@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>PackMoveGo - Professional Moving Services</title>
+    <meta name="description" content="Professional moving services with reliable, efficient, and affordable solutions for your relocation needs. Get a free quote today!" />
+    
+    <!-- Critical OG tags for text messaging - must be early in head -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://packmovego.com/" />
+    <meta property="og:title" content="PackMoveGo - Professional Moving Services" />
+    <meta property="og:description" content="Professional moving services with reliable, efficient, and affordable solutions for your relocation needs. Get a free quote today!" />
+    <meta property="og:image" content="https://packmovego.com/og-cover-v2.jpg?cb=3" />
+    <meta property="og:image:secure_url" content="https://packmovego.com/og-cover-v2.jpg?cb=3" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <!-- Additional fallbacks -->
+    <meta property="og:image" content="https://packmovego.com/og-cover-v2.png?cb=3" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image" content="https://packmovego.com/moving-truck.webp?cb=3" />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:alt" content="Professional moving truck and moving services" />
+    <meta property="og:site_name" content="PackMoveGo" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:updated_time" content="2025-01-12T20:30:00Z" />
+    
+    <!-- Twitter Card - must be early for text messaging -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:site" content="@packmovego" />
+    <meta property="twitter:creator" content="@packmovego" />
+    <meta property="twitter:url" content="https://packmovego.com/" />
+    <meta property="twitter:title" content="PackMoveGo - Professional Moving Services" />
+    <meta property="twitter:description" content="Professional moving services with reliable, efficient, and affordable solutions for your relocation needs. Get a free quote today!" />
+    <meta property="twitter:image" content="https://packmovego.com/og-cover-v2.jpg?cb=3" />
+    <meta property="twitter:image:alt" content="Professional moving truck and moving services" />
+    
+    <!-- PWA Manifest - Fixed path for Vercel -->
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#1d4ed8" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PackMoveGo" />
+    <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png" />
+    
+    <!-- Critical image loading optimized -->
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    
+    <!-- Critical CSS loaded dynamically -->
+    
+    <!-- Additional Open Graph tags -->
+    <meta property="og:locale:alternate" content="en_CA" />
+    
+    <!-- Apple-specific meta tags for better iPhone sharing -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PackMoveGo" />
+    <meta name="apple-itunes-app" content="app-argument=packmovego" />
+    
+    <!-- Additional social media meta tags -->
+    <meta property="og:determiner" content="the" />
+    <meta property="og:audio" content="" />
+    <meta property="og:video" content="" />
+    
+    <!-- Additional meta tags for text messaging apps -->
+    <meta name="twitter:app:country" content="US" />
+    <meta name="twitter:app:name:iphone" content="PackMoveGo" />
+    <meta name="twitter:app:name:ipad" content="PackMoveGo" />
+    <meta name="twitter:app:name:googleplay" content="PackMoveGo" />
+    <meta name="twitter:app:url:iphone" content="https://packmovego.com" />
+    <meta name="twitter:app:url:ipad" content="https://packmovego.com" />
+    <meta name="twitter:app:url:googleplay" content="https://packmovego.com" />
+    
+
+    
+
+    
+    <!-- Canonical URL for SEO -->
+    <link rel="canonical" href="https://packmovego.com/" />
+    
+    <!-- Additional Meta Tags -->
+    <meta name="keywords" content="moving services, professional movers, relocation, moving company, moving truck, moving supplies, orange county movers, residential moving, commercial moving" />
+    <meta name="author" content="PackMoveGo" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="application-name" content="PackMoveGo" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PackMoveGo" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Additional meta tags for better text messaging sharing -->
+    <meta name="twitter:domain_verification" content="your-verification-code" />
+    <meta name="google-site-verification" content="your-verification-code" />
+    <meta name="msvalidate.01" content="your-verification-code" />
+    
+    <!-- Additional meta tags specifically for text messaging apps -->
+    <meta name="twitter:app:id:iphone" content="your-app-id" />
+    <meta name="twitter:app:id:ipad" content="your-app-id" />
+    <meta name="twitter:app:id:googleplay" content="your-app-id" />
+    
+    <!-- Schema.org structured data for better search results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "PackMoveGo",
+      "description": "Professional moving services with reliable, efficient, and affordable solutions for your relocation needs.",
+      "url": "https://packmovego.com",
+      "logo": "https://packmovego.com/favicon.ico",
+      "image": "https://packmovego.com/moving-truck.webp",
+      "telephone": "+1-XXX-XXX-XXXX",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Orange County",
+        "addressRegion": "CA",
+        "addressCountry": "US"
+      },
+      "serviceType": "Moving Services",
+      "areaServed": "Orange County, CA"
+    }
+    </script>
+    
+    <!-- DNS Prefetch for faster resource loading -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Resource hints for faster loading -->
+    <link rel="preload" href="/src/main.tsx" as="script" crossorigin />
+    <link rel="preload" href="/index.js" as="script" />
+    <!-- CSS Preloading for faster loading -->
+    <link rel="preload" href="/src/styles/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <!-- Critical CSS inline for immediate rendering -->
+    <style>
+      /* Only the most critical CSS for immediate rendering */
+      /* Critical CSS for immediate rendering */
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+      #root { min-height: 100vh; }
+
+      /* Ghost Structure - Skeleton Loading */
+      .ghost-structure {
+        display: block;
+        background: #ffffff;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      .ghost-structure.hidden {
+        display: none !important;
+      }
+
+      /* Ghost Navbar */
+      .ghost-navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 70px;
+        background: #ffffff;
+        border-bottom: 1px solid #e5e7eb;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .ghost-logo {
+        width: 120px;
+        height: 30px;
+        background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+      }
+
+      .ghost-nav-links {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+      }
+
+      .ghost-nav-link {
+        width: 60px;
+        height: 20px;
+        background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+      }
+
+      /* Ghost Hero Section */
+      .ghost-hero {
+        margin-top: 70px;
+        padding: 4rem 2rem;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .ghost-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+      }
+
+      .ghost-hero-content {
+        text-align: center;
+        color: white;
+        z-index: 1;
+        position: relative;
+        max-width: 800px;
+      }
+
+      .ghost-hero-title {
+        width: 400px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.3);
+        margin: 0 auto 1rem auto;
+        border-radius: 8px;
+        animation: shimmer 2s infinite;
+      }
+
+      .ghost-hero-subtitle {
+        width: 600px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.2);
+        margin: 0 auto 2rem auto;
+        border-radius: 4px;
+        animation: shimmer 2s infinite;
+      }
+
+      .ghost-hero-button {
+        width: 150px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.3);
+        margin: 0 auto;
+        border-radius: 8px;
+        animation: shimmer 2s infinite;
+      }
+
+      /* Ghost Content Sections */
+      .ghost-section {
+        padding: 4rem 2rem;
+        background: #ffffff;
+      }
+
+      .ghost-section-title {
+        width: 300px;
+        height: 32px;
+        background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+        margin: 0 auto 2rem auto;
+      }
+
+      .ghost-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .ghost-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 2rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .ghost-card-image {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      .ghost-card-title {
+        width: 80%;
+        height: 24px;
+        background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+      }
+
+      .ghost-card-text {
+        width: 100%;
+        height: 16px;
+        background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+      }
+
+      .ghost-card-text:last-child {
+        width: 60%;
+      }
+
+      /* Ghost Footer */
+      .ghost-footer {
+        background: #1f2937;
+        color: white;
+        padding: 3rem 2rem;
+        text-align: center;
+      }
+
+      .ghost-footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .ghost-footer-title {
+        width: 200px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.2);
+        margin: 0 auto 1rem auto;
+        border-radius: 4px;
+        animation: shimmer 1.5s infinite;
+      }
+
+      .ghost-footer-text {
+        width: 400px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 auto;
+        border-radius: 4px;
+        animation: shimmer 1.5s infinite;
+      }
+
+      /* Shimmer Animation */
+      @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+
+      /* Loading Screen */
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+        z-index: 9999;
+        transition: opacity 0.3s ease-out;
+        opacity: 1;
+        overflow: hidden;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      #loading-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #loading-screen.fast-load {
+        display: none !important;
+      }
+
+      /* Simple loading content */
+      .loading-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: white;
+        z-index: 1;
+      }
+
+      /* Professional loading spinner */
+      .loading-spinner {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 2rem auto;
+      }
+
+      .loading-spinner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+        border-top: 3px solid #ffffff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Professional progress bar */
+      .progress-container {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 2px;
+        overflow: hidden;
+        position: relative;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .progress-bar {
+        height: 6px;
+        background: linear-gradient(90deg, #ffffff 0%, #dbeafe 100%);
+        border-radius: 6px;
+        width: 0%;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        position: relative;
+      }
+
+      .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+        animation: progressShimmer 1.2s ease-in-out infinite;
+      }
+
+      @keyframes progressShimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+      }
+
+      /* Professional progress text */
+      .progress-text {
+        color: #dbeafe;
+        font-size: 0.875rem;
+        margin-top: 0.75rem;
+        text-align: center;
+        font-weight: 500;
+        letter-spacing: 0.025em;
+      }
+
+      /* Hide root content while loading */
+      #root {
+        opacity: 0;
+        transition: opacity 0.4s ease-in;
+        min-height: 100vh;
+      }
+
+      #root.loaded {
+        opacity: 1;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .ghost-navbar {
+          padding: 0 1rem;
+        }
+        
+        .ghost-logo {
+          width: 100px;
+        }
+        
+        .ghost-nav-links {
+          gap: 1rem;
+        }
+        
+        .ghost-nav-link {
+          width: 40px;
+        }
+        
+        .ghost-hero {
+          padding: 2rem 1rem;
+          min-height: 400px;
+        }
+        
+        .ghost-hero-title {
+          width: 280px;
+          height: 36px;
+        }
+        
+        .ghost-hero-subtitle {
+          width: 320px;
+          height: 20px;
+        }
+        
+        .ghost-section {
+          padding: 2rem 1rem;
+        }
+        
+        .ghost-cards {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+      }
+    </style>
+    
+  </head>
+  <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="progress-container">
+          <div class="progress-bar" id="progress-bar"></div>
+            </div>
+        <div class="progress-text" id="progress-text">Initializing...</div>
+      </div>
+    </div>
+    <!-- Ghost Structure - Shows immediately while React app loads -->
+    <div class="ghost-structure" id="ghost-structure">
+      <!-- Ghost Navbar -->
+      <nav class="ghost-navbar">
+        <div class="ghost-logo"></div>
+        <div class="ghost-nav-links">
+          <div class="ghost-nav-link"></div>
+          <div class="ghost-nav-link"></div>
+          <div class="ghost-nav-link"></div>
+          <div class="ghost-nav-link"></div>
+          <div class="ghost-nav-link"></div>
+        </div>
+      </nav>
+      <!-- Ghost Hero Section -->
+      <section class="ghost-hero">
+        <div class="ghost-hero-content">
+          <div class="ghost-hero-title"></div>
+          <div class="ghost-hero-subtitle"></div>
+          <div class="ghost-hero-button"></div>
+        </div>
+      </section>
+      
+      <!-- Ghost Services Section -->
+      <section class="ghost-section">
+        <div class="ghost-section-title"></div>
+        <div class="ghost-cards">
+          <div class="ghost-card">
+            <div class="ghost-card-image"></div>
+            <div class="ghost-card-title"></div>
+            <div class="ghost-card-text"></div>
+            <div class="ghost-card-text"></div>
+            <div class="ghost-card-text"></div>
+          </div>
+          <div class="ghost-card">
+            <div class="ghost-card-image"></div>
+            <div class="ghost-card-title"></div>
+            <div class="ghost-card-text"></div>
+            <div class="ghost-card-text"></div>
+            <div class="ghost-card-text"></div>
+          </div>
+          <div class="ghost-card">
+            <div class="ghost-card-image"></div>
+            <div class="ghost-card-title"></div>
+            <div class="ghost-card-text"></div>
+            <div class="ghost-card-text"></div>
+            <div class="ghost-card-text"></div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Ghost About Section -->
+      <section class="ghost-section" style="background: #f8fafc;">
+        <div class="ghost-section-title"></div>
+        <div class="ghost-cards">
+          <div class="ghost-card">
+            <div class="ghost-card-image"></div>
+            <div class="ghost-card-title"></div>
+            <div class="ghost-card-text"></div>
+            <div class="ghost-card-text"></div>
+          </div>
+          <div class="ghost-card">
+            <div class="ghost-card-image"></div>
+            <div class="ghost-card-title"></div>
+            <div class="ghost-card-text"></div>
+            <div class="ghost-card-text"></div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Ghost Footer -->
+      <footer class="ghost-footer">
+        <div class="ghost-footer-content">
+          <div class="ghost-footer-title"></div>
+          <div class="ghost-footer-text"></div>
+        </div>
+      </footer>
+    </div>
+    <!-- React App Root #Final Compulation changed-->
+    <div id="root"></div>
+    <!-- No JavaScript Fallback-->
+    <noscript>
+      <div style="padding: 20px; text-align: center; background-color: #f8f9fa; border: 1px solid #dee2e6; margin: 20px; border-radius: 8px;">
+        <h2 style="color: #dc3545; margin-bottom: 10px;">JavaScript Required</h2>
+        <p style="color: #6c757d; margin-bottom: 15px;">
+          This website requires JavaScript to function properly. Please enable JavaScript in your browser to continue.
+        </p>
+        <p style="color: #6c757d; font-size: 14px;">
+          If you need assistance, please contact us at <a href="mailto:support@packmovego.com" style="color: #3b82f6; text-decoration: none;">support@packmovego.com</a>
+        </p>
+      </div>
+    </noscript>
+    <!-- React App Entry Point-->
+    <script type="module" src="/src/main.tsx"></script>
+    <script src="/index.js"></script>
+  </body>
+</html> 

@@ -1,0 +1,95 @@
+/* Component-specific styles - loaded asynchronously */
+
+/* Custom styles for navigation-aware wrapper */
+.navigation-aware-wrapper {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.navigation-aware-wrapper.navigating {
+  opacity: 0.8;
+}
+
+/* Smooth transitions for content loading */
+.content-transition {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.content-transition.loading {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
+.content-transition.loaded {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Cookie consent banner transitions */
+.cookie-banner-enter {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.cookie-banner-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.cookie-banner-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cookie-banner-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+}
+
+/* Loading states */
+.loading-pulse {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-before: always;
+  }
+}
+
+/* Reduced motion support for components */
+@media (prefers-reduced-motion: reduce) {
+  .navigation-aware-wrapper,
+  .content-transition,
+  .cookie-banner-enter,
+  .cookie-banner-enter-active,
+  .cookie-banner-exit,
+  .cookie-banner-exit-active {
+    transition: none !important;
+    animation: none !important;
+  }
+} 

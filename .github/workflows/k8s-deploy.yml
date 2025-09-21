@@ -1,0 +1,94 @@
+name: Kubernetes Frontend Deployment
+
+on:
+  workflow_run:
+    workflows: ["Frontend CI/CD"]
+    branches: [main]
+    types:
+      - completed
+
+env:
+  KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+  NAMESPACE: packmovego-prod
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "$KUBE_CONFIG" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy Frontend
+        run: |
+          kubectl apply -f k8s/frontend-deployment.yaml -n $NAMESPACE
+
+      - name: Wait for Frontend
+        run: |
+          kubectl wait --for=condition=ready pod -l app=frontend -n $NAMESPACE --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          echo "Verifying deployment..."
+          kubectl get pods -n $NAMESPACE
+          kubectl get services -n $NAMESPACE
+          
+          # Check frontend health
+          FRONTEND_POD=$(kubectl get pod -l app=frontend -n $NAMESPACE -o jsonpath="{.items[0].metadata.name}")
+          kubectl exec $FRONTEND_POD -n $NAMESPACE -- curl -f http://localhost:80 || exit 1
+
+      - name: Monitor deployment
+        run: |
+          echo "Monitoring deployment for 5 minutes..."
+          for i in {1..30}; do
+            echo "Check $i:"
+            kubectl get pods -n $NAMESPACE
+            kubectl top pods -n $NAMESPACE || true
+            sleep 10
+          done
+
+  rollback:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: failure()
+    environment: prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "$KUBE_CONFIG" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Rollback deployment
+        run: |
+          echo "Rolling back deployment..."
+          kubectl rollout undo deployment/frontend -n $NAMESPACE
+          kubectl rollout status deployment/frontend -n $NAMESPACE 

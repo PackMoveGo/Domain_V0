@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Configuration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>API Configuration Test</h1>
+    
+    <div class="test-section info">
+        <h3>Environment Variables</h3>
+        <div id="env-vars">Loading...</div>
+    </div>
+    
+    <div class="test-section info">
+        <h3>API Configuration</h3>
+        <div id="api-config">Loading...</div>
+    </div>
+    
+    <div class="test-section info">
+        <h3>Health Check Test</h3>
+        <button onclick="testHealthCheck()">Test Health Check</button>
+        <div id="health-result">Click button to test</div>
+    </div>
+    
+    <div class="test-section info">
+        <h3>Connection Test</h3>
+        <button onclick="testConnection()">Test API Connection</button>
+        <div id="connection-result">Click button to test</div>
+    </div>
+
+    <script>
+        // Display environment variables
+        function displayEnvVars() {
+            const envVars = {
+                'NODE_ENV': process.env.NODE_ENV || 'not set',
+                'API_URL': process.env.API_URL || 'not set',
+                'PORT': process.env.PORT || 'not set',
+                'SKIP_BACKEND_CHECK': process.env.SKIP_BACKEND_CHECK || 'not set',
+                'CORS_ORIGIN': process.env.CORS_ORIGIN || 'not set',
+                'API_KEY_FRONTEND': process.env.API_KEY_FRONTEND ? 'set (length: ' + process.env.API_KEY_FRONTEND.length + ')' : 'not set'
+            };
+            
+            document.getElementById('env-vars').innerHTML = '<pre>' + JSON.stringify(envVars, null, 2) + '</pre>';
+        }
+        
+        // Display API configuration
+        function displayApiConfig() {
+            const config = {
+                'Current URL': window.location.href,
+                'API Base URL': process.env.API_URL || 'not set',
+                'Expected API Health': (process.env.API_URL || '') + '/v0/health',
+                'Expected API Services': (process.env.API_URL || '') + '/v0/services',
+                'Expected API Nav': (process.env.API_URL || '') + '/v0/nav'
+            };
+            
+            document.getElementById('api-config').innerHTML = '<pre>' + JSON.stringify(config, null, 2) + '</pre>';
+        }
+        
+        // Test health check
+        async function testHealthCheck() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const apiUrl = process.env.API_URL || 'https://localhost:3000';
+                const healthUrl = apiUrl + '/v0/health';
+                
+                console.log('Testing health check at:', healthUrl);
+                
+                const response = await fetch(healthUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'x-api-key': process.env.API_KEY_FRONTEND || ''
+                    },
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = '<div class="success"><strong>Success!</strong><br><pre>' + JSON.stringify(data, null, 2) + '</pre></div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="error"><strong>Error:</strong> HTTP ' + response.status + ' - ' + response.statusText + '</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error"><strong>Connection Error:</strong> ' + error.message + '</div>';
+            }
+        }
+        
+        // Test connection
+        async function testConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const apiUrl = process.env.API_URL || 'https://localhost:3000';
+                const testUrls = [
+                    apiUrl + '/v0/health',
+                    apiUrl + '/v0/services',
+                    apiUrl + '/v0/nav'
+                ];
+                
+                const results = [];
+                
+                for (const url of testUrls) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'x-api-key': process.env.API_KEY_FRONTEND || ''
+                            },
+                            credentials: 'include'
+                        });
+                        
+                        results.push({
+                            url: url,
+                            status: response.status,
+                            ok: response.ok,
+                            statusText: response.statusText
+                        });
+                    } catch (error) {
+                        results.push({
+                            url: url,
+                            error: error.message,
+                            isConnectionError: error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')
+                        });
+                    }
+                }
+                
+                resultDiv.innerHTML = '<pre>' + JSON.stringify(results, null, 2) + '</pre>';
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error"><strong>Test Error:</strong> ' + error.message + '</div>';
+            }
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            displayEnvVars();
+            displayApiConfig();
+        });
+    </script>
+</body>
+</html>
