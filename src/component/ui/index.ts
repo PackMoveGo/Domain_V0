@@ -1,12 +1,12 @@
 // UI Components - Shared across pages
-export { default as LoadingSpinner } from './LoadingSpinner';
-export { default as SkeletonLoader } from './SkeletonLoader';
-export { default as SmoothContentLoader } from './SmoothContentLoader';
-export { default as SectionWarning } from './SectionWarning';
+// export { default as LoadingSpinner } from './LoadingSpinner';
+// export { default as SkeletonLoader } from './SkeletonLoader';
+// export { default as SmoothContentLoader } from './SmoothContentLoader';
+// export { default as SectionWarning } from './SectionWarning';
 export { default as NoDataSection } from './NoDataSection';
-export { default as AppContent } from '../../AppCSR';
-export { default as DownloadApps } from './DownloadApps';
-export { default as Footer } from './Footer';
+// export { default as AppContent } from '../../AppCSR';
+// export { default as DownloadApps } from './DownloadApps';
+export { default as Footer } from './footer.footer';
 
 // Navigation UI Components
 export { default as ScrollToTopButton } from './navigation/ScrollToTopButton';

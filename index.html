@@ -137,10 +137,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
     <!-- Resource hints for faster loading -->
-    <link rel="preload" href="/src/main.tsx" as="script" crossorigin />
-    <link rel="preload" href="/index.js" as="script" />
-    <!-- CSS Preloading for faster loading -->
-    <link rel="preload" href="/src/styles/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <!-- These will be replaced by Vite during build -->
     <!-- Critical CSS inline for immediate rendering -->
     <style>
       /* Only the most critical CSS for immediate rendering */
@@ -636,6 +633,44 @@
     </noscript>
     <!-- React App Entry Point-->
     <script type="module" src="/src/main.tsx"></script>
-    <script src="/index.js"></script>
+    
+    <!-- Hide loading screen when React app loads -->
+    <script>
+      // Hide loading screen when React app is ready
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loadingScreen = document.getElementById('loading-screen');
+          const ghostStructure = document.getElementById('ghost-structure');
+          const root = document.getElementById('root');
+          
+          if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+          }
+          if (ghostStructure) {
+            ghostStructure.classList.add('hidden');
+          }
+          if (root) {
+            root.classList.add('loaded');
+          }
+        }, 1000); // Wait 1 second for React to load
+      });
+      
+      // Fallback: Hide loading screen after 5 seconds regardless
+      setTimeout(function() {
+        const loadingScreen = document.getElementById('loading-screen');
+        const ghostStructure = document.getElementById('ghost-structure');
+        const root = document.getElementById('root');
+        
+        if (loadingScreen) {
+          loadingScreen.classList.add('hidden');
+        }
+        if (ghostStructure) {
+          ghostStructure.classList.add('hidden');
+        }
+        if (root) {
+          root.classList.add('loaded');
+        }
+      }, 5000);
+    </script>
   </body>
 </html> 

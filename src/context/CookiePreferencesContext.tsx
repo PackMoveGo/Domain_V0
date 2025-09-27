@@ -54,8 +54,9 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
   const [preferences, setPreferences] = useState<CookiePreferences>(defaultPreferences);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Banner timer functions
+  // Banner timer functions - SSR-safe
   const checkBannerTimer = (): boolean => {
+    if (typeof window === 'undefined') return true; // SSR: always show banner
     const lastBannerTime = localStorage.getItem('packmovego-last-banner-time');
     if (lastBannerTime) {
       const lastTime = parseInt(lastBannerTime);
@@ -67,7 +68,9 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
   };
 
   const clearBannerCache = () => {
-    localStorage.removeItem('packmovego-last-banner-time');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('packmovego-last-banner-time');
+    }
   };
 
   // Compute hasOptedOut based on preferences (if all cookies are disabled)
@@ -89,6 +92,13 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
 
   useEffect(() => {
     const loadPreferences = () => {
+      // SSR-safe localStorage access
+      if (typeof window === 'undefined') {
+        setPreferences(defaultPreferences);
+        setIsLoading(false);
+        return;
+      }
+      
       // Load from localStorage - no auto-acceptance
       const savedPreferences = localStorage.getItem('packmovego-cookie-preferences');
       if (savedPreferences) {
@@ -112,7 +122,7 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
   }, []);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && typeof window !== 'undefined') {
       const preferencesWithTimestamp = { ...preferences, lastUpdated: getCurrentTimestamp() };
       localStorage.setItem('packmovego-cookie-preferences', JSON.stringify(preferencesWithTimestamp));
       
@@ -150,13 +160,15 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
     };
     setPreferences(newPreferences);
     
-    // Dispatch opt-out event for other components to handle
-    window.dispatchEvent(new CustomEvent('cookie-opt-out'));
-    
-    // Refresh the page to apply opt-out restrictions
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
+    // Dispatch opt-out event for other components to handle (SSR-safe)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cookie-opt-out'));
+      
+      // Refresh the page to apply opt-out restrictions
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
   };
 
   const optIn = () => {
@@ -172,17 +184,19 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
     console.log('🍪 Setting new preferences:', newPreferences);
     setPreferences(newPreferences);
     
-    // Update last banner time
-    localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
-    
-    // Notify consent change
-    window.dispatchEvent(new CustomEvent('cookie-consent-change'));
-    
-    // Check for pending API errors now that consent is given
-    console.log('🍪 Checking for pending API errors after consent');
-    setTimeout(() => {
-      checkPendingApiErrors();
-    }, 100);
+    // Update last banner time (SSR-safe)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
+      
+      // Notify consent change
+      window.dispatchEvent(new CustomEvent('cookie-consent-change'));
+      
+      // Check for pending API errors now that consent is given
+      console.log('🍪 Checking for pending API errors after consent');
+      setTimeout(() => {
+        checkPendingApiErrors();
+      }, 100);
+    }
   };
 
   const value: CookiePreferencesContextType = {

@@ -29,7 +29,7 @@ class ConsoleManager {
   private startupMessages: string[] = [];
 
   private constructor() {
-    const isDevMode = isClient ? import.meta.env.MODE === 'development' : false;
+    const isDevMode = process.env.NODE_ENV === 'development';
     const devToolsEnabled = isClient ? (ENABLE_DEV_TOOLS === 'true') : false;
     
     this.isDevelopment = isDevMode && devToolsEnabled;
@@ -40,7 +40,7 @@ class ConsoleManager {
       // Collect startup messages instead of logging immediately
       this.startupMessages.push('🔧 Console Manager Initialized');
       this.startupMessages.push(`Session ID: ${this.sessionId}`);
-      this.startupMessages.push(`Environment: ${isClient ? import.meta.env.MODE || 'development' : 'server'}`);
+      this.startupMessages.push(`Environment: ${process.env.NODE_ENV || 'development'}`);
       
       // Log startup messages in a single group after a delay
       setTimeout(() => {
@@ -508,8 +508,8 @@ const consoleCommands = {
       hardwareConcurrency: navigator.hardwareConcurrency,
       deviceMemory: (navigator as any).deviceMemory,
       connection: (navigator as any).connection,
-      environment: import.meta.env.MODE,
-      devMode: import.meta.env.VITE_DEV_MODE
+      environment: process.env.NODE_ENV,
+      devMode: process.env.NODE_ENV
     });
   },
 
@@ -546,28 +546,28 @@ const consoleCommands = {
     const hasToken = JWT_AUTH.hasToken();
     const isExpired = JWT_AUTH.isTokenExpired();
     const timeUntilExpiration = JWT_AUTH.getTimeUntilExpiration();
-    const authHeader = JWT_AUTH.getAuthHeader();
+    // const authHeader = JWT_AUTH.getAuthHeader(); // Temporarily disabled
     
     console.log('JWT Status:', {
       hasToken,
       isExpired,
       timeUntilExpiration: timeUntilExpiration !== null ? `${timeUntilExpiration} minutes` : 'Unknown',
-      authHeader: Object.keys(authHeader).length > 0 ? 'Present' : 'Missing'
+      // authHeader: Object.keys(authHeader).length > 0 ? 'Present' : 'Missing' // Temporarily disabled
     });
   },
 
   setJwtToken: () => {
-    setTestToken();
+    // setTestToken(); // Temporarily disabled
     console.log('🔑 Test JWT token set (30 minute expiration)');
   },
 
   refreshJwtToken: () => {
-    JWT_AUTH.refreshToken();
+    // JWT_AUTH.refreshToken(); // Temporarily disabled
     console.log('🔄 JWT token refreshed');
   },
 
   clearJwtToken: () => {
-    JWT_AUTH.removeToken();
+    JWT_AUTH.clearToken();
     console.log('🗑️ JWT token cleared');
   },
 
@@ -597,20 +597,20 @@ const consoleCommands = {
   // Check API key configuration
   checkApiKey: () => {
     if (typeof window !== 'undefined') {
-      const apiKey = import.meta.env.VITE_API_KEY_FRONTEND;
-      const isEnabled = import.meta.env.API_KEY_ENABLED === 'true';
+      const apiKey = process.env.NEXT_PUBLIC_API_KEY_FRONTEND;
+      const isEnabled = process.env.NEXT_PUBLIC_API_KEY_ENABLED === 'true';
       console.log('🔑 API Key Status:', {
         isEnabled: isEnabled,
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
         apiKeyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none',
-        apiUrl: import.meta.env.VITE_API_URL
+        apiUrl: process.env.NEXT_PUBLIC_API_URL
       });
       return {
         isEnabled,
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
-        apiUrl: import.meta.env.VITE_API_URL
+        apiUrl: process.env.NEXT_PUBLIC_API_URL
       };
     }
     return 'Not available in server environment';
@@ -622,12 +622,12 @@ const consoleCommands = {
       try {
         const { api } = await import('../services/service.apiSW');
         console.log('🔧 API Configuration:', {
-          apiUrl: import.meta.env.VITE_API_URL,
-          apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
-          skipBackendCheck: import.meta.env.VITE_SKIP_BACKEND_CHECK,
-          devMode: import.meta.env.VITE_DEV_MODE,
-          devHttps: import.meta.env.VITE_DEV_HTTPS,
-          port: import.meta.env.VITE_PORT
+          apiUrl: process.env.NEXT_PUBLIC_API_URL,
+          apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+          skipBackendCheck: process.env.NEXT_PUBLIC_SKIP_BACKEND_CHECK,
+          devMode: process.env.NODE_ENV,
+          devHttps: process.env.NEXT_PUBLIC_DEV_HTTPS,
+          port: process.env.PORT
         });
         return 'API configuration logged to console';
       } catch (error) {
@@ -642,8 +642,8 @@ const consoleCommands = {
   testApiConnection: async () => {
     if (typeof window !== 'undefined') {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        const apiKey = import.meta.env.VITE_API_KEY_FRONTEND || '';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        const apiKey = process.env.NEXT_PUBLIC_API_KEY_FRONTEND || '';
         console.log('🔧 Testing API connection to:', apiUrl);
         console.log('🔑 API Key being sent:', {
           hasKey: !!apiKey,
@@ -671,7 +671,7 @@ const consoleCommands = {
         }
       } catch (error) {
         console.error('❌ API connection error:', error);
-        return `API connection error: ${error.message}`;
+        return `API connection error: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
     }
     return 'Not available in server environment';
@@ -701,7 +701,7 @@ const consoleCommands = {
     if (typeof window !== 'undefined') {
       try {
         const apiKey = 'pmg_frontend_live_sk_a7f8e2d9c1b4x6m9p3q8r5t2w7y1z4a6';
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
         
         console.log('🔑 Testing with manual API key:', {
           apiKey: apiKey,
@@ -727,29 +727,15 @@ const consoleCommands = {
         }
       } catch (error) {
         console.error('❌ API key test error:', error);
-        return `API key test error: ${error.message}`;
+        return `API key test error: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
     }
     return 'Not available in server environment';
   },
 
   getJwtTokenInfo: () => {
-    const token = JWT_AUTH.getToken();
-    if (token) {
-      try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          console.log('📋 JWT Token Info:', payload);
-        } else {
-          console.log('❌ Invalid token format');
-        }
-      } catch (error) {
-        console.log('❌ Error parsing token:', error);
-      }
-    } else {
-      console.log('❌ No token found');
-    }
+    // Temporarily disabled for Next.js build
+    console.log('📋 JWT Token Info: Temporarily disabled');
   },
 
   // Help
@@ -807,7 +793,7 @@ Utility Commands:
 
 // Add commands to global window object in development - SSR SAFE
 // Only load dev tools when NODE_ENV is development AND ENABLE_DEV_TOOLS is true
-const isDevMode = import.meta.env.MODE === 'development';
+const isDevMode = process.env.NODE_ENV === 'development';
 const devToolsEnabled = ENABLE_DEV_TOOLS === 'true';
 
 if (isDevMode && devToolsEnabled && typeof window !== 'undefined') {

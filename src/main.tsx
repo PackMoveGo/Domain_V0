@@ -34,15 +34,19 @@ const isSSR = rootElement.innerHTML.trim().length > 0;
 if (isSSR && 'hydrateRoot' in ReactDOMClient) {
   // Hydrate existing server-rendered content (Production with SSR)
   try {
+    console.log('🔄 Hydrating SSR content...');
     (ReactDOMClient as any).hydrateRoot(rootElement, AppComponent);
+    console.log('✅ SSR hydration successful');
   } catch (error) {
     console.error('❌ Hydration failed, falling back to CSR:', error);
-    // Fallback to client-side rendering if hydration fails
+    // Clear the server-rendered content and fall back to client-side rendering
+    rootElement.innerHTML = '';
     const root = createRoot(rootElement);
     root.render(AppComponent);
   }
 } else {
   // Client-side only rendering (Development with CSR)
+  console.log('🔄 Client-side rendering...');
   const root = createRoot(rootElement);
   root.render(AppComponent);
 }

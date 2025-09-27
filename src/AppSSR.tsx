@@ -1,106 +1,121 @@
-import React from 'react';
-import { StaticRouter } from 'react-router-dom/server';
-import { CookiePreferencesProvider } from './context/CookiePreferencesContext';
-import { SectionVerificationProvider } from './context/SectionVerificationContext';
-import { SectionDataProvider } from './context/SectionDataContext';
-import { UserTrackingProvider } from './component/business/UserTrackingProvider';
-import { RouteSEO } from './hook/useRouteSEO.tsx';
+import React, { Suspense } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import ErrorBoundary from './component/ui/feedback/ErrorBoundary';
+import Layout from './component/layout/Layout';
 
-// Import pages directly (no lazy loading for SSR)
-import HomePage from './pages/page.home';
-import AboutPage from './pages/page.about';
-import ServicesPage from './pages/page.services';
-import Contact from './pages/page.contact';
-import BlogPage from './pages/page.blog';
-import FAQ from './pages/page.faq';
-import Locations from './pages/page.locations';
-import Booking from './pages/page.booking';
-import Review from './pages/page.review';
-import Refer from './pages/page.refer';
-import SuppliesPage from './pages/page.supplies';
-import Tips from './pages/page.tipsPage';
-import SignInPage from './pages/page.signIn';
-import SignUpPage from './pages/page.signUp';
-import Privacy from './pages/page.privacy';
-import Terms from './pages/page.terms';
-import CookieOptOutPage from './pages/page.cookieOptOut';
-import Sitemap from './pages/page.sitemap';
-import NotFoundPage from './pages/page.404';
-
-// Simple routing without Suspense
-const AppContentSSR: React.FC<{ url: string }> = ({ url }) => {
-  // Simple route matching for SSR
-  const getPageComponent = () => {
-    switch (url) {
-      case '/':
-        return <HomePage />;
-      case '/about':
-        return <AboutPage />;
-      case '/services':
-        return <ServicesPage />;
-      case '/contact':
-        return <Contact />;
-      case '/blog':
-        return <BlogPage />;
-      case '/faq':
-        return <FAQ />;
-      case '/locations':
-        return <Locations />;
-      case '/booking':
-        return <Booking />;
-      case '/review':
-        return <Review />;
-      case '/refer':
-        return <Refer />;
-      case '/supplies':
-        return <SuppliesPage />;
-      case '/tips':
-        return <Tips />;
-      case '/signin':
-        return <SignInPage />;
-      case '/signup':
-        return <SignUpPage />;
-      case '/privacy':
-        return <Privacy />;
-      case '/terms':
-        return <Terms />;
-      case '/cookie-opt-out':
-        return <CookieOptOutPage />;
-      case '/cookie-test':
-        return <NotFoundPage />;
-      case '/api-test':
-        return <NotFoundPage />;
-      case '/sitemap':
-        return <Sitemap />;
-      default:
-        return <NotFoundPage />;
-    }
-  };
-
-  return (
-    <div className="App">
-      <div id="analytics-root"></div>
-      {getPageComponent()}
-    </div>
+// SSR-safe lazy loading with error boundaries
+const createLazyComponent = (importFunc: () => Promise<any>, fallback?: React.ReactNode) => {
+  const LazyComponent = React.lazy(() => 
+    importFunc().catch((error) => {
+      console.error('Failed to load component:', error);
+      // Return a fallback component instead of throwing
+      return { 
+        default: () => (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h3 className="text-yellow-800 font-semibold">Component Loading Error</h3>
+            <p className="text-yellow-600 text-sm">
+              Failed to load this component. Please refresh the page.
+            </p>
+            {process.env.NODE_ENV === 'development' && (
+              <details className="mt-2 text-xs text-yellow-600">
+                <summary>Error Details</summary>
+                <pre className="mt-1 p-2 bg-yellow-100 rounded overflow-auto">
+                  {error.message}
+                </pre>
+              </details>
+            )}
+          </div>
+        )
+      };
+    })
+  );
+  
+  return (props: any) => (
+    <ErrorBoundary>
+      <LazyComponent {...props} />
+    </ErrorBoundary>
   );
 };
 
-const AppSSR: React.FC<{ url: string }> = ({ url }) => {
+// Lazy load pages with error boundaries and SSR compatibility
+const HomePage = createLazyComponent(() => import('./pages/page.home'));
+const AboutPage = createLazyComponent(() => import('./pages/page.about'));
+const ServicesPage = createLazyComponent(() => import('./pages/page.services'));
+const ContactPage = createLazyComponent(() => import('./pages/page.contact'));
+const BlogPage = createLazyComponent(() => import('./pages/page.blog'));
+const FAQPage = createLazyComponent(() => import('./pages/page.faq'));
+const LocationsPage = createLazyComponent(() => import('./pages/page.locations'));
+const BookingPage = createLazyComponent(() => import('./pages/page.booking'));
+const ReviewPage = createLazyComponent(() => import('./pages/page.review'));
+const ReferPage = createLazyComponent(() => import('./pages/page.refer'));
+const SuppliesPage = createLazyComponent(() => import('./pages/page.supplies'));
+const TipsPage = createLazyComponent(() => import('./pages/page.tipsPage'));
+const SignInPage = createLazyComponent(() => import('./pages/page.signIn'));
+const SignUpPage = createLazyComponent(() => import('./pages/page.signUp'));
+const PrivacyPage = createLazyComponent(() => import('./pages/page.privacy'));
+const TermsPage = createLazyComponent(() => import('./pages/page.terms'));
+const CookieOptOutPage = createLazyComponent(() => import('./pages/page.cookieOptOut'));
+const SitemapPage = createLazyComponent(() => import('./pages/page.sitemap'));
+const NotFoundPage = createLazyComponent(() => import('./pages/page.404'));
+
+// Import ServicesTest component directly for testing
+// import ServicesTest from './component/devtools/ServicesTest';
+import ApiErrorHandlingExample from './component/examples/ApiErrorHandlingExample';
+import ModalOrderTest from './component/examples/ModalOrderTest';
+
+interface AppSSRProps {
+  url: string;
+}
+
+const AppSSR: React.FC<AppSSRProps> = ({ url }) => {
+  console.log('🚀 AppSSR rendering for URL:', url);
+  
+  // SSR-safe loading fallback
+  const LoadingFallback = () => (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+        <p className="text-gray-600 text-sm">Loading...</p>
+      </div>
+    </div>
+  );
+
   return (
-    <React.StrictMode>
-      <StaticRouter location={url}>
-        <CookiePreferencesProvider>
-          <SectionVerificationProvider>
-            <SectionDataProvider>
-              <UserTrackingProvider serverUrl="https://api.packmovego.com">
-                <RouteSEO />
-                <AppContentSSR url={url} />
-              </UserTrackingProvider>
-            </SectionDataProvider>
-          </SectionVerificationProvider>
-        </CookiePreferencesProvider>
-      </StaticRouter>
-    </React.StrictMode>
+    <Layout isSSR={true}>
+      <div className="App">
+        {/* Analytics Root */}
+        <div id="analytics-root"></div>
+        
+        {/* Main Content with optimized routing */}
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/services" element={<ServicesPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/locations" element={<LocationsPage />} />
+            <Route path="/booking" element={<BookingPage />} />
+            <Route path="/review" element={<ReviewPage />} />
+            <Route path="/refer" element={<ReferPage />} />
+            <Route path="/supplies" element={<SuppliesPage />} />
+            <Route path="/tips" element={<TipsPage />} />
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/cookie-opt-out" element={<CookieOptOutPage />} />
+            <Route path="/cookie-test" element={<NotFoundPage />} />
+            {/* <Route path="/services-test" element={<ServicesTest />} /> */}
+            <Route path="/error-handling-example" element={<ApiErrorHandlingExample />} />
+            <Route path="/modal-order-test" element={<ModalOrderTest />} />
+            <Route path="/sitemap" element={<SitemapPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </div>
+    </Layout>
   );
 };
 

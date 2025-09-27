@@ -58,11 +58,13 @@ const SitemapPage = createLazyComponent(() => import('./pages/page.sitemap'));
 const NotFoundPage = createLazyComponent(() => import('./pages/page.404'));
 
 // Import ServicesTest component directly for testing
-import ServicesTest from './component/devtools/ServicesTest';
+// import ServicesTest from './component/devtools/ServicesTest';
 import ApiErrorHandlingExample from './component/examples/ApiErrorHandlingExample';
 import ModalOrderTest from './component/examples/ModalOrderTest';
 
 const AppContent: React.FC = () => {
+  console.log('🚀 AppCSR rendering...');
+  
   return (
     <div className="App">
       {/* Analytics Root */}
@@ -96,7 +98,7 @@ const AppContent: React.FC = () => {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/cookie-opt-out" element={<CookieOptOutPage />} />
           <Route path="/cookie-test" element={<NotFoundPage />} />
-          <Route path="/services-test" element={<ServicesTest />} />
+          {/* <Route path="/services-test" element={<ServicesTest />} /> */}
           <Route path="/error-handling-example" element={<ApiErrorHandlingExample />} />
           <Route path="/modal-order-test" element={<ModalOrderTest />} />
           <Route path="/sitemap" element={<SitemapPage />} />

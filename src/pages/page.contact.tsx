@@ -31,9 +31,7 @@ export default function ContactPage() {
   const { getSectionProps } = useGiveSectionId();
 
   // Check if we're in production mode (SSR-safe)
-  const isProduction = typeof window !== 'undefined' 
-    ? import.meta.env.VITE_DEV_MODE === 'production'
-    : process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === 'production';
 
   // Load contact page data using comprehensive API service with modal middleware
   const loadContactPageData = async () => {

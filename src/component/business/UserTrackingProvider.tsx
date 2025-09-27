@@ -42,9 +42,9 @@ export const UserTrackingProvider: React.FC<UserTrackingProviderProps> = ({
   const isInitialized = useRef(false);
   const previousPath = useRef<string>('');
 
-  // Initialize user tracking
+  // Initialize user tracking (SSR-safe)
   useEffect(() => {
-    if (!isInitialized.current) {
+    if (!isInitialized.current && typeof window !== 'undefined') {
       UserTrackerAPI.init(serverUrl, {
         enableLocation,
         enableInteractions,
@@ -57,9 +57,9 @@ export const UserTrackingProvider: React.FC<UserTrackingProviderProps> = ({
     }
   }, [serverUrl, enableLocation, enableInteractions, enablePing, pingInterval, maxQueueSize, debug]);
 
-  // Auto-track page views
+  // Auto-track page views (SSR-safe)
   useEffect(() => {
-    if (isInitialized.current && autoTrackPageViews) {
+    if (isInitialized.current && autoTrackPageViews && typeof window !== 'undefined') {
       const currentPath = location.pathname;
       if (previousPath.current && previousPath.current !== currentPath) {
         UserTrackerAPI.trackPageView(currentPath, previousPath.current);
@@ -70,10 +70,10 @@ export const UserTrackingProvider: React.FC<UserTrackingProviderProps> = ({
     }
   }, [location.pathname, autoTrackPageViews]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount (SSR-safe)
   useEffect(() => {
     return () => {
-      if (isInitialized.current) {
+      if (isInitialized.current && typeof window !== 'undefined') {
         UserTrackerAPI.destroy();
       }
     };

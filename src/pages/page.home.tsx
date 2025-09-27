@@ -41,9 +41,7 @@ export default function HomePage(){
   const [statusCode, setStatusCode] = React.useState<number>(200);
 
   // Check if we're in production mode (SSR-safe)
-  const isProduction = typeof window !== 'undefined' 
-    ? import.meta.env.VITE_DEV_MODE === 'production'
-    : process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === 'production';
   
   // Load home page data using service pattern
   const loadHomePageData = async () => {

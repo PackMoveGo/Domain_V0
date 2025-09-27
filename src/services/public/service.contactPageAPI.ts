@@ -670,7 +670,7 @@ export const getApiFailureModalProps = () => {
  * This function returns the modal component that's managed by the middleware
  */
 export const getApiFailureModalComponent = () => {
-  return api.getApiFailureModalComponent();
+  return null; // Temporarily disabled for Next.js build
 };
 
 /**

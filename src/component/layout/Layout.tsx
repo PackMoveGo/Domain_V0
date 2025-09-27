@@ -12,9 +12,10 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 import QuoteForm from '../forms/form.quote';
 import ScrollToTopButton from '../ui/navigation/ScrollToTopButton';
 import Footer from '../ui/footer.footer';
-import DevToolsLauncher from '../devtools/DevToolsLauncher';
+// import DevToolsLauncher from '../devtools/DevToolsLauncher';
 import ApiFailureModal from '../ui/overlay/modal.apistatus';
 import CookieOptOut from '../../pages/modal.cookieOptOut';
+import LayoutSSR from './LayoutSSR';
 
 interface LayoutProps {
   forceHideSearch?: boolean;
@@ -27,6 +28,8 @@ interface LayoutProps {
   onSearchComplete?: (results: SearchResult[]) => void;
   onQuoteSubmit?: (data: FormData) => void;
   children: ReactNode;
+  // SSR detection
+  isSSR?: boolean;
 }
 
 const Layout: FC<LayoutProps> = ({
@@ -39,12 +42,59 @@ const Layout: FC<LayoutProps> = ({
   onSearch,
   onSearchComplete,
   onQuoteSubmit,
-  children
+  children,
+  isSSR = false
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isProduction = (import.meta as any).env?.NODE_ENV === 'production';
-  const { hasConsent, isWaitingForConsent, isApiBlocked, optIn, hasOptedOut, hasMadeChoice, hasOptedIn } = useCookiePreferences();
+  
+  // Detect if we're in SSR mode
+  const isServerSide = typeof window === 'undefined' || isSSR;
+  
+  // If SSR, use the SSR-safe layout component
+  if (isServerSide) {
+    return (
+      <LayoutSSR
+        forceHideSearch={forceHideSearch}
+        focusSearch={focusSearch}
+        noTopPadding={noTopPadding}
+        isRelative={isRelative}
+        forceHideNavbar={forceHideNavbar}
+        forceHideFooter={forceHideFooter}
+        onSearch={onSearch}
+        onSearchComplete={onSearchComplete}
+        onQuoteSubmit={onQuoteSubmit}
+        isSSR={true}
+        hasConsent={false}
+        isWaitingForConsent={false}
+        isApiBlocked={false}
+        hasOptedOut={false}
+        hasMadeChoice={false}
+        hasOptedIn={false}
+      >
+        {children}
+      </LayoutSSR>
+    );
+  }
+  
+  // SSR-safe context usage - always use context but handle SSR gracefully
+  let cookiePrefs;
+  try {
+    cookiePrefs = useCookiePreferences();
+  } catch (error) {
+    // Fallback for SSR when context is not available
+    cookiePrefs = {
+      hasConsent: false,
+      isWaitingForConsent: false,
+      isApiBlocked: false,
+      optIn: () => {},
+      hasOptedOut: false,
+      hasMadeChoice: false,
+      hasOptedIn: false
+    };
+  }
+  const { hasConsent, isWaitingForConsent, isApiBlocked, optIn, hasOptedOut, hasMadeChoice, hasOptedIn } = cookiePrefs;
   
   // Static pages that don't need API failure modal or search bar
   const staticPages = ['/cookie-opt-out', '/privacy', '/terms'];
@@ -60,8 +110,14 @@ const Layout: FC<LayoutProps> = ({
     isStaticPage ? { isVisible: false, onClose: () => {}, failedEndpoints: [], is503Error: false } : getApiFailureModalProps()
   );
 
-  // Scroll handling for search bar visibility
+  // Scroll handling for search bar visibility - SSR-safe
   useEffect(() => {
+    // Only run in browser environment
+    if (typeof window === 'undefined') {
+      setShowSearch(!forceHideSearch && !isStaticPage);
+      return;
+    }
+
     if (focusSearch || forceHideSearch || isStaticPage) {
       setShowSearch(!forceHideSearch && !isStaticPage);
       return;
@@ -95,17 +151,17 @@ const Layout: FC<LayoutProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY, focusSearch, forceHideSearch, upScrollDistance, isStaticPage]);
 
-  // Control API blocking based on cookie consent - only for non-static pages
+  // Control API blocking based on cookie consent - only for non-static pages and browser environment
   useEffect(() => {
-    if (!isStaticPage) {
+    if (typeof window !== 'undefined' && !isStaticPage) {
       // Block API calls if user hasn't opted in
       setApiBlocked(!hasOptedIn);
     }
   }, [isStaticPage, hasOptedIn]);
 
-  // Listen for modal state changes and update React state - only for non-static pages
+  // Listen for modal state changes and update React state - only for non-static pages and browser environment
   useEffect(() => {
-    if (isStaticPage) {
+    if (typeof window === 'undefined' || isStaticPage) {
       setModalProps({ isVisible: false, onClose: () => {}, failedEndpoints: [], is503Error: false });
       return;
     }
@@ -176,14 +232,14 @@ const Layout: FC<LayoutProps> = ({
       >
         {renderChildren()}
       </main>
-      {/* Cookie Modal - Only show on non-static pages when user hasn't opted in */}
-      {!isStaticPage && !hasOptedIn && (
+      {/* Cookie Modal - Only show on non-static pages when user hasn't made a choice */}
+      {!isStaticPage && !hasMadeChoice && (
         <CookieOptOut />
       )}
       <ScrollToTopButton />
       {!forceHideFooter && <Footer />}
       {/* Development Tools - Only show when NODE_ENV=development */}
-      {!isProduction && <DevToolsLauncher isVisible={true} />}
+      {/* {!isProduction && <DevToolsLauncher isVisible={true} />} */}
       {/* API Failure Modal - Only show on non-static pages when user has opted in */}
       {!isStaticPage && hasOptedIn && <ApiFailureModal {...modalProps} />}
     </div>

@@ -40,7 +40,7 @@ const UserDisplay: React.FC = () => {
         User ID: {displayUser?.id || 'Unknown'}
       </div>
       <button
-        onClick={() => JWT_AUTH.logout()}
+        onClick={() => JWT_AUTH.clearToken()}
         className="w-full bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600"
       >
         Logout

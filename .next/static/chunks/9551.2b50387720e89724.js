@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[9551],{9551:(e,l,s)=>{s.r(l),s.d(l,{default:()=>t});var r=s(5155);s(2115);let t=e=>{let{testimonials:l,isLoading:s,error:t}=e;return(0,r.jsx)("div",{children:"Testimonials temporarily disabled"})}}}]);
