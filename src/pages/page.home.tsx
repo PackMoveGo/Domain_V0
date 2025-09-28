@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react'; // Added missing import
-import Layout from '../component/layout/Layout';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
 import { getHomePageData, getHomePageStatusCode, getHomePageFailedEndpoints, HomePageServiceData } from '../services/public/service.homePageAPI';
+// Modal state is handled by Layout component
 // import SEO from '../component/business/SEO'; // SEO complation
 // const { getSectionProps, isTampered, SectionWarning } = useGiveSectionId(contactPageSections); Hash validation example implmintation
 
@@ -34,18 +34,24 @@ const FinalCTA = lazy(() => import('../component/business/marketing/banner.final
 (FinalCTA as any).displayName='FinalCTA';
 
 export default function HomePage(){
-  // State for home page data
+  // Check if we're in SSR mode
+  const isSSR = typeof window === 'undefined';
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // State for home page data - initialize with SSR-safe defaults
   const [homePageData, setHomePageData] = React.useState<HomePageServiceData | null>(null);
-  const [isLoadingData, setIsLoadingData] = React.useState(false);
+  const [isLoadingData, setIsLoadingData] = React.useState(false); // Never show loading during SSR
   const [dataError, setDataError] = React.useState<string | null>(null);
   const [statusCode, setStatusCode] = React.useState<number>(200);
-
-  // Check if we're in production mode (SSR-safe)
-  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Modal state is handled by Layout component
   
   // Load home page data using service pattern
   const loadHomePageData = async () => {
-    if (isProduction) return;
+    // Skip API calls during SSR
+    if (isSSR) {
+      return;
+    }
     
     setIsLoadingData(true);
     setDataError(null);
@@ -55,19 +61,35 @@ export default function HomePage(){
       // Use the home page service data function
       const data = await getHomePageData();
       
+      // Check if the data contains 503 error information
+      if (data && (data as any).error && (data as any).is503Error) {
+        setStatusCode(503);
+        setDataError('503 Service Unavailable');
+        setHomePageData(null);
+        return;
+      }
+      
       setHomePageData(data);
-      setStatusCode(getHomePageStatusCode());
+      setStatusCode(200);
       
       // Check if there are any errors and set appropriate states
       const hasErrors = !data.services || !data.testimonials || !data.recentMoves || !data.nav || !data.authStatus;
       if (hasErrors) {
         setDataError('503 Service Unavailable');
+        setStatusCode(503);
       }
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
-      setDataError(errorMessage);
-      setStatusCode(getHomePageStatusCode());
+      
+      // Check if this is a 503 error
+      if (error instanceof Error && (error as any).is503Error) {
+        setStatusCode(503);
+        setDataError('503 Service Unavailable');
+      } else {
+        setDataError(errorMessage);
+        setStatusCode(500);
+      }
       
       // Modal will be handled by middleware automatically
     } finally {
@@ -75,41 +97,39 @@ export default function HomePage(){
     }
   };
 
-  // Call load data on component mount
+  // Call load data on component mount (client-side only)
   React.useEffect(() => {
-    loadHomePageData();
-  }, []);
+    if (!isSSR) {
+      loadHomePageData();
+    }
+  }, [isSSR]);
 
-  // Modal is now managed by middleware - no need for state listeners
+  // Modal state is handled by Layout component
   
-  const {getSectionProps} = useGiveSectionId();
-
-  // Determine if we should show services in Hero
-  const shouldShowServicesInHero = !isProduction && homePageData?.services;
-  
-  // Transform services data for components
-  const servicesData = homePageData?.services?.services || [];
-  const recentMovesData = homePageData?.recentMoves?.recentMoves || homePageData?.recentMoves?.moves || [];
-  const testimonialsData = homePageData?.testimonials?.testimonials || [];
-  const totalMoves = recentMovesData.length || 0;
-  const totalMovesCount = homePageData?.totalMoves || 500;
-
-  // Show loading state while data is being fetched
-  if (isLoadingData) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Loading Home...</h2>
-          <p className="text-gray-600">Please wait while we load the home page content</p>
-        </div>
-      </div>
-    );
+  // SSR-safe section props
+  let getSectionProps;
+  try {
+    const sectionHook = useGiveSectionId();
+    getSectionProps = sectionHook.getSectionProps;
+  } catch (error) {
+    // Fallback for SSR when hook is not available
+    getSectionProps = (id: string) => ({ id });
   }
 
+  // Determine if we should show services in Hero (SSR-safe)
+  const shouldShowServicesInHero = isSSR ? true : homePageData?.services;
+  
+  // Transform services data for components (SSR-safe with fallbacks)
+  const servicesData = isSSR ? [] : (homePageData?.services?.services || []);
+  const recentMovesData = isSSR ? [] : (homePageData?.recentMoves?.recentMoves || homePageData?.recentMoves?.moves || []);
+  const testimonialsData = isSSR ? [] : (homePageData?.testimonials?.testimonials || []);
+  const totalMoves = isSSR ? 0 : (recentMovesData.length || 0);
+  const totalMovesCount = isSSR ? 500 : (homePageData?.totalMoves || 500);
+
+  // Always render content - no loading state that blocks navigation
+
   return (
-    <Layout forceHideSearch={false}>
-      <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white">
         {/* Hero Section (above the fold) - Lazy loaded with Suspense */}
         <section {...getSectionProps('hero')}>
           <Suspense fallback={
@@ -123,7 +143,7 @@ export default function HomePage(){
           }>
             <Hero 
               services={shouldShowServicesInHero ? servicesData : []} 
-              isLoading={isLoadingData} 
+              isLoading={isLoadingData && !isSSR} 
               error={dataError} 
             />
           </Suspense>
@@ -138,17 +158,17 @@ export default function HomePage(){
         <section {...getSectionProps('statistics')}>
           <Statistics 
             totalMoves={totalMoves}
-            isLoading={isLoadingData}
+            isLoading={isLoadingData && !isSSR}
             error={dataError}
           />
         </section>
 
-        {/* Services Section - Only show when API is available and not in production */}
+        {/* Services Section - Show when API data is available */}
         {shouldShowServicesInHero && (
           <section {...getSectionProps('services')}>
             <OurServices 
               services={servicesData}
-              isLoading={isLoadingData}
+              isLoading={isLoadingData && !isSSR}
               error={dataError}
             />
           </section>
@@ -163,7 +183,7 @@ export default function HomePage(){
         <section {...getSectionProps('services')}>
           <OurServices 
             services={servicesData}
-            isLoading={isLoadingData}
+            isLoading={isLoadingData && !isSSR}
             error={dataError}
           />
         </section>
@@ -172,7 +192,7 @@ export default function HomePage(){
         <section {...getSectionProps('testimonials')}>
           <Testimonials 
             testimonials={testimonialsData}
-            isLoading={isLoadingData}
+            isLoading={isLoadingData && !isSSR}
             error={dataError}
           />
         </section>
@@ -181,7 +201,7 @@ export default function HomePage(){
         <section {...getSectionProps('recent-moves')}>
           <RecentMoves 
             recentMoves={recentMovesData}
-            isLoading={isLoadingData}
+            isLoading={isLoadingData && !isSSR}
             error={dataError}
           />
         </section>
@@ -190,7 +210,7 @@ export default function HomePage(){
         <section {...getSectionProps('why-choose-us')}>
           <WhyChooseUs 
             totalMovesCount={totalMovesCount}
-            isLoading={isLoadingData}
+            isLoading={isLoadingData && !isSSR}
             error={dataError}
           />
         </section>
@@ -216,9 +236,8 @@ export default function HomePage(){
         <section {...getSectionProps('final-cta')}>
           <FinalCTA />
         </section>
-      </div>
-      
-    </Layout>
+        
+    </div>
   );
 }
 

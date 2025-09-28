@@ -1,7 +1,6 @@
 
 import { useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import Layout from '../component/layout/Layout';
 import SEO from '../component/business/SEO';
 import QuoteForm, { FormData } from '../component/forms/form.quote';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
@@ -122,12 +121,7 @@ export default function Privacy() {
   }, [isDevMode]);
 
   return (
-    <Layout 
-      forceHideSearch={false}
-      onSearch={handleSearch}
-      onSearchComplete={handleSearchComplete}
-      onQuoteSubmit={handleQuoteSubmit}
-    >
+    <>
       <SEO {...seoData} />
       
       <div className="min-h-screen bg-white">
@@ -572,6 +566,6 @@ export default function Privacy() {
           </div>
         </section>
       </div>
-    </Layout>
+    </>
   );
 } 

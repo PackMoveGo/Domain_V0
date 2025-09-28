@@ -37,7 +37,10 @@ const SEO: React.FC<SEOProps> = ({
     
     // Server-side: use environment or default
     if (typeof window === 'undefined') {
-      return `https://packmovego.com${location.pathname}`;
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://packmovego.com' 
+        : 'http://localhost:5050';
+      return `${baseUrl}${location.pathname}`;
     }
     
     // Client-side: use window.location
@@ -50,7 +53,10 @@ const SEO: React.FC<SEOProps> = ({
   const getImageUrl = () => {
     if (image.startsWith('http')) return image;
     if (typeof window === 'undefined') {
-      return `https://packmovego.com${image}`;
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://packmovego.com' 
+        : 'http://localhost:5050';
+      return `${baseUrl}${image}`;
     }
     return `${window.location.origin}${image}`;
   };

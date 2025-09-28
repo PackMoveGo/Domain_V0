@@ -30,9 +30,14 @@ export function useReviews() {
       setServices(reviewsData.services);
       console.log('✅ Reviews loaded successfully:', reviewsData.reviews.length, 'reviews,', reviewsData.services.length, 'services');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load reviews';
-      console.error('❌ Reviews loading error:', errorMessage);
-      setError(errorMessage);
+      // Check if this is a 503 error
+      if (err instanceof Error && (err as any).is503Error) {
+        setError('503 Service Unavailable');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load reviews';
+        setError(errorMessage);
+      }
+      console.error('❌ Reviews loading error:', err);
     } finally {
       setIsLoading(false);
     }

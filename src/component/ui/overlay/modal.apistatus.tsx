@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { resetHealthGate } from '../../../services/service.apiSW';
+import { resetHealthGate, getTrackedApiCalls, getCurrentPageName } from '../../../services/service.apiSW';
+
+// SSR-safe environment detection
+const isSSR = typeof window === 'undefined';
 
 interface ApiFailureModalProps {
   isVisible: boolean;
@@ -12,41 +15,69 @@ interface ApiFailureModalProps {
 export default function ApiFailureModal({ isVisible, onClose, failureDetails, failedEndpoints = [], is503Error = false }: ApiFailureModalProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [allFailedEndpoints, setAllFailedEndpoints] = useState<string[]>([]);
+  const [allTrackedCalls, setAllTrackedCalls] = useState<string[]>([]);
+  const [currentPageName, setCurrentPageName] = useState<string>('');
   const [has503Error, setHas503Error] = useState(false);
 
-  // Use only the failed endpoints passed as props (page-specific)
+  // Debug logging
+  console.log('🔧 [MODAL] ApiFailureModal render:', {
+    isVisible,
+    failedEndpoints,
+    is503Error,
+    isSSR,
+    allTrackedCalls,
+    currentPageName
+  });
+
+  // Get all tracked API calls and failed endpoints for the current page
   useEffect(() => {
-    if (isVisible) {
-      // Only use the endpoints passed as props, not global tracked endpoints
-      // This ensures each page only shows its own failed endpoints
+    if (isVisible && !isSSR) {
+      // Get all tracked API calls for the current page
+      const trackedCalls = getTrackedApiCalls();
+      const pageName = getCurrentPageName();
+      
+      setAllTrackedCalls(trackedCalls);
+      setCurrentPageName(pageName);
       setAllFailedEndpoints(failedEndpoints);
       setHas503Error(is503Error);
+      
+      console.log('🔧 [MODAL] API calls for page:', {
+        pageName,
+        trackedCalls,
+        failedEndpoints,
+        is503Error
+      });
     }
-  }, [isVisible, failedEndpoints, is503Error]);
+  }, [isVisible, failedEndpoints, is503Error, isSSR]);
 
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && !isSSR) {
       // Add a small delay for smooth animation
       const timer = setTimeout(() => setIsAnimating(true), 100);
       return () => clearTimeout(timer);
     } else {
       setIsAnimating(false);
     }
-  }, [isVisible]);
+  }, [isVisible, isSSR]);
 
-  if (!isVisible) {
+  // SSR-safe visibility check - don't render during SSR
+  if (isSSR || !isVisible) {
     return null;
   }
 
   const handleRetry = () => {
     // Reset health gate to allow fresh health check
     resetHealthGate();
-    window.location.reload();
+    if (!isSSR) {
+      window.location.reload();
+    }
   };
 
   const handleReportBug = () => {
-    const reportEmail = 'mailto:report@packmovego.com';
-    window.open(reportEmail, '_blank');
+    if (!isSSR) {
+      const reportEmail = 'mailto:report@packmovego.com';
+      window.open(reportEmail, '_blank');
+    }
   };
 
   return (
@@ -54,7 +85,7 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
       {/* Backdrop */}
       <div 
         className={`
-          fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] 
+          fixed inset-0 bg-black/50 backdrop-blur-sm z-[10002] 
           transition-opacity duration-300 ease-in-out
           ${isAnimating ? 'opacity-100' : 'opacity-0'}
         `}
@@ -64,7 +95,7 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
       {/* Modal */}
       <div 
         className={`
-          fixed inset-0 z-[10000] flex items-center justify-center p-2 sm:p-4
+          fixed inset-0 z-[10003] flex items-center justify-center p-2 sm:p-4
           transition-all duration-300 ease-in-out
           ${isAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}
         `}
@@ -90,10 +121,21 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
                   </p>
                   {process.env.NODE_ENV === 'development' && (
                     <div className="text-red-100 text-xs opacity-75 mt-1">
-                      {allFailedEndpoints.length > 0 ? (
+                      {allTrackedCalls.length > 0 ? (
                         <div>
-                          <p className="break-all">Failed APIs: {allFailedEndpoints.join(', ')}</p>
-                          {failureDetails && <p className="break-all">Primary: {failureDetails.endpoint}</p>}
+                          <p className="break-all">Page: {currentPageName}</p>
+                          <p className="break-all">All API Routes Called: {allTrackedCalls.length} endpoints</p>
+                          <p className="break-all text-xs mt-1">Routes: {allTrackedCalls.join(', ')}</p>
+                          {(allFailedEndpoints.length > 0 || has503Error) && (
+                            <p className="break-all text-xs mt-1">Failed: {has503Error ? allTrackedCalls.join(', ') : allFailedEndpoints.join(', ')}</p>
+                          )}
+                          {failureDetails && <p className="break-all text-xs mt-1">Primary Error: {failureDetails.endpoint}</p>}
+                        </div>
+                      ) : allFailedEndpoints.length > 0 ? (
+                        <div>
+                          <p className="break-all">All API Routes Called: {allFailedEndpoints.length} endpoints</p>
+                          <p className="break-all text-xs mt-1">Routes: {allFailedEndpoints.join(', ')}</p>
+                          {failureDetails && <p className="break-all text-xs mt-1">Primary Error: {failureDetails.endpoint}</p>}
                         </div>
                       ) : failureDetails ? (
                         <p className="break-all">[API Failed: {failureDetails.endpoint}]</p>
@@ -129,12 +171,34 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
                     : 'The website failed to load properly. This could be due to a temporary server issue, network problem, or browser compatibility issue.'
                   }
                 </p>
-                {process.env.NODE_ENV === 'development' && (failureDetails || allFailedEndpoints.length > 0) && (
+                {process.env.NODE_ENV === 'development' && (failureDetails || allTrackedCalls.length > 0 || allFailedEndpoints.length > 0) && (
                   <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-xs text-red-700 font-medium mb-1">Technical Details (Dev Only):</p>
-                    {allFailedEndpoints.length > 0 ? (
+                    {allTrackedCalls.length > 0 ? (
                       <div>
-                        <p className="text-xs text-red-600 font-medium mb-1">Failed endpoints:</p>
+                        <p className="text-xs text-red-600 font-medium mb-1">Page: {currentPageName}</p>
+                        <p className="text-xs text-red-600 font-medium mb-1">All API Routes Called ({allTrackedCalls.length} total):</p>
+                        {allTrackedCalls.map((endpoint, index) => (
+                          <p key={index} className={`text-xs ml-2 break-all ${
+                            allFailedEndpoints.includes(endpoint) || has503Error ? 'text-red-600 font-semibold' : 'text-gray-600'
+                          }`}>
+                            • {endpoint} {allFailedEndpoints.includes(endpoint) || has503Error ? '(FAILED)' : '(OK)'}
+                          </p>
+                        ))}
+                        {(allFailedEndpoints.length > 0 || has503Error) && (
+                          <p className="text-xs text-red-600 mt-2 font-medium">
+                            Failed endpoints: {has503Error ? allTrackedCalls.join(', ') : allFailedEndpoints.join(', ')}
+                          </p>
+                        )}
+                        {failureDetails && (
+                          <p className="text-xs text-red-600 mt-2 break-all">
+                            Primary error: {failureDetails.error}
+                          </p>
+                        )}
+                      </div>
+                    ) : allFailedEndpoints.length > 0 ? (
+                      <div>
+                        <p className="text-xs text-red-600 font-medium mb-1">All API Routes Called ({allFailedEndpoints.length} total):</p>
                         {allFailedEndpoints.map((endpoint, index) => (
                           <p key={index} className="text-xs text-red-600 ml-2 break-all">
                             • {endpoint}
@@ -188,7 +252,7 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
 
               {has503Error && (
                 <button
-                  onClick={() => window.open('mailto:contact@packmovego.com', '_blank')}
+                  onClick={() => !isSSR && window.open('mailto:contact@packmovego.com', '_blank')}
                   className="
                     w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg
                     transition-colors duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base

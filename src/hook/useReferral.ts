@@ -16,9 +16,14 @@ export function useReferral() {
       setReferralData(data);
       console.log('✅ Referral data loaded successfully');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load referral data';
-      console.error('❌ Referral loading error:', errorMessage);
-      setError(errorMessage);
+      // Check if this is a 503 error
+      if (err instanceof Error && (err as any).is503Error) {
+        setError('503 Service Unavailable');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load referral data';
+        setError(errorMessage);
+      }
+      console.error('❌ Referral loading error:', err);
     } finally {
       setIsLoading(false);
     }

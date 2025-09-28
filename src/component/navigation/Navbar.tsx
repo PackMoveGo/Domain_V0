@@ -4,6 +4,9 @@ import { navigationStyles } from '../../styles/navigation';
 import { getMainNavigation, NavItem } from '../../services/routes/route.navAPI';
 import { resetHealthGate } from '../../services/service.apiSW';
 
+// SSR-safe environment detection
+const isSSR = typeof window === 'undefined';
+
 // Static navigation for static pages (no API calls needed)
 export const StaticNavbar: React.FC = () => {
   return (
@@ -12,7 +15,7 @@ export const StaticNavbar: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <a href="/" className="text-xl font-bold text-gray-900">
+              <a href="/" className="text-xl font-bold text-blue-600 hover:text-blue-700">
                 Pack Move Go
               </a>
             </div>
@@ -34,7 +37,52 @@ export const StaticNavbar: React.FC = () => {
   );
 };
 
-// Simplified Navbar combining ResponsiveNavbar functionality
+// SSR-safe navbar component that doesn't use any client-side hooks
+export const SSRNavbar: React.FC<{ currentPath?: string }> = ({ currentPath = '/' }) => {
+  const defaultNavItems: NavItem[] = [
+    { id: 'home', path: '/', label: 'Home', order: 1, isVisible: true },
+    { id: 'about', path: '/about', label: 'About', order: 2, isVisible: true },
+    { id: 'contact', path: '/contact', label: 'Contact', order: 3, isVisible: true }
+  ];
+
+  return (
+    <nav className={navigationStyles.wrapper}>
+      <div className={navigationStyles.container}>
+        <div className={navigationStyles.header}>
+          {/* Logo */}
+          <div className={navigationStyles.logo}>
+            <a href="/">
+              Pack Move Go
+            </a>
+          </div>
+          
+          {/* Desktop Navigation for SSR */}
+          <div className="flex-1 flex justify-end">
+            <nav className={navigationStyles.desktop.nav}>
+              {defaultNavItems.map((item) => (
+                <a
+                  key={item.path}
+                  href={item.path}
+                  className={`
+                    ${navigationStyles.desktop.link.base}
+                    ${currentPath === item.path
+                      ? navigationStyles.desktop.link.active
+                      : navigationStyles.desktop.link.inactive
+                    }
+                  `}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+// Client-side only Navbar component
 interface NavbarProps {
   hasConsent: boolean;
   isWaitingForConsent: boolean;
@@ -45,9 +93,16 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Navigation state
-  const [navItems, setNavItems] = useState<NavItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Default navigation items for fallback
+  const defaultNavItems: NavItem[] = [
+    { id: 'home', path: '/', label: 'Home', order: 1, isVisible: true },
+    { id: 'about', path: '/about', label: 'About', order: 2, isVisible: true },
+    { id: 'contact', path: '/contact', label: 'Contact', order: 3, isVisible: true }
+  ];
+  
+  // Navigation state - initialize with default items for SSR and when API is blocked
+  const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -57,9 +112,17 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
 
   // Load navigation items from API with rate limiting
   useEffect(() => {
-    // If API is blocked due to no cookie consent, show loading state
+    // Skip API calls during SSR - use fallback navigation
+    if (isSSR) {
+      setNavItems(defaultNavItems);
+      setIsLoading(false);
+      return;
+    }
+    
+    // If API is blocked due to no cookie consent, use fallback navigation
     if (isApiBlocked) {
-      setIsLoading(true);
+      setNavItems(defaultNavItems);
+      setIsLoading(false);
       return;
     }
     
@@ -108,9 +171,11 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
         const errorMessage = err instanceof Error ? err.message : 'Failed to load navigation';
         setError(errorMessage);
         
-        // Check if it's a rate limiting error
-        if (errorMessage.includes('429') || errorMessage.includes('Too many requests')) {
-          console.warn('Rate limited, using fallback navigation');
+        console.warn('Navigation API failed, using fallback navigation:', errorMessage);
+        
+        // Check if it's a rate limiting error or 503 error
+        if (errorMessage.includes('429') || errorMessage.includes('503') || errorMessage.includes('Too many requests') || errorMessage.includes('Service Unavailable')) {
+          console.warn('API unavailable, using fallback navigation');
           // Use cached data if available, even if expired
           const cachedNavData = sessionStorage.getItem('packmovego-nav-data');
           if (cachedNavData) {
@@ -125,13 +190,8 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
           }
         }
         
-        // Set fallback navigation items
-        setNavItems([
-          { id: 'home', path: '/', label: 'Home', order: 1, isVisible: true },
-          { id: 'about', path: '/about', label: 'About', order: 2, isVisible: true },
-          { id: 'contact', path: '/contact', label: 'Contact', order: 4, isVisible: true }
-        ]);
-      } finally {
+        // Set fallback navigation items for any error
+        setNavItems(defaultNavItems);
         setIsLoading(false);
       }
     };
@@ -154,6 +214,9 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
 
   // Check for overflow on mount and window resize (responsive behavior)
   useEffect(() => {
+    // Only run on client side
+    if (isSSR) return;
+    
     const checkOverflow = () => {
       const isSmallScreen = window.innerWidth < 975;
       setIsOverflowing(isSmallScreen);
@@ -165,10 +228,13 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
     return () => {
       window.removeEventListener('resize', checkOverflow);
     };
-  }, [navItems]);
+  }, [navItems, isSSR]);
 
   // Disable scrolling when menu is open
   useEffect(() => {
+    // Only run on client side
+    if (isSSR) return;
+    
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
@@ -184,7 +250,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
       document.body.style.position = '';
       document.body.style.width = '';
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, isSSR]);
 
   // Handlers
   const handleMenuToggle = useCallback((e: React.MouseEvent) => {
@@ -215,49 +281,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
     return navItems.filter(item => item.isVisible !== false);
   }, [navItems]);
 
-  // Loading state while waiting for cookie consent
-  if (isWaitingForConsent) {
-    return (
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-xl font-bold text-gray-900">Pack Move Go</span>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-              <span className="text-sm text-gray-500">Loading navigation...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading state when API is blocked (API won't work without consent)
-  if (isApiBlocked) {
-    return (
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <a href="/" className="text-xl font-bold text-gray-900">
-                  Pack Move Go
-                </a>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <span className="text-sm text-gray-500">Waiting for cookie consent...</span>
-            </div>
-          </div>
-        </div>
-      </nav>
-    );
-  }
+  // Always show navigation - no loading states that block fallback navigation
 
   return (
     <nav className={navigationStyles.wrapper}>
@@ -322,31 +346,24 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
               >
                 {/* Navigation Links */}
                 <div className="flex-1 py-3 px-4 space-y-2">
-                  {isLoading ? (
-                    <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                      <span className="text-sm text-gray-500">Loading navigation...</span>
-                    </div>
-                  ) : (
-                    visibleNavItems.map((item, index) => (
-                      <a
-                        key={item.path}
-                        href={item.path}
-                        className={`
-                          ${navigationStyles.mobileBottom.link.base}
-                          ${location.pathname === item.path
-                            ? navigationStyles.mobileBottom.link.active
-                            : navigationStyles.mobileBottom.link.inactive
-                          }
-                          ${isMenuOpen ? 'opacity-100 scale-100 translate-x-0' : 'opacity-0 scale-95 translate-x-full'}
-                        `}
-                        onClick={(e) => handleNavClick(e, item.path)}
-                        style={{ transitionDelay: `${(index + 1) * 200}ms` }}
-                      >
-                        {item.label}
-                      </a>
-                    ))
-                  )}
+                  {visibleNavItems.map((item, index) => (
+                    <a
+                      key={item.path}
+                      href={item.path}
+                      className={`
+                        ${navigationStyles.mobileBottom.link.base}
+                        ${location.pathname === item.path
+                          ? navigationStyles.mobileBottom.link.active
+                          : navigationStyles.mobileBottom.link.inactive
+                        }
+                        ${isMenuOpen ? 'opacity-100 scale-100 translate-x-0' : 'opacity-0 scale-95 translate-x-full'}
+                      `}
+                      onClick={(e) => handleNavClick(e, item.path)}
+                      style={{ transitionDelay: `${(index + 1) * 200}ms` }}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
                 </div>
                 
                 {/* Book Now Button */}
@@ -369,29 +386,22 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
             /* Desktop Navigation */
             <div ref={containerRef} className="flex-1 flex justify-end">
               <nav ref={navRef} className={navigationStyles.desktop.nav}>
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    <span className="text-sm text-gray-500">Loading...</span>
-                  </div>
-                ) : (
-                  visibleNavItems.map((item) => (
-                    <a
-                      key={item.path}
-                      href={item.path}
-                      className={`
-                        ${navigationStyles.desktop.link.base}
-                        ${location.pathname === item.path
-                          ? navigationStyles.desktop.link.active
-                          : navigationStyles.desktop.link.inactive
-                        }
-                      `}
-                      onClick={(e) => handleNavClick(e, item.path)}
-                    >
-                      {item.label}
-                    </a>
-                  ))
-                )}
+                {visibleNavItems.map((item) => (
+                  <a
+                    key={item.path}
+                    href={item.path}
+                    className={`
+                      ${navigationStyles.desktop.link.base}
+                      ${location.pathname === item.path
+                        ? navigationStyles.desktop.link.active
+                        : navigationStyles.desktop.link.inactive
+                      }
+                    `}
+                    onClick={(e) => handleNavClick(e, item.path)}
+                  >
+                    {item.label}
+                  </a>
+                ))}
               </nav>
             </div>
           )}

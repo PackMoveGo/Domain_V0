@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchBlogData, BlogPost, BlogCategory } from '../util/blogParser';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
-import Layout from '../component/layout/Layout';
 import SEO from '../component/business/SEO';
 import ErrorBoundary from '../component/ui/feedback/ErrorBoundary';
 import Blog from '../component/pages/Blog';
@@ -37,8 +36,13 @@ const BlogPage = () => {
       setCategories(blogData.categories);
       setTags(blogData.tags);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load blog posts';
-      setError(errorMessage);
+      // Check if this is a 503 error
+      if (err instanceof Error && (err as any).is503Error) {
+        setError('503 Service Unavailable');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load blog posts';
+        setError(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +53,7 @@ const BlogPage = () => {
   }, [loadBlogData]);
 
   return (
-    <Layout forceHideSearch={false}>
+    <div>
       <SEO 
         title="Moving & Packing Blog - Pack Move Go"
         description="Expert moving tips, packing guides, and insights to help make your move successful and stress-free. Learn from the professionals at Pack Move Go."
@@ -65,7 +69,7 @@ const BlogPage = () => {
           </ErrorBoundary>
         </section>
       </div>
-    </Layout>
+    </div>
   );
 };
 

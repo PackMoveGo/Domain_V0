@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react';
-import Layout from '../component/layout/Layout';
 import { useGiveSectionId, defaultAboutSections } from '../hook/useGiveSectionId';
 import { getComprehensiveAboutPageData } from '../services/public/service.aboutPageAPI';
+// Modal state is handled by Layout component
 
 // Lazy load Hero component
 const HeroAbout = lazy(() => import('../component/hero.about'));
@@ -22,17 +22,23 @@ const QuoteForm = lazy(() => import('../component/forms/form.quote'));
 (QuoteForm as any).displayName='QuoteForm';
 
 export default function AboutPage() {
-  // State for about page data
-  const [aboutPageData, setAboutPageData] = React.useState<any>(null);
-  const [isLoadingData, setIsLoadingData] = React.useState(false);
-  const [dataError, setDataError] = React.useState<string | null>(null);
-
-  // Check if we're in production mode (SSR-safe)
+  // Check if we're in SSR mode
+  const isSSR = typeof window === 'undefined';
   const isProduction = process.env.NODE_ENV === 'production';
+  
+  // State for about page data - initialize with SSR-safe defaults
+  const [aboutPageData, setAboutPageData] = React.useState<any>(null);
+  const [isLoadingData, setIsLoadingData] = React.useState(false); // Never show loading during SSR
+  const [dataError, setDataError] = React.useState<string | null>(null);
+  
+  // Modal state is handled by Layout component
   
   // Load about page data using comprehensive API service with modal middleware
   const loadAboutPageData = async () => {
-    if (isProduction) return;
+    // Skip API calls during SSR
+    if (isSSR) {
+      return;
+    }
     
     setIsLoadingData(true);
     setDataError(null);
@@ -42,6 +48,13 @@ export default function AboutPage() {
       
       // Use the comprehensive about page data function that includes modal middleware
       const data = await getComprehensiveAboutPageData();
+      
+      // Check if the data contains 503 error information
+      if (data && (data as any).error && (data as any).is503Error) {
+        setDataError('503 Service Unavailable');
+        setAboutPageData(null);
+        return;
+      }
       
       setAboutPageData(data);
       
@@ -54,13 +67,18 @@ export default function AboutPage() {
       console.log('✅ About page data loaded successfully:', {
         nav: !!data.nav,
         about: !!data.about,
-        totalMovesCount: data.totalMovesCount,
-        health: !!data.health
+        totalMovesCount: data.totalMovesCount
       });
     } catch (error) {
       console.error('❌ Failed to load about page data:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
-      setDataError(errorMessage);
+      
+      // Check if this is a 503 error
+      if (error instanceof Error && (error as any).is503Error) {
+        setDataError('503 Service Unavailable');
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
+        setDataError(errorMessage);
+      }
       
       // Modal will be handled by middleware automatically
     } finally {
@@ -68,33 +86,21 @@ export default function AboutPage() {
     }
   };
 
-  // Call load data on component mount
+  // Call load data on component mount (client-side only)
   React.useEffect(() => {
-    loadAboutPageData();
-  }, []);
+    if (!isSSR) {
+      loadAboutPageData();
+    }
+  }, [isSSR]);
 
-  // Modal is now managed by middleware - no need for state listeners
+  // Modal state is handled by Layout component
   
   const { getSectionProps } = useGiveSectionId(defaultAboutSections);
 
-  // Show loading state while data is being fetched
-  if (isLoadingData) {
-    return (
-      <Layout focusSearch={true}>
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Loading About...</h2>
-            <p className="text-gray-600">Please wait while we load the about page content</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  // Always render content - no loading state that blocks SSR
 
   return (
-    <Layout focusSearch={true}>
-      <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white">
         {/* Hero Section - Lazy loaded with Suspense */}
         <section {...getSectionProps('hero')}>
           <Suspense fallback={
@@ -231,8 +237,8 @@ export default function AboutPage() {
             )}
           </Suspense>
         </section>
-      </div>
-    </Layout>
+        
+    </div>
   );
 }
 

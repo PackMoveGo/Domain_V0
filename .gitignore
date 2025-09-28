@@ -106,8 +106,8 @@ Thumbs.db
 .augment/rules/byterover-rules.md
 
 # Project-specific directories to ignore
-config/
+# config/ - Keep config directory for Vercel build
 test/
-scripts/
-dist/
+# scripts/ - Keep scripts directory for Vercel build
+# dist/ - Keep dist directory for Vercel build (will be generated)
 

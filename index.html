@@ -632,31 +632,12 @@
       </div>
     </noscript>
     <!-- React App Entry Point-->
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/script.js"></script>
     
     <!-- Hide loading screen when React app loads -->
     <script>
-      // Hide loading screen when React app is ready
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          const loadingScreen = document.getElementById('loading-screen');
-          const ghostStructure = document.getElementById('ghost-structure');
-          const root = document.getElementById('root');
-          
-          if (loadingScreen) {
-            loadingScreen.classList.add('hidden');
-          }
-          if (ghostStructure) {
-            ghostStructure.classList.add('hidden');
-          }
-          if (root) {
-            root.classList.add('loaded');
-          }
-        }, 1000); // Wait 1 second for React to load
-      });
-      
-      // Fallback: Hide loading screen after 5 seconds regardless
-      setTimeout(function() {
+      // Function to hide loading screen
+      function hideLoadingScreen() {
         const loadingScreen = document.getElementById('loading-screen');
         const ghostStructure = document.getElementById('ghost-structure');
         const root = document.getElementById('root');
@@ -670,7 +651,25 @@
         if (root) {
           root.classList.add('loaded');
         }
-      }, 5000);
+      }
+
+      // Check if we have SSR content (content already rendered)
+      const rootElement = document.getElementById('root');
+      const hasSSRContent = rootElement && rootElement.innerHTML.trim().length > 0;
+      
+      if (hasSSRContent) {
+        // SSR mode - hide loading screen immediately
+        console.log('SSR content detected, hiding loading screen immediately');
+        hideLoadingScreen();
+      } else {
+        // CSR mode - wait for React to load
+        window.addEventListener('load', function() {
+          setTimeout(hideLoadingScreen, 500); // Reduced timeout for faster loading
+        });
+      }
+      
+      // Fallback: Hide loading screen after 3 seconds regardless
+      setTimeout(hideLoadingScreen, 3000);
     </script>
   </body>
 </html> 

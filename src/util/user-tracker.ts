@@ -97,6 +97,12 @@ class UserTracker {
 
     this.log('Initializing UserTracker...');
     
+    // Production SSR optimization - disable tracking in production SSR
+    if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
+      this.log('UserTracker disabled for production SSR');
+      return;
+    }
+    
     // Note: Page view tracking is handled by UserTrackingProvider's auto-tracking logic
     // No need to track page view during initialization
 

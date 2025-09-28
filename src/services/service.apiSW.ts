@@ -16,7 +16,7 @@
 
 import { handleApiError } from '../util/apiErrorHandler';
 import { apiCache } from '../util/apiCache';
-import { isConnectionError, is503Error, normalizeTo503Error, log503Error } from '../util/errorUtils';
+import { isConnectionError, is503Error, normalizeTo503Error, log503Error, createConnectionError } from '../util/errorUtils';
 
 // =============================================================================
 // API FAILURE MODAL MANAGEMENT
@@ -120,190 +120,24 @@ export const resetGlobal503Status = () => {
 
 // Add global error handler for unhandled promise rejections
 if (typeof window !== 'undefined') {
-  // Override global console methods to suppress network errors
-  const originalConsoleError = console.error;
-  const originalConsoleWarn = console.warn;
-  const originalConsoleLog = console.log;
   
-  // More aggressive error suppression
-  const shouldSuppressMessage = (message: string): boolean => {
-    const lowerMessage = message.toLowerCase();
-    return lowerMessage.includes('err_connection_refused') || 
-           lowerMessage.includes('failed to fetch') ||
-           lowerMessage.includes('net::err_connection_refused') ||
-           lowerMessage.includes('get https://localhost:3000/v0/health net::err_connection_refused') ||
-           lowerMessage.includes('localhost:3000') ||
-           lowerMessage.includes('err_network') ||
-           lowerMessage.includes('err_internet_disconnected') ||
-           lowerMessage.includes('connection refused') ||
-           lowerMessage.includes('network error') ||
-           lowerMessage.includes('fetch failed') ||
-           lowerMessage.includes('failed to load resource') ||
-           lowerMessage.includes('understand this error') ||
-           lowerMessage.includes('service temporarily unavailable') ||
-           lowerMessage.includes('api is globally unavailable') ||
-           lowerMessage.includes('service.apisw.ts:190') ||
-           lowerMessage.includes('window.fetch @ service.apisw.ts:190');
-  };
-  
-  console.error = (...args) => {
-    const message = args[0]?.toString() || '';
-    if (shouldSuppressMessage(message)) {
-      return; // Suppress the error completely
-    }
-    // Also check if any of the arguments contain network error patterns
-    const allArgs = args.map(arg => arg?.toString() || '').join(' ');
-    if (shouldSuppressMessage(allArgs)) {
-      return;
-    }
-    originalConsoleError.apply(console, args);
-  };
-  
-  console.warn = (...args) => {
-    const message = args[0]?.toString() || '';
-    if (shouldSuppressMessage(message)) {
-      return; // Suppress the warning completely
-    }
-    // Also check if any of the arguments contain network error patterns
-    const allArgs = args.map(arg => arg?.toString() || '').join(' ');
-    if (shouldSuppressMessage(allArgs)) {
-      return;
-    }
-    originalConsoleWarn.apply(console, args);
-  };
-  
-  console.log = (...args) => {
-    const message = args[0]?.toString() || '';
-    if (shouldSuppressMessage(message)) {
-      return; // Suppress the log completely
-    }
-    // Also check if any of the arguments contain network error patterns
-    const allArgs = args.map(arg => arg?.toString() || '').join(' ');
-    if (shouldSuppressMessage(allArgs)) {
-      return;
-    }
-    originalConsoleLog.apply(console, args);
-  };
-  
-  // Override the native fetch to prevent network errors from appearing
-  const originalFetch = window.fetch;
-  window.fetch = async (...args) => {
-    // Suppress console errors for this specific fetch call
-    const originalConsoleError = console.error;
-    const originalConsoleWarn = console.warn;
-    const originalConsoleLog = console.log;
-    
-    console.error = (...args) => {
-      const message = args[0]?.toString() || '';
-      if (shouldSuppressMessage(message)) {
-        return; // Suppress the error completely
-      }
-      originalConsoleError.apply(console, args);
-    };
-    
-    console.warn = (...args) => {
-      const message = args[0]?.toString() || '';
-      if (shouldSuppressMessage(message)) {
-        return; // Suppress the warning completely
-      }
-      originalConsoleWarn.apply(console, args);
-    };
-    
-    console.log = (...args) => {
-      const message = args[0]?.toString() || '';
-      if (shouldSuppressMessage(message)) {
-        return; // Suppress the log completely
-      }
-      originalConsoleLog.apply(console, args);
-    };
-    
-    try {
-      const result = await originalFetch.apply(window, args);
-      // Restore original console methods
-      console.error = originalConsoleError;
-      console.warn = originalConsoleWarn;
-      console.log = originalConsoleLog;
-      return result;
-    } catch (error) {
-      // Restore original console methods
-      console.error = originalConsoleError;
-      console.warn = originalConsoleWarn;
-      console.log = originalConsoleLog;
-      
-      // If it's a connection error, return a mock 503 response instead of throwing
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        const mockResponse = new Response(
-          JSON.stringify({
-            error: true,
-            statusCode: 503,
-            message: 'Service Unavailable: Connection failed',
-            is503Error: true,
-            isConnectionError: true
-          }),
-          {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        return mockResponse;
-      }
-      throw error;
-    }
-  };
+  // Simplified error handling - no fetch override
 
-  // Add error event listener to catch all errors
-  window.addEventListener('error', (event) => {
-    const message = event.message || '';
-    const filename = event.filename || '';
-    const errorString = `${message} ${filename}`.toLowerCase();
-    
-    if (shouldSuppressMessage(message) || shouldSuppressMessage(filename) || shouldSuppressMessage(errorString)) {
-      event.preventDefault();
-      return;
-    }
-  });
-  
-  // Add resource error listener to catch "Failed to load resource" errors
-  window.addEventListener('error', (event) => {
-    if (event.target && event.target !== window) {
-      const target = event.target as any;
-      if (target.src && target.src.includes('localhost:3000')) {
-        event.preventDefault();
-        return;
-      }
-    }
-  }, true);
+  // Simplified error handling - no global error suppression
   
   window.addEventListener('unhandledrejection', (event) => {
-    // Suppress all fetch-related errors when API is globally 503
-    if (isApiGlobally503()) {
-      event.preventDefault();
-      return;
-    }
-    
-    // Check if it's a network error
-    const reason = event.reason;
-    if (reason && typeof reason === 'object') {
-      const errorMessage = reason.message || reason.toString() || '';
-      if (shouldSuppressMessage(errorMessage)) {
-        event.preventDefault();
-        return;
-      }
-    }
-    
-    console.error('🚨 Unhandled Promise Rejection:', event.reason);
-    
-    // If it's a 503 error, prevent the default behavior (crash)
+    // Only prevent crashes for 503 errors, not all network errors
     if (event.reason && typeof event.reason === 'object') {
       const error = event.reason;
       if (error.statusCode === 503 || error.is503Error) {
         console.warn('🛡️ Preventing crash for 503 error:', error.message);
         event.preventDefault(); // Prevent the default crash behavior
+        return;
       }
     }
+    
+    // Log other unhandled rejections but don't suppress them
+    console.error('🚨 Unhandled Promise Rejection:', event.reason);
   });
 }
 
@@ -677,6 +511,17 @@ export class APIsw {
   private pageApiCalls: string[] = [];
   private currentPageName: string = '';
   
+  // Error tracking for 503 status testing
+  private errorLog: Array<{
+    timestamp: number;
+    endpoint: string;
+    error: string;
+    statusCode?: number;
+    is503Error: boolean;
+    isConnectionError: boolean;
+    pageName: string;
+  }> = [];
+  
   // Cookie consent state
   private isApiBlocked: boolean = false;
   
@@ -695,6 +540,10 @@ export class APIsw {
   private globalRequestBlocked: boolean = false;
   private globalBlockTime: number = 0;
   private globalBlockCooldown: number = 30000; // 30 seconds global block
+  
+  // Modal cooldown to prevent infinite loops
+  private lastModalShowTime: number = 0;
+  private modalCooldown: number = 5000; // 5 seconds cooldown between modal shows
   
   // Request deduplication to prevent multiple identical requests
   private pendingRequests: Map<string, Promise<any>> = new Map();
@@ -1020,11 +869,18 @@ export class APIsw {
     options: RequestInit = {},
     requireAuth: boolean = false
   ): Promise<T> {
+    // Track this API call
+    this.trackApiCall(endpoint);
+    
     // Check global 503 status first - if API is globally down, return 503 immediately
     if (isApiGlobally503()) {
       const error = new Error(`503 Service Unavailable: API is globally unavailable`);
       (error as any).statusCode = 503;
       (error as any).is503Error = true;
+      
+      // Show API failure modal for global 503 status
+      this.showApiFailureModal([endpoint], true);
+      
       throw error;
     }
 
@@ -1042,6 +898,10 @@ export class APIsw {
       (error as any).isGlobalBlock = true;
       
       console.log(`🚫 [GLOBAL-BLOCK] Blocking request to ${endpoint} - global block active`);
+      
+      // Show API failure modal for global request blocking
+      this.showApiFailureModal([endpoint], true);
+      
       throw error;
     }
 
@@ -1053,6 +913,10 @@ export class APIsw {
       (error as any).isCircuitBreaker = true;
       
       console.log(`🔒 [CIRCUIT-BREAKER] Blocking request to ${endpoint} - in cooldown period`);
+      
+      // Show API failure modal for circuit breaker
+      this.showApiFailureModal([endpoint], true);
+      
       throw error;
     }
 
@@ -1074,7 +938,8 @@ export class APIsw {
       (error as any).statusCode = 503;
       (error as any).is503Error = true;
       
-      
+      // Show API failure modal for health check failures
+      this.showApiFailureModal([endpoint], true);
       
       throw error;
     }
@@ -1182,11 +1047,18 @@ export class APIsw {
   }
 
   async makePublicRequestInternal<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    // Track this API call
+    this.trackApiCall(endpoint);
+    
     // Check global 503 status first - if API is globally down, return 503 immediately
     if (isApiGlobally503()) {
       const error = new Error(`503 Service Unavailable: API is globally unavailable`);
       (error as any).statusCode = 503;
       (error as any).is503Error = true;
+      
+      // Show API failure modal for global 503 status
+      this.showApiFailureModal([endpoint], true);
+      
       throw error;
     }
 
@@ -1236,7 +1108,8 @@ export class APIsw {
       (error as any).statusCode = 503;
       (error as any).is503Error = true;
       
-      
+      // Show API failure modal for health check failures
+      this.showApiFailureModal([endpoint], true);
       
       throw error;
     }
@@ -1310,68 +1183,10 @@ export class APIsw {
         console.log(`🌐 API Request: ${url}`);
       }
       
-      // Override console methods to suppress network errors
-      const originalConsoleError = console.error;
-      const originalConsoleWarn = console.warn;
-      const originalConsoleLog = console.log;
-      
-      console.error = (...args) => {
-        // Suppress all fetch-related errors
-        const message = args[0]?.toString() || '';
-        if (message.includes('ERR_CONNECTION_REFUSED') || 
-            message.includes('Failed to fetch') ||
-            message.includes('net::ERR_CONNECTION_REFUSED') ||
-            message.includes('GET https://localhost:3000/v0/health net::ERR_CONNECTION_REFUSED') ||
-            message.includes('localhost:3000') ||
-            message.includes('ERR_NETWORK') ||
-            message.includes('ERR_INTERNET_DISCONNECTED')) {
-          return; // Suppress the error completely
-        }
-        originalConsoleError.apply(console, args);
-      };
-      
-      console.warn = (...args) => {
-        // Suppress fetch-related warnings
-        const message = args[0]?.toString() || '';
-        if (message.includes('ERR_CONNECTION_REFUSED') || 
-            message.includes('Failed to fetch') ||
-            message.includes('net::ERR_CONNECTION_REFUSED') ||
-            message.includes('GET https://localhost:3000/v0/health net::ERR_CONNECTION_REFUSED') ||
-            message.includes('localhost:3000') ||
-            message.includes('ERR_NETWORK') ||
-            message.includes('ERR_INTERNET_DISCONNECTED')) {
-          return; // Suppress the warning completely
-        }
-        originalConsoleWarn.apply(console, args);
-      };
-      
-      console.log = (...args) => {
-        // Suppress fetch-related logs
-        const message = args[0]?.toString() || '';
-        if (message.includes('ERR_CONNECTION_REFUSED') || 
-            message.includes('Failed to fetch') ||
-            message.includes('net::ERR_CONNECTION_REFUSED') ||
-            message.includes('GET https://localhost:3000/v0/health net::ERR_CONNECTION_REFUSED') ||
-            message.includes('localhost:3000') ||
-            message.includes('ERR_NETWORK') ||
-            message.includes('ERR_INTERNET_DISCONNECTED')) {
-          return; // Suppress the log completely
-        }
-        originalConsoleLog.apply(console, args);
-      };
-      
       try {
         const response = await fetch(url, config);
-        // Restore original console methods
-        console.error = originalConsoleError;
-        console.warn = originalConsoleWarn;
-        console.log = originalConsoleLog;
         return response;
       } catch (fetchError) {
-        // Restore original console methods
-        console.error = originalConsoleError;
-        console.warn = originalConsoleWarn;
-        console.log = originalConsoleLog;
         
         // Instead of throwing, return a mock 503 response
         if (fetchError instanceof TypeError && fetchError.message.includes('Failed to fetch')) {
@@ -1421,6 +1236,9 @@ export class APIsw {
       } else {
         // Handle 503 responses gracefully
         if (response.status === 503) {
+          // Set global 503 status when we get a 503 response
+          setGlobal503Status(true);
+          
           const data = await response.json();
           return data; // Return the 503 error data instead of throwing
         }
@@ -1429,7 +1247,37 @@ export class APIsw {
         throw new Error(errorMessage);
       }
     } catch (error) {
-      // Only handle non-503 errors here since 503s are now returned as responses
+      // Check if this is a connection error that should be treated as 503
+      if (isConnectionError(error)) {
+        // Set global 503 status for connection errors
+        setGlobal503Status(true);
+        
+        // Create a 503 error response
+        const error503 = createConnectionError(endpoint, error);
+        return {
+          error: true,
+          statusCode: 503,
+          message: error503.message,
+          is503Error: true,
+          isConnectionError: true
+        };
+      }
+      
+      // Check if this is already a 503 error
+      if (is503Error(error)) {
+        // Set global 503 status for 503 errors
+        setGlobal503Status(true);
+        
+        return {
+          error: true,
+          statusCode: 503,
+          message: (error as Error).message,
+          is503Error: true,
+          isConnectionError: (error as any)?.isConnectionError || false
+        };
+      }
+      
+      // Re-throw other errors
       throw error;
     }
   }
@@ -1474,68 +1322,10 @@ export class APIsw {
         console.log(`🌐 Public API Request: ${url}`);
       }
       
-      // Override console methods to suppress network errors
-      const originalConsoleError = console.error;
-      const originalConsoleWarn = console.warn;
-      const originalConsoleLog = console.log;
-      
-      console.error = (...args) => {
-        // Suppress all fetch-related errors
-        const message = args[0]?.toString() || '';
-        if (message.includes('ERR_CONNECTION_REFUSED') || 
-            message.includes('Failed to fetch') ||
-            message.includes('net::ERR_CONNECTION_REFUSED') ||
-            message.includes('GET https://localhost:3000/v0/health net::ERR_CONNECTION_REFUSED') ||
-            message.includes('localhost:3000') ||
-            message.includes('ERR_NETWORK') ||
-            message.includes('ERR_INTERNET_DISCONNECTED')) {
-          return; // Suppress the error completely
-        }
-        originalConsoleError.apply(console, args);
-      };
-      
-      console.warn = (...args) => {
-        // Suppress fetch-related warnings
-        const message = args[0]?.toString() || '';
-        if (message.includes('ERR_CONNECTION_REFUSED') || 
-            message.includes('Failed to fetch') ||
-            message.includes('net::ERR_CONNECTION_REFUSED') ||
-            message.includes('GET https://localhost:3000/v0/health net::ERR_CONNECTION_REFUSED') ||
-            message.includes('localhost:3000') ||
-            message.includes('ERR_NETWORK') ||
-            message.includes('ERR_INTERNET_DISCONNECTED')) {
-          return; // Suppress the warning completely
-        }
-        originalConsoleWarn.apply(console, args);
-      };
-      
-      console.log = (...args) => {
-        // Suppress fetch-related logs
-        const message = args[0]?.toString() || '';
-        if (message.includes('ERR_CONNECTION_REFUSED') || 
-            message.includes('Failed to fetch') ||
-            message.includes('net::ERR_CONNECTION_REFUSED') ||
-            message.includes('GET https://localhost:3000/v0/health net::ERR_CONNECTION_REFUSED') ||
-            message.includes('localhost:3000') ||
-            message.includes('ERR_NETWORK') ||
-            message.includes('ERR_INTERNET_DISCONNECTED')) {
-          return; // Suppress the log completely
-        }
-        originalConsoleLog.apply(console, args);
-      };
-      
       try {
         const response = await fetch(url, config);
-        // Restore original console methods
-        console.error = originalConsoleError;
-        console.warn = originalConsoleWarn;
-        console.log = originalConsoleLog;
         return response;
       } catch (fetchError) {
-        // Restore original console methods
-        console.error = originalConsoleError;
-        console.warn = originalConsoleWarn;
-        console.log = originalConsoleLog;
         
         // Instead of throwing, return a mock 503 response
         if (fetchError instanceof TypeError && fetchError.message.includes('Failed to fetch')) {
@@ -1574,6 +1364,9 @@ export class APIsw {
       } else {
         // Handle 503 responses gracefully
         if (response.status === 503) {
+          // Set global 503 status when we get a 503 response
+          setGlobal503Status(true);
+          
           const data = await response.json();
           return data; // Return the 503 error data instead of throwing
         }
@@ -1582,7 +1375,37 @@ export class APIsw {
         throw new Error(errorMessage);
       }
     } catch (error) {
-      // Only handle non-503 errors here since 503s are now returned as responses
+      // Check if this is a connection error that should be treated as 503
+      if (isConnectionError(error)) {
+        // Set global 503 status for connection errors
+        setGlobal503Status(true);
+        
+        // Create a 503 error response
+        const error503 = createConnectionError(endpoint, error);
+        return {
+          error: true,
+          statusCode: 503,
+          message: error503.message,
+          is503Error: true,
+          isConnectionError: true
+        };
+      }
+      
+      // Check if this is already a 503 error
+      if (is503Error(error)) {
+        // Set global 503 status for 503 errors
+        setGlobal503Status(true);
+        
+        return {
+          error: true,
+          statusCode: 503,
+          message: (error as Error).message,
+          is503Error: true,
+          isConnectionError: (error as any)?.isConnectionError || false
+        };
+      }
+      
+      // Re-throw other errors
       throw error;
     }
   }
@@ -1845,21 +1668,23 @@ export class APIsw {
         return await this.makeRequest('/v0/health');
       }, 'Health Check');
     
-    // Cache the successful response for 30 seconds (health checks frequently)
-    if (result) {
-      apiCache.cacheApiResponse('/v0/health', result, 30 * 1000);
-    }
-    
-    return result;
+      // Cache the successful response for 30 seconds (health checks frequently)
+      if (result) {
+        apiCache.cacheApiResponse('/v0/health', result, 30 * 1000);
+      }
+      
+      return result;
     } catch (error) {
       // Normalize connection errors to 503
       const normalizedError = normalizeTo503Error(error, '/v0/health');
       
+      // Always set global 503 status when health check fails
+      setGlobal503Status(true);
+      
+      // Log the health check error
+      this.logError('/v0/health', normalizedError, 503, true, (normalizedError as any)?.isConnectionError || false);
       
       if (is503Error(normalizedError)) {
-        // Set global 503 status to prevent further requests
-        setGlobal503Status(true);
-        
         // Instead of throwing, return a 503 error response
         return {
           error: true,
@@ -2174,27 +1999,54 @@ export class APIsw {
    * Show the API failure modal with specific error details
    */
   showApiFailureModal(failedEndpoints: string[], is503Error: boolean = false, onClose?: () => void): void {
-    // Only show failed endpoints, remove duplicates
-    const uniqueEndpoints = Array.from(new Set(failedEndpoints));
+    const now = Date.now();
+    
+    console.log('🔧 [API-SERVICE] showApiFailureModal called:', {
+      failedEndpoints,
+      is503Error,
+      currentModalVisible: this.modalState.isVisible,
+      timeSinceLastModal: now - this.lastModalShowTime,
+      cooldown: this.modalCooldown
+    });
+    
+    // Prevent showing modal if already visible to avoid infinite loops
+    if (this.modalState.isVisible) {
+      console.log('🔧 [API-SERVICE] Modal already visible, skipping');
+      return;
+    }
+    
+    // Check cooldown to prevent rapid modal triggers
+    if (now - this.lastModalShowTime < this.modalCooldown) {
+      console.log('🔧 [API-SERVICE] Modal in cooldown, skipping');
+      return;
+    }
+    
+    // Only show the specific failed endpoints for the current page
+    // This ensures the modal is relevant to the page the user is on
+    const pageSpecificEndpoints = Array.from(new Set(failedEndpoints));
     
     this.modalState = {
       isVisible: true,
-      failedEndpoints: uniqueEndpoints, // Only unique failed endpoints
+      failedEndpoints: pageSpecificEndpoints, // Show only page-specific failed endpoints
       is503Error,
       onClose: onClose || null
     };
+    
+    // Update last modal show time
+    this.lastModalShowTime = now;
+    
+    console.log('🔧 [API-SERVICE] Modal state set:', this.modalState);
     
     // Notify all listeners that modal state has changed
     this.notifyModalStateListeners();
     
     if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
-      console.log('🔧 APIsw: Showing API failure modal:', {
-        originalFailedEndpoints: failedEndpoints,
-        uniqueEndpoints,
+      console.log('🔧 APIsw: Showing page-specific API failure modal:', {
+        pageSpecificEndpoints,
         is503Error,
         hasOnClose: !!onClose,
         currentPage: this.currentPageName,
-        allTrackedCalls: this.getTrackedApiCalls()
+        totalEndpoints: pageSpecificEndpoints.length
       });
     }
   }
@@ -2262,6 +2114,7 @@ export class APIsw {
    * Notify all listeners that modal state has changed
    */
   private notifyModalStateListeners(): void {
+    console.log('🔧 [API-SERVICE] Notifying modal state listeners:', this.modalStateListeners.size);
     this.modalStateListeners.forEach(listener => {
       try {
         listener();
@@ -2279,13 +2132,13 @@ export class APIsw {
    * Start tracking API calls for a specific page
    */
   startPageTracking(pageName: string): void {
-    // Prevent duplicate tracking for the same page
-    if (this.currentPageName === pageName) {
-      return;
-    }
-    
+    // Always reset tracking when starting a new page
     this.currentPageName = pageName;
     this.pageApiCalls = [];
+    
+    if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+      console.log(`🔧 [API-TRACKING] Started tracking API calls for page: ${pageName}`);
+    }
   }
 
   /**
@@ -2295,15 +2148,81 @@ export class APIsw {
     // Only track if not already tracked to avoid duplicates
     if (!this.pageApiCalls.includes(endpoint)) {
       this.pageApiCalls.push(endpoint);
-    }
-    
-    // Only log in development and reduce frequency
-    if (process.env.NODE_ENV === 'development' && !ENV_CONFIG.REDUCE_LOGGING) {
-      // Only log every 5th call to reduce spam
-      if (this.pageApiCalls.length % 5 === 0) {
-        console.log(`🔧 [API-TRACKING] Tracked ${this.pageApiCalls.length} calls for ${this.currentPageName}`);
+      
+      // Log each tracked call in development for debugging
+      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+        console.log(`🔧 [API-TRACKING] Tracked API call: ${endpoint} (Page: ${this.currentPageName})`);
+        console.log(`🔧 [API-TRACKING] Current tracked calls:`, this.pageApiCalls);
       }
     }
+  }
+
+  /**
+   * Log an error for tracking and debugging
+   */
+  private logError(endpoint: string, error: Error, statusCode?: number, is503Error: boolean = false, isConnectionError: boolean = false): void {
+    const errorEntry = {
+      timestamp: Date.now(),
+      endpoint,
+      error: error.message,
+      statusCode,
+      is503Error,
+      isConnectionError,
+      pageName: this.currentPageName
+    };
+    
+    this.errorLog.push(errorEntry);
+    
+    // Keep only last 100 errors to prevent memory issues
+    if (this.errorLog.length > 100) {
+      this.errorLog = this.errorLog.slice(-100);
+    }
+    
+    // Log 503 errors prominently for testing
+    if (is503Error) {
+      console.error(`🚨 [503-ERROR] ${endpoint}: ${error.message} (Page: ${this.currentPageName})`);
+      console.error(`🚨 [503-ERROR] Full error details:`, errorEntry);
+    } else if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+      console.error(`❌ [API-ERROR] ${endpoint}: ${error.message} (Page: ${this.currentPageName})`);
+    }
+  }
+
+  /**
+   * Get error log for debugging
+   */
+  getErrorLog(): Array<{
+    timestamp: number;
+    endpoint: string;
+    error: string;
+    statusCode?: number;
+    is503Error: boolean;
+    isConnectionError: boolean;
+    pageName: string;
+  }> {
+    return [...this.errorLog];
+  }
+
+  /**
+   * Get 503 errors only
+   */
+  get503Errors(): Array<{
+    timestamp: number;
+    endpoint: string;
+    error: string;
+    statusCode?: number;
+    is503Error: boolean;
+    isConnectionError: boolean;
+    pageName: string;
+  }> {
+    return this.errorLog.filter(error => error.is503Error);
+  }
+
+  /**
+   * Clear error log
+   */
+  clearErrorLog(): void {
+    this.errorLog = [];
+    console.log('🧹 [ERROR-LOG] Cleared error log');
   }
 
   /**
@@ -2574,4 +2493,9 @@ export const checkConsentMiddleware = () => api.checkConsentMiddleware();
 export const consentAwareMiddleware = (endpoint: string, context: string) => api.consentAwareMiddleware(endpoint, context);
 
 // Export health gate functions
-export const resetHealthGate = () => api.resetHealthGate(); 
+export const resetHealthGate = () => api.resetHealthGate();
+
+// Export error tracking functions
+export const getErrorLog = () => api.getErrorLog();
+export const get503Errors = () => api.get503Errors();
+export const clearErrorLog = () => api.clearErrorLog(); 

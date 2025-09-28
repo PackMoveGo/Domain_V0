@@ -1,1 +1,0 @@
-"use strict";exports.id=3370,exports.ids=[3370],exports.modules={43370:(a,b,c)=>{c.r(b),c.d(b,{default:()=>e});var d=c(8732);c(82015);let e=({testimonials:a,isLoading:b,error:c})=>(0,d.jsx)("div",{children:"Testimonials temporarily disabled"})}};

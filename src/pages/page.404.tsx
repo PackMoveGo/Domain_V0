@@ -1,7 +1,6 @@
 
 import { FC, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import Layout from '../component/layout/Layout';
 import SEO from '../component/business/SEO';
 import QuoteForm from '../component/forms/form.quote';
 import { FormData } from '../component/forms/form.quote';
@@ -92,7 +91,7 @@ const Page404: FC = () => {
   };
 
   return (
-    <Layout onQuoteSubmit={handleQuoteSubmit}>
+    <div>
       <SEO 
         title="404 - Page Not Found | Pack Move Go"
         description="The page you're looking for doesn't exist. Return to our homepage for professional moving and packing services."
@@ -254,7 +253,7 @@ const Page404: FC = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 

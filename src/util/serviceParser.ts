@@ -92,8 +92,13 @@ export function useServicesData(autoLoad = true) {
         throw new Error('Invalid services response format');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch services';
-      setError(errorMessage);
+      // Check if this is a 503 error
+      if (err instanceof Error && (err as any).is503Error) {
+        setError('503 Service Unavailable');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch services';
+        setError(errorMessage);
+      }
       logger.error('Failed to fetch services', err);
       
       // Use centralized error handling

@@ -2,7 +2,6 @@
 import React, { FC, useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../component/business/SEO';
-import Layout from '../component/layout/Layout';
 
 import { useGiveSectionId } from '../hook/useGiveSectionId';
 import { searchContent, SearchResult } from '../util/search';
@@ -216,7 +215,7 @@ const Services: FC = () => {
   }, []);
 
   return (
-    <Layout
+    <div
       onSearch={handleSearch}
       onSearchComplete={handleSearchComplete}
       isRelative={true}
@@ -478,7 +477,7 @@ const Services: FC = () => {
           </ErrorBoundary>
         </section>
       </div>
-    </Layout>
+    </div>
   );
 };
 

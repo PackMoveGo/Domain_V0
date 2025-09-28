@@ -23,9 +23,14 @@ export function useLocations() {
       setServiceTypes(safeServiceTypes);
       console.log('✅ Locations loaded successfully:', safeLocations.length, 'regions,', safeServiceTypes.length, 'service types');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load locations';
-      console.error('❌ Locations loading error:', errorMessage);
-      setError(errorMessage);
+      // Check if this is a 503 error
+      if (err instanceof Error && (err as any).is503Error) {
+        setError('503 Service Unavailable');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load locations';
+        setError(errorMessage);
+      }
+      console.error('❌ Locations loading error:', err);
       
       // Set empty arrays as fallback to prevent undefined errors
       setLocations([]);

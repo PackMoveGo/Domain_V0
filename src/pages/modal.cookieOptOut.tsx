@@ -4,6 +4,9 @@ import { useCookiePreferences } from '../context/CookiePreferencesContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getCurrentTimestamp } from '../util/ssrUtils';
 
+// SSR-safe environment detection
+const isSSR = typeof window === 'undefined';
+
 // SSR-safe Helmet wrapper
 const HelmetWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [Helmet, setHelmet] = React.useState<any>(null);
@@ -76,8 +79,10 @@ const CookieOptOut: React.FC = () => {
     clearBannerCache = () => {};
   }
 
-  // Function to prevent scrolling
+  // Function to prevent scrolling (SSR-safe)
   const preventScroll = () => {
+    if (isSSR) return () => {};
+    
     // Store current scroll position
     scrollPositionRef.current = window.scrollY;
     
@@ -125,8 +130,10 @@ const CookieOptOut: React.FC = () => {
     };
   };
 
-  // Function to restore scrolling
+  // Function to restore scrolling (SSR-safe)
   const restoreScroll = () => {
+    if (isSSR) return;
+    
     // Restore body styles
     document.body.style.overflow = '';
     document.body.style.position = '';
@@ -162,8 +169,10 @@ const CookieOptOut: React.FC = () => {
     }
   }, [isInitialized, isLoading]);
 
-  // Listen for dev tools cookie reset event
+  // Listen for dev tools cookie reset event (SSR-safe)
   useEffect(() => {
+    if (isSSR) return;
+    
     const handleCookieReset = () => {
       console.log('🍪 Cookie consent reset event received - showing modal');
       setIsVisible(true);
@@ -172,7 +181,7 @@ const CookieOptOut: React.FC = () => {
 
     window.addEventListener('cookie-consent-reset', handleCookieReset);
     return () => window.removeEventListener('cookie-consent-reset', handleCookieReset);
-  }, []);
+  }, [isSSR]);
 
   // Handle scroll prevention when visible (only for modal mode, not full page)
   useEffect(() => {
@@ -205,6 +214,12 @@ const CookieOptOut: React.FC = () => {
       console.log('🍪 CookieOptOut: Calling optIn function');
     setIsTransitioning(true);
     optIn();
+    
+    // Set last banner time to now (will show again in 30 minutes)
+    if (!isSSR) {
+      localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
+      console.log('🍪 Cookie banner opt-in - will show again in 30 minutes');
+    }
       
       if (isFullPage) {
         // For full page mode, just navigate after a short delay
@@ -246,8 +261,10 @@ const CookieOptOut: React.FC = () => {
 
   const handleManagePreferences = () => {
     setSelectedOption('custom');
-    // Set last banner time to now
-    localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
+    // Set last banner time to now (SSR-safe)
+    if (!isSSR) {
+      localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
+    }
     // Clear cache
     if (clearBannerCache) clearBannerCache();
     
@@ -258,8 +275,11 @@ const CookieOptOut: React.FC = () => {
   };
 
   const handleDismiss = () => {
-    // Set last banner time to now (dismiss for 30 minutes)
-    localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
+    // Set last banner time to now (dismiss for 30 minutes) (SSR-safe)
+    if (!isSSR) {
+      localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
+      console.log('🍪 Cookie banner dismissed - will show again in 30 minutes');
+    }
     // Clear cache
     if (clearBannerCache) clearBannerCache();
     
@@ -297,18 +317,21 @@ const CookieOptOut: React.FC = () => {
     });
   };
 
-  // Don't render if not visible or still loading (only for modal mode)
-  if (!isVisible || isLoading || !isInitialized) {
+  // Check if we should show the banner based on 30-minute timer
+  const shouldShowBanner = !isSSR && (checkBannerTimer ? checkBannerTimer() : true);
+  
+  // Don't render if not visible, still loading, or timer says not to show (only for modal mode)
+  if (!isVisible || isLoading || !isInitialized || !shouldShowBanner) {
     if (isFullPage) {
       // For full page mode, show loading state
-  return (
+      return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading cookie preferences...</p>
-                  </div>
-                </div>
-              );
+          </div>
+        </div>
+      );
     }
     return null;
   }
@@ -505,7 +528,7 @@ const CookieOptOut: React.FC = () => {
   return (
     <div 
       className={`
-        fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10001] p-2 sm:p-4
+        fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000] p-2 sm:p-4
         transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${isFadingOut ? 'opacity-0 backdrop-blur-none' : 'opacity-100 backdrop-blur-sm'}
         ${!isInitialized ? 'pointer-events-none' : ''}

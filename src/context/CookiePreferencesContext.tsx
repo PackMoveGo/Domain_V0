@@ -92,30 +92,25 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
 
   useEffect(() => {
     const loadPreferences = () => {
-      // SSR-safe localStorage access
-      if (typeof window === 'undefined') {
-        setPreferences(defaultPreferences);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Load from localStorage - no auto-acceptance
-      const savedPreferences = localStorage.getItem('packmovego-cookie-preferences');
-      if (savedPreferences) {
-        try {
-          const parsed = JSON.parse(savedPreferences);
-          if (parsed.hasMadeChoice === undefined) { parsed.hasMadeChoice = true; }
-          if (!parsed.lastUpdated) { parsed.lastUpdated = Date.now(); }
-          setPreferences(parsed);
-        } catch (error) {
-          console.error('Error parsing saved cookie preferences:', error);
-          setPreferences(defaultPreferences);
-        }
-      } else {
-        setPreferences(defaultPreferences);
-      }
-      
+      // Always start with default preferences for consistent hydration
+      setPreferences(defaultPreferences);
       setIsLoading(false);
+      
+      // Only load from localStorage in browser environment after hydration
+      if (typeof window !== 'undefined') {
+        const savedPreferences = localStorage.getItem('packmovego-cookie-preferences');
+        if (savedPreferences) {
+          try {
+            const parsed = JSON.parse(savedPreferences);
+            if (parsed.hasMadeChoice === undefined) { parsed.hasMadeChoice = true; }
+            if (!parsed.lastUpdated) { parsed.lastUpdated = Date.now(); }
+            // Update preferences after hydration to avoid mismatch
+            setTimeout(() => setPreferences(parsed), 0);
+          } catch (error) {
+            console.error('Error parsing saved cookie preferences:', error);
+          }
+        }
+      }
     };
     
     loadPreferences();

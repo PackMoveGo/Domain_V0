@@ -1,6 +1,5 @@
 import { FC } from 'react';
 import { Link } from 'react-router-dom';
-import Layout from '../component/layout/Layout';
 import SEO from '../component/business/SEO';
 
 const Sitemap: FC = () => {
@@ -42,7 +41,7 @@ const Sitemap: FC = () => {
   ];
 
   return (
-    <Layout>
+    <>
       <SEO 
         title="Sitemap - Pack Move Go | Find All Our Pages"
         description="Browse all pages on Pack Move Go's website. Find information about our moving services, resources, and company information easily."
@@ -74,7 +73,7 @@ const Sitemap: FC = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

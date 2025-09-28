@@ -9,39 +9,37 @@ import AppCSR from './AppCSR';
 import AppSSR from './AppSSR';
 import ErrorDebugger from './component/debug/ErrorDebugger';
 
+// SSR-safe environment detection
+const isSSR = typeof window === 'undefined';
+const isProduction = process.env.NODE_ENV === 'production';
+
 function App() {
   useEffect(() => {
     // Only run in browser environment
-    if (typeof window !== 'undefined') {
+    if (!isSSR) {
       // No auto-acceptance - users must make their own choice
     }
   }, []);
 
-  // Development: Use AppCSR (Client-Side Rendering)
-  // Production: Use AppSSR (Server-Side Rendering)
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const isProduction = process.env.NODE_ENV === 'production';
+  // Always use SSR in production, CSR in development
+  const isDevelopment = !isProduction;
   
-  console.log('🚀 App Environment:', { isDevelopment, isProduction, NODE_ENV: process.env.NODE_ENV });
+  console.log('🚀 App Environment:', { isDevelopment, isProduction, isSSR, NODE_ENV: process.env.NODE_ENV });
   console.log('🚀 App rendering with providers...');
 
+  // Use AppCSR for client-side rendering to ensure proper routing
+  // AppSSR is only used during server-side rendering, not for client-side navigation
   return (
     <ErrorDebugger>
-      {isDevelopment ? (
-        <UserTrackingProvider serverUrl={ENV_CONFIG.API_URL}>
-          <CookiePreferencesProvider>
-            <SectionDataProvider>
-              <SectionVerificationProvider>
-                <AppCSR />
-              </SectionVerificationProvider>
-            </SectionDataProvider>
-          </CookiePreferencesProvider>
-        </UserTrackingProvider>
-      ) : (
-        <SSRProviders serverUrl={ENV_CONFIG.API_URL}>
-          <AppSSR url={typeof window !== 'undefined' ? window.location.pathname : '/'} />
-        </SSRProviders>
-      )}
+      <UserTrackingProvider serverUrl={ENV_CONFIG.API_URL}>
+        <CookiePreferencesProvider>
+          <SectionDataProvider>
+            <SectionVerificationProvider>
+              <AppCSR />
+            </SectionVerificationProvider>
+          </SectionDataProvider>
+        </CookiePreferencesProvider>
+      </UserTrackingProvider>
     </ErrorDebugger>
   );
 }

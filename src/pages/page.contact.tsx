@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react';
-import Layout from '../component/layout/Layout';
 import { getComprehensiveContactPageData } from '../services/public/service.contactPageAPI';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
+// Modal state is handled by Layout component
 
 // Lazy load contact components
 const ContactHeader = lazy(() => import('../component/business/contact/hero.contact'));
@@ -22,20 +22,26 @@ const ContactCTA = lazy(() => import('../component/business/contact/banner.conta
 (ContactCTA as any).displayName = 'ContactCTA';
 
 export default function ContactPage() {
-  // State for contact page data
+  // Check if we're in SSR mode
+  const isSSR = typeof window === 'undefined';
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // State for contact page data - initialize with SSR-safe defaults
   const [contactPageData, setContactPageData] = React.useState<any>(null);
-  const [isLoadingData, setIsLoadingData] = React.useState(false);
+  const [isLoadingData, setIsLoadingData] = React.useState(false); // Never show loading during SSR
   const [dataError, setDataError] = React.useState<string | null>(null);
+  
+  // Modal state is handled by Layout component
 
   // Section verification and tracking
   const { getSectionProps } = useGiveSectionId();
 
-  // Check if we're in production mode (SSR-safe)
-  const isProduction = process.env.NODE_ENV === 'production';
-
   // Load contact page data using comprehensive API service with modal middleware
   const loadContactPageData = async () => {
-    if (isProduction) return;
+    // Skip API calls during SSR
+    if (isSSR) {
+      return;
+    }
     
     setIsLoadingData(true);
     setDataError(null);
@@ -46,10 +52,20 @@ export default function ContactPage() {
       // Use the comprehensive contact page data function that includes modal middleware
       const data = await getComprehensiveContactPageData();
       
+      // Check if the data contains 503 error information
+      if (data && (data as any).error && (data as any).is503Error) {
+        setDataError('503 Service Unavailable');
+        setContactPageData(null);
+        return;
+      }
+      
       setContactPageData(data);
       
-      // Don't set dataError for API failures since we have hardcoded fallback data
-      // The modal will be handled by service middleware automatically
+      // Check if there are any errors and set appropriate states
+      const hasErrors = !data.nav || !data.contact;
+      if (hasErrors) {
+        setDataError('503 Service Unavailable');
+      }
       
       console.log('✅ Contact page data loaded successfully:', {
         nav: !!data.nav,
@@ -59,34 +75,33 @@ export default function ContactPage() {
     } catch (error) {
       console.error('❌ Failed to load contact page data:', error);
       
-      // Don't set dataError for API failures since we have hardcoded fallback data
+      // Check if this is a 503 error
+      if (error instanceof Error && (error as any).is503Error) {
+        setDataError('503 Service Unavailable');
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
+        setDataError(errorMessage);
+      }
+      
       // Modal will be handled by service middleware automatically
     } finally {
       setIsLoadingData(false);
     }
   };
 
-  // Call load data on component mount
+  // Call load data on component mount (client-side only)
   React.useEffect(() => {
-    loadContactPageData();
-  }, []);
+    if (!isSSR) {
+      loadContactPageData();
+    }
+  }, [isSSR]);
 
-  // Show loading state while data is being fetched
-  if (isLoadingData) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Loading Contact...</h2>
-          <p className="text-gray-600">Please wait while we load the contact page content</p>
-        </div>
-      </div>
-    );
-  }
+  // Modal state is handled by Layout component
+
+  // Always render content - no loading state that blocks SSR
 
   return (
-    <Layout forceHideSearch={false}>
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Contact Header */}
           <section {...getSectionProps('contact-header')}>
@@ -417,8 +432,8 @@ export default function ContactPage() {
             </Suspense>
           </section>
         </div>
-      </div>
-    </Layout>
+        
+    </div>
   );
 }
 

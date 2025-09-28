@@ -689,11 +689,11 @@ export const getHomePageData = async (): Promise<HomePageServiceData> => {
   try {
     console.log('🚀 Loading consolidated home page data...');
     
-    // Start tracking API calls for home page
+    // Start tracking API calls for home page (this resets previous tracking)
     api.startPageTracking('home-page');
     
-    // Define all routes that will be called (for reference only)
-    const allRoutes = ['/v0/nav', '/v0/services', '/v0/auth/status', '/v0/testimonials', '/v0/recentMoves', '/v0/recentMoves/total'];
+    // Define all routes that will be called for this page
+    const homePageRoutes = ['/v0/nav', '/v0/services', '/v0/auth/status', '/v0/testimonials', '/v0/recentMoves', '/v0/recentMoves/total'];
     
     // First check health status - if it fails, all routes are considered 503
     try {
@@ -702,11 +702,13 @@ export const getHomePageData = async (): Promise<HomePageServiceData> => {
     } catch (healthError) {
       homePageStatusCode = 503;
       
-      // Only show the health endpoint as failed since others were never called
-      const healthFailedRoutes = ['/v0/health'];
+      // Track all routes as failed since health check failed
+      homePageRoutes.forEach(route => {
+        api.trackApiCall(route);
+      });
       
-      // Show modal with only the health endpoint
-      api.showApiFailureModal(healthFailedRoutes, true);
+      // Show modal with all routes as failed
+      api.showApiFailureModal(homePageRoutes, true);
       
       // Return empty data with 503 status
       return {
@@ -720,9 +722,8 @@ export const getHomePageData = async (): Promise<HomePageServiceData> => {
       };
     }
     
-    // Health check passed - proceed with individual route calls using consent-aware middleware
+    // Health check passed - proceed with individual route calls
     const [navData, servicesData, authStatus, testimonialsData, recentMovesData, totalMovesData] = await Promise.allSettled([
-      // Direct API calls (these will use consent middleware internally)
       api.getNav(),
       api.getServices(),
       api.checkAuthStatus(),
@@ -731,56 +732,44 @@ export const getHomePageData = async (): Promise<HomePageServiceData> => {
       api.makeRequest('/v0/recentMoves/total')
     ]);
     
-    // Check for failed endpoints and distinguish between consent errors and API errors
+    // Collect failed endpoints for this page only
     const failedEndpoints: string[] = [];
-    const consentErrors: string[] = [];
+    let has503Error = false;
     
-    // Check if any endpoint failed with 503 error (actual API errors)
-    const has503Error = navData.status === 'rejected' && navData.reason?.message?.includes('503') ||
-                       servicesData.status === 'rejected' && servicesData.reason?.message?.includes('503') ||
-                       authStatus.status === 'rejected' && authStatus.reason?.message?.includes('503') ||
-                       testimonialsData.status === 'rejected' && testimonialsData.reason?.message?.includes('503') ||
-                       recentMovesData.status === 'rejected' && recentMovesData.reason?.message?.includes('503') ||
-                       totalMovesData.status === 'rejected' && totalMovesData.reason?.message?.includes('503');
+    // Check each endpoint result
+    if (navData.status === 'rejected') {
+      failedEndpoints.push('/v0/nav');
+      if (navData.reason?.message?.includes('503')) has503Error = true;
+    }
+    if (servicesData.status === 'rejected') {
+      failedEndpoints.push('/v0/services');
+      if (servicesData.reason?.message?.includes('503')) has503Error = true;
+    }
+    if (authStatus.status === 'rejected') {
+      failedEndpoints.push('/v0/auth/status');
+      if (authStatus.reason?.message?.includes('503')) has503Error = true;
+    }
+    if (testimonialsData.status === 'rejected') {
+      failedEndpoints.push('/v0/testimonials');
+      if (testimonialsData.reason?.message?.includes('503')) has503Error = true;
+    }
+    if (recentMovesData.status === 'rejected') {
+      failedEndpoints.push('/v0/recentMoves');
+      if (recentMovesData.reason?.message?.includes('503')) has503Error = true;
+    }
+    if (totalMovesData.status === 'rejected') {
+      failedEndpoints.push('/v0/recentMoves/total');
+      if (totalMovesData.reason?.message?.includes('503')) has503Error = true;
+    }
     
-    // Check for consent errors (don't show API failure modal for these)
-    const hasConsentError = navData.status === 'rejected' && navData.reason?.message?.includes('cookie consent') ||
-                           servicesData.status === 'rejected' && servicesData.reason?.message?.includes('cookie consent') ||
-                           authStatus.status === 'rejected' && authStatus.reason?.message?.includes('cookie consent') ||
-                           testimonialsData.status === 'rejected' && testimonialsData.reason?.message?.includes('cookie consent') ||
-                           recentMovesData.status === 'rejected' && recentMovesData.reason?.message?.includes('cookie consent') ||
-                           totalMovesData.status === 'rejected' && totalMovesData.reason?.message?.includes('cookie consent');
-    
-    // Update homePageStatusCode based on 503 errors from API calls
+    // Update status code
     if (has503Error) {
       homePageStatusCode = 503;
     }
     
-    // Collect failed endpoints (only actual API errors, not consent errors)
-    // Only add endpoints that were actually called and failed
-    if (navData.status === 'rejected' && !navData.reason?.message?.includes('cookie consent')) {
-      failedEndpoints.push('/v0/nav');
-    }
-    if (servicesData.status === 'rejected' && !servicesData.reason?.message?.includes('cookie consent')) {
-      failedEndpoints.push('/v0/services');
-    }
-    if (authStatus.status === 'rejected' && !authStatus.reason?.message?.includes('cookie consent')) {
-      failedEndpoints.push('/v0/auth/status');
-    }
-    if (testimonialsData.status === 'rejected' && !testimonialsData.reason?.message?.includes('cookie consent')) {
-      failedEndpoints.push('/v0/testimonials');
-    }
-    if (recentMovesData.status === 'rejected' && !recentMovesData.reason?.message?.includes('cookie consent')) {
-      failedEndpoints.push('/v0/recentMoves');
-    }
-    if (totalMovesData.status === 'rejected' && !totalMovesData.reason?.message?.includes('cookie consent')) {
-      failedEndpoints.push('/v0/recentMoves/total');
-    }
-    
-    // Show modal only for actual API errors, not consent errors
+    // Show modal only for this page's failed endpoints
     if (failedEndpoints.length > 0) {
-      api.showApiFailureModal(failedEndpoints, homePageStatusCode === 503);
-    } else if (hasConsentError) {
+      api.showApiFailureModal(failedEndpoints, has503Error);
     }
     
     const result: HomePageServiceData = {

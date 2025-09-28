@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ErrorBoundary from './component/ui/feedback/ErrorBoundary';
+import Layout from './component/layout/Layout';
 
 // Optimized lazy loading with error boundaries and SSR compatibility
 const createLazyComponent = (importFunc: () => Promise<any>, fallback?: React.ReactNode) => {
@@ -61,51 +62,55 @@ const NotFoundPage = createLazyComponent(() => import('./pages/page.404'));
 // import ServicesTest from './component/devtools/ServicesTest';
 import ApiErrorHandlingExample from './component/examples/ApiErrorHandlingExample';
 import ModalOrderTest from './component/examples/ModalOrderTest';
+import ErrorTestingExample from './component/examples/ErrorTestingExample';
 
 const AppContent: React.FC = () => {
   console.log('🚀 AppCSR rendering...');
   
   return (
-    <div className="App">
-      {/* Analytics Root */}
-      <div id="analytics-root"></div>
-      
-      {/* Main Content with optimized routing */}
-      <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-gray-600 text-sm">Loading...</p>
+    <Layout isSSR={false}>
+      <div className="App">
+        {/* Analytics Root */}
+        <div id="analytics-root"></div>
+        
+        {/* Main Content with optimized routing */}
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-gray-600 text-sm">Loading...</p>
+            </div>
           </div>
-        </div>
-      }>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/faq" element={<FAQPage />} />
-          <Route path="/locations" element={<LocationsPage />} />
-          <Route path="/booking" element={<BookingPage />} />
-          <Route path="/review" element={<ReviewPage />} />
-          <Route path="/refer" element={<ReferPage />} />
-          <Route path="/supplies" element={<SuppliesPage />} />
-          <Route path="/tips" element={<TipsPage />} />
-          <Route path="/signin" element={<SignInPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/cookie-opt-out" element={<CookieOptOutPage />} />
-          <Route path="/cookie-test" element={<NotFoundPage />} />
-          {/* <Route path="/services-test" element={<ServicesTest />} /> */}
-          <Route path="/error-handling-example" element={<ApiErrorHandlingExample />} />
-          <Route path="/modal-order-test" element={<ModalOrderTest />} />
-          <Route path="/sitemap" element={<SitemapPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
-    </div>
+        }>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/services" element={<ServicesPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/locations" element={<LocationsPage />} />
+            <Route path="/booking" element={<BookingPage />} />
+            <Route path="/review" element={<ReviewPage />} />
+            <Route path="/refer" element={<ReferPage />} />
+            <Route path="/supplies" element={<SuppliesPage />} />
+            <Route path="/tips" element={<TipsPage />} />
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/cookie-opt-out" element={<CookieOptOutPage />} />
+            <Route path="/cookie-test" element={<NotFoundPage />} />
+            {/* <Route path="/services-test" element={<ServicesTest />} /> */}
+            <Route path="/error-handling-example" element={<ApiErrorHandlingExample />} />
+            <Route path="/modal-order-test" element={<ModalOrderTest />} />
+            <Route path="/error-testing" element={<ErrorTestingExample />} />
+            <Route path="/sitemap" element={<SitemapPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </div>
+    </Layout>
   );
 };
 
