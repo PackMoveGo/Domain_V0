@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { ENV_CONFIG } from './services/service.apiSW';
 import { UserTrackingProvider } from './component/business/UserTrackingProvider';
 import { CookiePreferencesProvider } from './context/CookiePreferencesContext';
@@ -36,6 +37,7 @@ function App() {
           <SectionDataProvider>
             <SectionVerificationProvider>
               <AppCSR />
+              <Analytics />
             </SectionVerificationProvider>
           </SectionDataProvider>
         </CookiePreferencesProvider>
