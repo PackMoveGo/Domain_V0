@@ -1,0 +1,204 @@
+name: Vercel Deployment
+
+# Trigger on push to main, pull requests, and manual dispatch
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - preview
+
+# Environment variables
+env:
+  NODE_VERSION: '20'
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # Build and test job
+  build-and-test:
+    runs-on: ubuntu-latest
+    name: Build and Test
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Type check
+        run: npm run type-check
+      
+      - name: Lint code
+        run: npm run lint
+      
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_API_URL: ${{ secrets.VITE_API_URL_PROD }}
+          VITE_APP_NAME: ${{ secrets.VITE_APP_NAME }}
+          VITE_APP_VERSION: ${{ secrets.VITE_APP_VERSION }}
+          VITE_APP_DOMAIN: ${{ secrets.VITE_APP_DOMAIN }}
+          VITE_DEV_MODE: 'production'
+          VITE_CSP_ENABLED: 'true'
+          VITE_ENABLE_SERVICE_WORKER: 'true'
+          VITE_ENABLE_PWA: 'true'
+          VITE_CACHE_VERSION: '1.0.0'
+          VITE_CACHE_DURATION: '3600'
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-files
+          path: dist/
+          retention-days: 1
+
+  # Deploy to Vercel job
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Vercel
+    needs: build-and-test
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-files
+          path: dist/
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      
+      - name: Deploy to Vercel
+        run: |
+          vercel --token ${{ secrets.VERCEL_TOKEN }} \
+                 --scope ${{ secrets.VERCEL_ORG_ID }} \
+                 --prod \
+                 --yes
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      
+      - name: Get deployment URL
+        id: deployment
+        run: |
+          DEPLOYMENT_URL=$(vercel ls --token ${{ secrets.VERCEL_TOKEN }} --scope ${{ secrets.VERCEL_ORG_ID }} | head -n 2 | tail -n 1 | awk '{print $4}')
+          echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "Deployment URL: $DEPLOYMENT_URL"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      
+      - name: Comment deployment URL
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Deployment Complete!**
+              
+              **Environment:** ${{ github.event.inputs.environment || 'production' }}
+              **URL:** ${{ steps.deployment.outputs.deployment_url }}
+              **Commit:** ${{ github.sha }}
+              
+              Deployed by @${{ github.actor }}`
+            })
+
+  # Health check job
+  health-check:
+    runs-on: ubuntu-latest
+    name: Health Check
+    needs: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Wait for deployment
+        run: sleep 30
+      
+      - name: Check deployment health
+        run: |
+          # Get the latest deployment URL
+          DEPLOYMENT_URL=$(curl -s "https://api.vercel.com/v1/projects/${{ secrets.VERCEL_PROJECT_ID }}/deployments" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            | jq -r '.deployments[0].url')
+          
+          echo "Checking deployment: $DEPLOYMENT_URL"
+          
+          # Wait for deployment to be ready
+          for i in {1..10}; do
+            if curl -f -s "$DEPLOYMENT_URL" > /dev/null; then
+              echo "✅ Deployment is healthy!"
+              break
+            else
+              echo "⏳ Waiting for deployment to be ready... (attempt $i/10)"
+              sleep 10
+            fi
+          done
+          
+          # Final health check
+          if ! curl -f -s "$DEPLOYMENT_URL" > /dev/null; then
+            echo "❌ Deployment health check failed"
+            exit 1
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  # Notify on completion
+  notify:
+    runs-on: ubuntu-latest
+    name: Notify
+    needs: [deploy, health-check]
+    if: always()
+    
+    steps:
+      - name: Notify deployment status
+        run: |
+          if [ "${{ needs.deploy.result }}" == "success" ] && [ "${{ needs.health-check.result }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+            echo "🌐 Production URL: https://packmovego.com"
+            echo "📊 Dashboard: https://vercel.com/pack-move-go-frontend/packmovego.com"
+          else
+            echo "❌ Deployment failed!"
+            echo "Check the logs for more details."
+          fi 

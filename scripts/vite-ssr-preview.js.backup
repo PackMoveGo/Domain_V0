@@ -1,0 +1,194 @@
+#!/usr/bin/env node
+
+import express from 'express';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const app = express();
+const port = process.env.PORT || 5002;
+
+// Serve static files from the dist directory
+const distPath = resolve(__dirname, '../dist');
+app.use(express.static(distPath));
+
+// Check if dist directory exists
+if (!fs.existsSync(distPath)) {
+  console.error('❌ Dist directory not found. Please run "npm run build" first.');
+  process.exit(1);
+}
+
+// Check if required files exist
+const indexPath = resolve(distPath, 'index.html');
+const serverDir = resolve(distPath, 'server');
+
+if (!fs.existsSync(indexPath)) {
+  console.error('❌ index.html not found in dist. Please run "npm run build" first.');
+  process.exit(1);
+}
+
+if (!fs.existsSync(serverDir)) {
+  console.error('❌ Server build not found. Please run "npm run build" first.');
+  process.exit(1);
+}
+
+// Load the built template
+const template = fs.readFileSync(indexPath, 'utf-8');
+
+// Find and load the SSR entry point
+const serverAssetsDir = resolve(serverDir, 'assets/js');
+let render;
+
+if (fs.existsSync(serverAssetsDir)) {
+  const serverFiles = fs.readdirSync(serverAssetsDir);
+  const entryServerFile = serverFiles.find(file => file.startsWith('entry-server') && file.endsWith('.js'));
+  
+  if (entryServerFile) {
+    try {
+      const serverEntryPath = resolve(serverAssetsDir, entryServerFile);
+      const serverModule = await import(`file://${serverEntryPath}`);
+      render = serverModule.render;
+      
+      if (!render || typeof render !== 'function') {
+        console.error('❌ render function not found in server entry module');
+        console.error('Available exports:', Object.keys(serverModule));
+      } else {
+        console.log('✅ SSR render function loaded successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load SSR render function:', error.message);
+    }
+  } else {
+    console.error('❌ Entry server file not found in server build');
+  }
+}
+
+// Handle all routes with SSR
+app.get('*', async (req, res) => {
+  const url = req.originalUrl;
+  
+  try {
+    let html;
+    
+    if (render && typeof render === 'function') {
+      // Try SSR rendering
+      try {
+        const renderResult = await render(url);
+        
+        // Handle both string and object return types from render function
+        let appHtml, helmetData;
+        if (typeof renderResult === 'string') {
+          appHtml = renderResult;
+          helmetData = null;
+        } else if (renderResult && typeof renderResult === 'object') {
+          appHtml = renderResult.html || '';
+          helmetData = renderResult.helmet || null;
+        } else {
+          appHtml = '';
+          helmetData = null;
+        }
+        
+        // Inject the app-rendered HTML into the template
+        html = template.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
+        
+        // Inject helmet data if available
+        if (helmetData) {
+          // Inject helmet data into the head
+          const helmetHtml = `
+            ${helmetData.title.toString()}
+            ${helmetData.meta.toString()}
+            ${helmetData.link.toString()}
+            ${helmetData.script.toString()}
+            ${helmetData.noscript.toString()}
+          `;
+          
+          // Replace the closing head tag with helmet data + closing head tag
+          html = html.replace('</head>', `${helmetHtml}\n  </head>`);
+        }
+        
+        console.log(`✅ SSR rendered: ${url}`);
+      } catch (ssrError) {
+        console.warn(`⚠️ SSR failed for ${url}, falling back to CSR:`, ssrError.message);
+        html = template;
+      }
+    } else {
+      // Fallback to CSR
+      html = template;
+      console.log(`📄 CSR fallback: ${url}`);
+    }
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.end(html);
+    
+  } catch (error) {
+    console.error('❌ Error serving page:', error);
+    
+    // Send fallback HTML
+    const fallbackHtml = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pack Move Go - Loading...</title>
+  </head>
+  <body>
+    <div id="root">
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+        <div style="text-align: center;">
+          <h2>Loading...</h2>
+          <p>Please wait while the application loads.</p>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/assets/js/main.js"></script>
+  </body>
+</html>`;
+    
+    res.status(200).setHeader('Content-Type', 'text/html').end(fallbackHtml);
+  }
+});
+
+// Function to start server with port conflict handling
+const startServer = (targetPort) => {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(targetPort, () => {
+      console.log(`🚀 SSR Preview server running at http://localhost:${targetPort}`);
+      console.log(`   • Serving files from: ${distPath}`);
+      console.log(`   • Mode: production (built files)`);
+      console.log(`   • SSR: ${render ? 'Enabled' : 'Disabled (CSR fallback)'}`);
+      console.log(`   • Press Ctrl+C to stop`);
+      resolve(server);
+    });
+
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        const newPort = targetPort + 1;
+        console.log(`⚠️ Port ${targetPort} is in use, trying port ${newPort}`);
+        server.close();
+        startServer(newPort).then(resolve).catch(reject);
+      } else {
+        console.error('❌ Server error:', error);
+        reject(error);
+      }
+    });
+
+    // Graceful shutdown
+    const shutdown = () => {
+      console.log('🛑 Shutting down gracefully...');
+      server.close(() => {
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
+  });
+};
+
+// Start the server
+startServer(port).catch(console.error);

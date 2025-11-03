@@ -1,0 +1,40 @@
+# Development files that should not be deployed
+node_modules/
+.git/
+.github/
+.vscode/
+.env*
+!.env.example
+
+# Build artifacts that should be in dist/ instead
+*.log
+*.lock
+package-lock.json
+
+# Development and testing files
+*.test.*
+*.spec.*
+test/
+tests/
+__tests__/
+
+# Documentation (already in dist if needed)
+*.md
+!README.md
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Build configuration files (needed for build process)
+# config/postcss.config.mjs
+# config/tailwind.config.mjs
+# config/
+
+# Backup and temporary directories
+Backup/
+preLaunch/
+script/
+network/ 
