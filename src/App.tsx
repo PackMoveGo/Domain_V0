@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { ENV_CONFIG } from './services/service.apiSW';
 import { UserTrackingProvider } from './component/business/UserTrackingProvider';
 import { CookiePreferencesProvider } from './context/CookiePreferencesContext';
@@ -38,6 +39,7 @@ function App() {
             <SectionVerificationProvider>
               <AppCSR />
               <Analytics />
+              <SpeedInsights />
             </SectionVerificationProvider>
           </SectionDataProvider>
         </CookiePreferencesProvider>
