@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -10,10 +9,48 @@ lerna-debug.log*
 
 # Dependencies
 node_modules
+node_modules/
+**/node_modules/
 dist
 dist-ssr
-*.local
 .pnpm-store/
+
+# Environment files - SENSITIVE
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.production.local
+**/.env.test.local
+
+# Certificate files - SENSITIVE
+*.pem
+**/*.pem
+**/config/certs/*.pem
+config/certs/*.pem
+
+# Build output
+build/
+dist/
+**/dist/
+out/
+**/build/
+
+# Coverage directory
+coverage/
+/.nyc_output
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Vercel
+.vercel
 
 # Editor directories and files
 .vscode/*
@@ -26,51 +63,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Build output
-build/
-dist/
-out/
-
-# Coverage directory
-coverage/
-
-# TypeScript cache
-*.tsbuildinfo
-
-# Vercel
-.vercel
-
-# Testing
-/coverage
-/.nyc_output
-
-# Production build
-/build
-/dist
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Local env files
-.env*.local
+*.swp
+*.swo
+*~
 
 # Vite
 .vite/
 
 # Docker
 .docker/
-
-# System Files
-.DS_Store
-Thumbs.db
 
 # Cache
 .cache/
@@ -97,9 +98,14 @@ Thumbs.db
 
 # Turbo
 .turbo
-=======
-# IDE Rules (existing)
->>>>>>> f5058b2 (Initial commit: Multi-view dashboard application)
+
+# OS files
+Thumbs.db
+
+# Temporary files
+*.tmp
+
+# IDE Rules
 .clinerules/byterover-rules.md
 .kilocode/rules/byterover-rules.md
 .roo/rules/byterover-rules.md
@@ -108,65 +114,3 @@ Thumbs.db
 .kiro/steering/byterover-rules.md
 .qoder/rules/byterover-rules.md
 .augment/rules/byterover-rules.md
-
-<<<<<<< HEAD
-# Project-specific directories to ignore
-# config/ - Keep config directory for Vercel build
-test/
-# scripts/ - Keep scripts directory for Vercel build
-# dist/ - Keep dist directory for Vercel build (will be generated)
-
-=======
-# Dependencies
-node_modules/
-**/node_modules/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.production.local
-.env.test.local
-**/.env
-**/.env.local
-**/.env.development.local
-**/.env.production.local
-**/.env.test.local
-
-# Build outputs
-dist/
-**/dist/
-build/
-**/build/
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Certificate files
-*.pem
-**/*.pem
-**/config/certs/*.pem
-
-# Testing
-coverage/
-.nyc_output
-
-# Temporary files
-*.tmp
-.cache/
->>>>>>> f5058b2 (Initial commit: Multi-view dashboard application)
