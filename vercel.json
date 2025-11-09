@@ -1,7 +1,6 @@
 {
   "buildCommand": "npm run build:csr",
   "outputDirectory": "dist",
-  "rootDirectory": null,
   "rewrites": [
     {
       "source": "/(.*)",
