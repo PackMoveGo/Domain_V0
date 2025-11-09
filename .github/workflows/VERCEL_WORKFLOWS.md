@@ -1,10 +1,10 @@
-# 🚀 Vercel Deployment Workflows
+# 🚀 Vercel Deployment Workflow
 
-This repository contains optimized GitHub Actions workflows for deploying to Vercel.
+This repository contains a single, optimized GitHub Actions workflow for deploying to Vercel.
 
-## 📋 Available Workflows
+## 📋 Workflow
 
-### 1. **Vercel Deployment** (`vercel.yml`)
+### **Vercel Deployment** (`vercel.yml`)
 **Full-featured deployment workflow with comprehensive testing and health checks.**
 
 #### Features:
@@ -15,6 +15,8 @@ This repository contains optimized GitHub Actions workflows for deploying to Ver
 - ✅ **Pull request comments** with deployment URLs
 - ✅ **Manual deployment** with environment selection
 - ✅ **Deployment notifications**
+- ✅ **Uses correct build command** (`npm run build:csr`)
+- ✅ **Uses Node.js 22** (matches Vercel settings)
 
 #### Triggers:
 - Push to `main` branch
@@ -22,24 +24,10 @@ This repository contains optimized GitHub Actions workflows for deploying to Ver
 - Manual dispatch (with environment selection)
 
 #### Jobs:
-1. **Build and Test** - Type check, lint, and build
-2. **Deploy** - Deploy to Vercel
+1. **Build and Test** - Type check, lint, and build with `npm run build:csr`
+2. **Deploy** - Deploy to Vercel using Vercel CLI
 3. **Health Check** - Verify deployment health
 4. **Notify** - Final status notification
-
-### 2. **Vercel Quick Deploy** (`vercel-quick.yml`)
-**Simplified workflow for rapid deployments.**
-
-#### Features:
-- ✅ **Fast deployment** without extensive testing
-- ✅ **Basic build** and deploy
-- ✅ **Manual trigger** support
-- ✅ **Deployment summary**
-
-#### Use Cases:
-- Quick fixes and hotfixes
-- Content updates
-- When you need immediate deployment
 
 ## 🔧 Setup Requirements
 
@@ -76,16 +64,11 @@ git push
 4. Choose environment (production/preview)
 5. Click **Run workflow**
 
-### Quick Deployment:
-1. Go to **Actions** tab in GitHub
-2. Select **Vercel Quick Deploy** workflow
-3. Click **Run workflow**
-
 ## 📊 Deployment Status
 
 ### Production URLs:
-- **Live Site**: `https://packmovego.com`
-- **Vercel Dashboard**: `https://vercel.com/pack-move-go-frontend/packmovego.com`
+- **Live Site**: `https://domainv0-pack-move-go1.vercel.app`
+- **Vercel Dashboard**: `https://vercel.com/pack-move-go1/domain_v0`
 - **Latest Deployment**: Check Vercel dashboard for current deployment URL
 
 ### Monitoring:
@@ -93,17 +76,18 @@ git push
 - **Vercel Dashboard**: Monitor deployments and performance
 - **Health Checks**: Automatic verification after deployment
 
-## 🔄 Workflow Comparison
+## 🔄 Workflow Details
 
-| Feature | Vercel Deployment | Quick Deploy |
-|---------|------------------|--------------|
-| Type Checking | ✅ | ❌ |
-| Linting | ✅ | ❌ |
-| Health Checks | ✅ | ❌ |
-| PR Comments | ✅ | ❌ |
-| Manual Environment | ✅ | ❌ |
-| Speed | ⏱️ 3-5 min | ⚡ 1-2 min |
-| Reliability | 🛡️ High | 🎯 Good |
+The single workflow provides:
+- **Type Checking**: ✅ Full TypeScript validation
+- **Linting**: ✅ ESLint code quality checks
+- **Health Checks**: ✅ Automatic deployment verification
+- **PR Comments**: ✅ Automatic deployment URL comments on PRs
+- **Manual Environment**: ✅ Choose production or preview
+- **Build Command**: ✅ Uses `npm run build:csr` (CSR build)
+- **Node Version**: ✅ Node.js 22.x (matches Vercel settings)
+- **Speed**: ⏱️ 3-5 minutes (with caching)
+- **Reliability**: 🛡️ High (comprehensive testing before deployment)
 
 ## 🚨 Troubleshooting
 
@@ -126,8 +110,8 @@ git push
 
 ### Debug Commands:
 ```bash
-# Local build test
-npm run build
+# Local build test (CSR)
+npm run build:csr
 
 # Type checking
 npm run type-check
@@ -143,7 +127,6 @@ vercel --prod
 
 ### Build Times:
 - **Full Workflow**: ~3-5 minutes
-- **Quick Deploy**: ~1-2 minutes
 - **Cache Hit**: ~30 seconds faster
 
 ### Optimization Tips:
@@ -154,4 +137,4 @@ vercel --prod
 
 ---
 
-**Note**: Both workflows are configured for optimal performance and reliability. Choose based on your deployment needs! 
+**Note**: The workflow is configured for optimal performance and reliability. It uses the correct build command (`build:csr`) and Node.js version (22) to match Vercel project settings.
