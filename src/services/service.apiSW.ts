@@ -642,7 +642,7 @@ export class APIsw {
    * Only shows API failure modal for actual API errors, not consent issues
    */
   consentAwareMiddleware(endpoint: string, context: string) {
-    return async (req: any, res: any, next: any) => {
+    return async (_req: any, _res: any, next: any) => {
       try {
         // Check consent first - if blocked, don't proceed with API call
         this.checkConsentMiddleware();
@@ -1381,7 +1381,7 @@ export class APIsw {
           message: error503.message,
           is503Error: true,
           isConnectionError: true
-        };
+        } as T;
       }
       
       // Check if this is already a 503 error
@@ -1395,7 +1395,7 @@ export class APIsw {
           message: (error as Error).message,
           is503Error: true,
           isConnectionError: (error as any)?.isConnectionError || false
-        };
+        } as T;
       }
       
       // Re-throw other errors
@@ -1509,7 +1509,7 @@ export class APIsw {
           message: error503.message,
           is503Error: true,
           isConnectionError: true
-        };
+        } as T;
       }
       
       // Check if this is already a 503 error
@@ -1523,7 +1523,7 @@ export class APIsw {
           message: (error as Error).message,
           is503Error: true,
           isConnectionError: (error as any)?.isConnectionError || false
-        };
+        } as T;
       }
       
       // Re-throw other errors

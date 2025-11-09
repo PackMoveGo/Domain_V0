@@ -9,7 +9,7 @@ import { SectionVerificationProvider } from './context/SectionVerificationContex
 // import { SSRProviders } from './context/SSRSafeProviders'; // Reserved for future use
 import AppCSR from './appCSR';
 // import AppSSR from './appSSR'; // Reserved for future use
-import ErrorDebugger from './component/debug/errordebugger';
+import ErrorDebugger from './component/debug/ErrorDebugger';
 
 // SSR-safe environment detection
 const isSSR = typeof window === 'undefined';

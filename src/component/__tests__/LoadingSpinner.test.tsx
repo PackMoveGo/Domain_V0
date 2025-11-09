@@ -1,7 +1,7 @@
 
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { LoadingSpinner } from '../LoadingSpinner';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
 
 describe('LoadingSpinner Component', () => {
   it('renders without crashing', () => {

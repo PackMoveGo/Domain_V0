@@ -5,6 +5,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getCurrentTimestamp } from '../util/ssrUtils';
 import { retryPendingApiCalls } from '../util/apiConsentCoordinator';
 
+interface CookiePreferences {
+  thirdPartyAds: boolean;
+  analytics: boolean;
+  functional: boolean;
+  hasMadeChoice: boolean;
+  lastUpdated?: number;
+}
+
 // SSR-safe environment detection
 const isSSR = typeof window === 'undefined';
 
@@ -28,9 +36,12 @@ const CookieOptOut: React.FC = () => {
   const [selectedOption, setSelectedOption] = useState<'accept' | 'reject' | 'custom' | null>(null);
   
   // Get cookie preferences with error handling
-  let preferences, hasOptedOut, hasMadeChoice, optIn, optOut, updatePreferences, isLoading;
-  let _isApiBlocked; // Reserved for future use
-  let checkBannerTimer, clearBannerCache;
+  let preferences: CookiePreferences, hasOptedOut: boolean, hasMadeChoice: boolean, 
+      optIn: (() => void) | undefined, optOut: (() => void) | undefined, 
+      updatePreferences: ((prefs: Partial<CookiePreferences>) => void) | undefined, 
+      isLoading: boolean;
+  let _isApiBlocked: boolean; // Reserved for future use
+  let checkBannerTimer: (() => boolean) | undefined, clearBannerCache: (() => void) | undefined;
   
   try {
     const cookiePrefs = useCookiePreferences();
@@ -49,7 +60,7 @@ const CookieOptOut: React.FC = () => {
     // Provide fallback values
     preferences = { thirdPartyAds: false, analytics: false, functional: false, hasMadeChoice: false };
     hasOptedOut = false;
-    // hasMadeChoice = false; // Reserved for future use
+    hasMadeChoice = false;
     isLoading = false;
     // isApiBlocked = false; // Reserved for future use
     // optIn = () => console.warn('Cookie preferences not available'); // Reserved for future use
@@ -240,7 +251,9 @@ const CookieOptOut: React.FC = () => {
   const _handleOptOut = () => { // Reserved for future use
     setSelectedOption('reject');
     setIsTransitioning(true);
-    optOut();
+    if (optOut) {
+      optOut();
+    }
     // Don't navigate away - let them see the updated status
     setTimeout(() => {
       setIsTransitioning(false);

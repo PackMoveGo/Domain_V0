@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import ErrorBoundary from './component/ui/feedback/errorboundary';
-import Layout from './component/layout/layout';
+import ErrorBoundary from './component/ui/feedback/ErrorBoundary';
+import Layout from './component/layout/Layout';
 
 // Optimized lazy loading with error boundaries and SSR compatibility
 const createLazyComponent = (importFunc: () => Promise<any>, _fallback?: React.ReactNode) => { // Reserved for future use
@@ -62,9 +62,9 @@ const NotFoundPage = createLazyComponent(() => import('./pages/page.404'));
 
 // Import ServicesTest component directly for testing
 // import ServicesTest from './component/devtools/ServicesTest';
-import ApiErrorHandlingExample from './component/examples/apierrorhandlingexample';
-import ModalOrderTest from './component/examples/modalordertest';
-import ErrorTestingExample from './component/examples/errortestingexample';
+import ApiErrorHandlingExample from './component/examples/ApiErrorHandlingExample';
+import ModalOrderTest from './component/examples/ModalOrderTest';
+import ErrorTestingExample from './component/examples/ErrorTestingExample';
 
 const AppContent: React.FC = () => {
   console.log('🚀 AppCSR rendering...');

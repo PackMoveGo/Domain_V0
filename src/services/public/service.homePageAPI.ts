@@ -269,7 +269,7 @@ const handleApiErrorInResponse = (req: Request, res: Response, _data: any) => { 
  * Integrates ApiFailureModal from service.apiSW.ts
  */
 export const createModalAwareErrorHandler = (endpoint: string, context: string) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (_req: Request, _res: Response, next: NextFunction) => {
     try {
       // Process the request
       await next();
@@ -359,7 +359,7 @@ export const removeModalStateListener = (listener: () => void) => {
  * Works like Express.js middleware: (req, res, next)
  */
 const _apiErrorHandlerMiddleware = (endpoint: string, context: string) => { // Reserved for future use
-  return async (req: any, res: any, next: any) => {
+  return async (_req: any, _res: any, next: any) => {
     try {
       // Call the next function (the actual route handler)
       const result = await next();
