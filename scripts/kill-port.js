@@ -19,8 +19,8 @@ const killPort = async (port) => {
         try {
           await execAsync(`kill ${pid}`);
           console.log(`✅ Killed process ${pid}`);
-        } catch (error) {
-          console.log(`⚠️ Could not kill process ${pid}: ${error.message}`);
+        } catch (_error) {
+          console.log(`⚠️ Could not kill process ${pid}`);
         }
       }
       
@@ -29,7 +29,7 @@ const killPort = async (port) => {
     } else {
       console.log(`✅ Port ${port} is free`);
     }
-  } catch (error) {
+  } catch (_error) {
     // No processes found on the port
     console.log(`✅ Port ${port} is free`);
   }

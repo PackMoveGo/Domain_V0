@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UseAppLoadingFallbackOptions {
   timeoutMs?: number;
@@ -18,7 +18,7 @@ export function useAppLoadingFallback({
   enableFallback = true
 }: UseAppLoadingFallbackOptions = {}): UseAppLoadingFallbackReturn {
   const [showFallback, setShowFallback] = useState(false);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check if app is loaded
   const isAppLoaded = useCallback(() => {
@@ -89,8 +89,8 @@ export function useAppLoadingFallback({
     if (!enableFallback) return;
 
     // Clear any existing timeout
-    if (timeoutId) {
-      clearTimeout(timeoutId);
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
     }
 
     // Set new timeout
@@ -101,14 +101,15 @@ export function useAppLoadingFallback({
       }
     }, timeoutMs);
 
-    setTimeoutId(timeout);
+    timeoutIdRef.current = timeout;
   }, [timeoutMs, enableFallback, isAppLoaded]);
 
   // Stop timeout monitoring
-  const stopTimeout = useCallback(() => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      setTimeoutId(null);
+  // const stopTimeout = useCallback(() => { // Reserved for future use
+  const _stopTimeout = useCallback(() => {
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
     }
   }, []);
 
@@ -118,9 +119,9 @@ export function useAppLoadingFallback({
       console.log('App loading fallback triggered manually');
       setShowFallback(true);
       // Clear timeout manually
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        setTimeoutId(null);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
       }
     }
   }, [enableFallback]);
@@ -134,9 +135,9 @@ export function useAppLoadingFallback({
   const resetFallback = useCallback(() => {
     setShowFallback(false);
     // Clear timeout manually
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      setTimeoutId(null);
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
     }
     // Start new timeout
     startTimeout();
@@ -146,7 +147,6 @@ export function useAppLoadingFallback({
   useEffect(() => {
     if (!enableFallback) return;
 
-    let checkInterval: NodeJS.Timeout;
     let consecutiveFailures = 0;
     const maxFailures = 10; // After 5 seconds of continuous failures, trigger fallback
 
@@ -156,11 +156,10 @@ export function useAppLoadingFallback({
         setShowFallback(false);
         consecutiveFailures = 0;
         // Clear timeout manually instead of calling stopTimeout
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          setTimeoutId(null);
+        if (timeoutIdRef.current) {
+          clearTimeout(timeoutIdRef.current);
+          timeoutIdRef.current = null;
         }
-        clearInterval(checkInterval);
       } else {
         consecutiveFailures++;
         
@@ -168,21 +167,20 @@ export function useAppLoadingFallback({
         if (consecutiveFailures >= maxFailures) {
           console.log('App loading fallback triggered - too many consecutive failures');
           setShowFallback(true);
-          clearInterval(checkInterval);
         }
       }
     };
 
     // Start monitoring
     startTimeout();
-    checkInterval = setInterval(checkAppLoaded, 500);
+    const checkInterval: NodeJS.Timeout = setInterval(checkAppLoaded, 500);
 
     // Cleanup
     return () => {
       // Clear timeout manually instead of calling stopTimeout
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        setTimeoutId(null);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
       }
       if (checkInterval) {
         clearInterval(checkInterval);
@@ -198,9 +196,9 @@ export function useAppLoadingFallback({
       console.log('Global loading timeout detected - triggering fallback');
       setShowFallback(true);
       // Clear timeout manually
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        setTimeoutId(null);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
       }
     };
 

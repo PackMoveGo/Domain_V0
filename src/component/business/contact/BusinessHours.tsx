@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatPhoneNumber } from '../../../util/contactParser';
+// import { formatPhoneNumber } from '../../../util/contactParser'; // Reserved for future use
 
 interface BusinessHours {
   title: string;

@@ -1,38 +1,16 @@
-# PackMoveGo Domain V0
-<<<<<<< HEAD
-# Pack Move Go Movers Client
+# PackMoveGo Desktop Application
 
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-blue.svg)](LICENSE)
 
-This is the client-side application for Pack Move GO, a professional moving company. The application provides a user-friendly interface for customers to book moving services, track their moves, and manage their accounts.
+PackMoveGo is a modern, full-stack moving services platform that provides customers with an intuitive interface to book moving services, track their moves, and manage their accounts. This is the desktop frontend application built with React and TypeScript.
 
 ## Tech Stack
 
-=======
-# PackMoveGo - Full Stack Moving Services Platform
-
-[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-blue.svg)](LICENSE)
-
-PackMoveGo is a comprehensive full-stack moving services platform that provides customers with an intuitive interface to book moving services, track their moves, and manage their accounts. The platform consists of a robust backend API and a modern React frontend.
-
-## Tech Stack
-
-### Backend (SSD/)
-- Node.js with Express
-- TypeScript
-- MongoDB with Mongoose
-- Socket.IO for real-time features
-- JWT Authentication
-- Stripe Payment Processing
-- API Gateway Architecture
-
-### Frontend (Views/desktop/domain_V1/)
->>>>>>> f5058b2 (Initial commit: Multi-view dashboard application)
 - React 18
 - TypeScript
-- Vite
+- Vite 6
 - React Router DOM
-- React Query
+- React Query (TanStack Query)
 - TailwindCSS
 - React Hook Form with Zod validation
 - Axios for API requests
@@ -40,172 +18,273 @@ PackMoveGo is a comprehensive full-stack moving services platform that provides 
 
 ## Prerequisites
 
-<<<<<<< HEAD
-- Node.js (Latest LTS version recommended)
-- npm or yarn package manager
-
-## Getting Started
-
-1. Install dependencies:
-```bash
-npm install
-# or
-yarn install
-```
-
-2. Create a `.env` file in the root directory (if not already present) and configure your environment variables.
-
-3. Start the development server:
-```bash
-npm run dev
-# or
-yarn dev
-```
-
-The application will be available at `http://localhost:5001` by default.
-
-## Available Scripts
-
-- `npm run dev` - Start the development server
-- `npm run build` - Build the application for production
-- `npm run lint` - Run ESLint to check for code issues
-- `npm run preview` - Preview the production build locally
-=======
 - Node.js (v18.14.0 or higher)
 - npm (v8.0.0 or higher)
-- MongoDB (local or cloud instance)
+- OpenSSL (for SSL certificate generation)
 
 ## Quick Start
 
-### 1. Install All Dependencies
+### 1. Install Dependencies
 ```bash
-npm run install:all
+npm install
 ```
 
 ### 2. Configure Environment Variables
 
-Create `.env` files in both `SSD/` and `Views/desktop/domain_V1/` directories with the required environment variables.
+Create a `.env.development.local` file in the `config/` directory:
 
-**Backend (SSD/.env):**
-- MongoDB connection string
-- JWT secrets
-- Stripe API keys
-- Email service credentials
+```env
+NODE_ENV=development
+DEV_HTTPS=true
+HOST=localhost
+PORT=5001
+API_URL=https://localhost:3000
+JWT_SECRET=your-jwt-secret-key-here
+CORS_ORIGIN=https://localhost:5001
+```
 
-**Frontend (Views/desktop/domain_V1/.env):**
-- API endpoint URLs
-- Analytics keys
+### 3. Set Up SSL Certificates (Required for HTTPS)
 
-### 3. Start Development Servers
+The development server uses HTTPS by default. You need to generate and trust SSL certificates:
 
-Run both backend and frontend concurrently:
+```bash
+# Generate SSL certificates
+npm run certs:generate
+
+# Trust the certificate (macOS only - requires password)
+npm run certs:trust
+```
+
+**Important:** After trusting the certificate, completely quit and restart your browser (Cmd+Q) for changes to take effect.
+
+### 4. Start Development Server
+
 ```bash
 npm run dev
 ```
 
-This will start:
-- **Backend API** on `http://localhost:3000`
-- **Backend Gateway** on configured port
-- **Frontend** on `http://localhost:5001`
+The application will be available at `https://localhost:5001`
 
-Or run them individually:
+## SSL/HTTPS Setup
+
+### Why HTTPS in Development?
+
+This project uses HTTPS in local development to:
+- Match production environment behavior
+- Test secure cookie handling
+- Enable service workers and PWA features
+- Avoid mixed content warnings when calling HTTPS APIs
+
+### Certificate Management
+
+#### Generate Certificates
 ```bash
-# Backend only
-npm run dev:backend
-
-# Frontend only
-npm run dev:frontend
+npm run certs:generate
 ```
+Creates self-signed SSL certificates valid for 365 days in `config/certs/`:
+- `localhost-key.pem` (private key)
+- `localhost.pem` (certificate)
+
+#### Trust Certificates (macOS)
+```bash
+npm run certs:trust
+```
+Adds the certificate to your macOS system keychain as a trusted root certificate. This eliminates browser security warnings.
+
+**You must completely quit and restart your browser (Cmd+Q) after trusting the certificate.**
+
+#### Remove Trust
+```bash
+npm run certs:untrust
+```
+Removes the certificate from your system keychain if needed.
+
+### Fixing "Your connection is not private" (ERR_CERT_AUTHORITY_INVALID)
+
+If you see this error in your browser:
+
+1. **Quick Fix:** Click "Advanced" → "Proceed to localhost (unsafe)"
+   - Works immediately but shows a warning icon
+
+2. **Permanent Fix (Recommended):** Trust the certificate
+   ```bash
+   npm run certs:trust
+   ```
+   - Enter your password when prompted
+   - Completely quit your browser (Cmd+Q)
+   - Reopen your browser
+   - Visit `https://localhost:5001`
+   - You should see a secure lock icon with no warnings
+
+### Disable HTTPS (Optional)
+
+To run without HTTPS, set in your `.env.development.local`:
+```env
+DEV_HTTPS=false
+```
+Then the server will run on `http://localhost:5001` instead.
 
 ## Available Scripts
 
-### Root Level Scripts
-- `npm run dev` - Start both backend and frontend development servers concurrently
-- `npm run dev:backend` - Start only the backend (API + Gateway)
-- `npm run dev:frontend` - Start only the frontend
-- `npm run build` - Build both backend and frontend for production
-- `npm run build:backend` - Build backend only
-- `npm run build:frontend` - Build frontend only
-- `npm run install:all` - Install dependencies for all workspaces
-- `npm run clean` - Clean build artifacts and node_modules
-- `npm run test` - Run tests for both backend and frontend
+### Development
+- `npm run dev` - Start development server with HTTPS on port 5001
+- `npm run dev:react` - Start Vite dev server without port cleanup
+- `npm run dev:secure` - Start with HTTP to HTTPS redirect server
+- `npm run dev:ssr` - Build and preview SSR version
 
-### Backend Scripts (SSD/)
-- `npm run dev` - Start backend with nodemon (server + gateway)
-- `npm run build` - Compile TypeScript to JavaScript
-- `npm run start` - Start production servers
-- `npm run test` - Run backend tests
-- `npm run security:check` - Run security validation
+### Certificate Management
+- `npm run certs:generate` - Generate SSL certificates for localhost
+- `npm run certs:trust` - Trust certificate in macOS keychain (requires sudo)
+- `npm run certs:untrust` - Remove certificate from keychain
 
-### Frontend Scripts (Views/desktop/domain_V1/)
-- `npm run dev` - Start Vite development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-- `npm run test` - Run frontend tests
->>>>>>> f5058b2 (Initial commit: Multi-view dashboard application)
+### Building
+- `npm run build` - Build for production (SSR)
+- `npm run build:csr` - Build client-side rendering version
+- `npm run build:ssr` - Build server-side rendering version
+- `npm run build:clean` - Remove dist directory
+- `npm run build:analyze` - Build with bundle analyzer
+- `npm run build:profile` - Build with profiling
+
+### Preview & Production
+- `npm run preview` - Preview CSR production build
+- `npm run preview:csr` - Build and preview CSR version
+- `npm run preview:ssr` - Preview SSR build
+- `npm run start` - Build and start production server
+- `npm run start:prod` - Clean build and start
+
+### Testing & Quality
+- `npm run test` - Run tests with Jest
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run lint` - Run ESLint and auto-fix issues
+- `npm run type-check` - Check TypeScript types without emitting
+
+### Utilities
+- `npm run kill:port` - Kill process on port 5001
+- `npm run dev:api:enable` - Enable API calls
+- `npm run dev:api:disable` - Disable API calls (mock mode)
+- `npm run dev:api:status` - Check API connection status
+- `npm run perf:lighthouse` - Run Lighthouse performance audit
+- `npm run audit:fix` - Fix npm audit issues
+- `npm run audit:check` - Check for security vulnerabilities
+- `npm run clean:deps` - Clean install all dependencies
 
 ## Project Structure
 
 ```
-<<<<<<< HEAD
-client/
-├── config/         # Configuration files
-├── network/        # API and network related code
-├── public/         # Static assets
-├── script/         # Build and utility scripts
-├── src/           # Source code
-└── ...
+domain_V0/
+├── config/              # Configuration files
+│   ├── certs/          # SSL certificates (gitignored)
+│   ├── vite.config.csr.ts    # Client-side rendering config
+│   ├── vite.config.ssr.ts    # Server-side rendering config
+│   ├── tailwind.config.js
+│   ├── postcss.config.mjs
+│   └── .env.development.local
+├── src/
+│   ├── component/      # React components
+│   ├── pages/          # Page components
+│   ├── hook/           # Custom React hooks
+│   ├── services/       # API services
+│   ├── context/        # React context providers
+│   ├── util/           # Utility functions
+│   ├── styles/         # CSS and styling
+│   ├── type/           # TypeScript types
+│   ├── App.tsx         # Main App component
+│   ├── main.tsx        # Entry point
+│   └── entry-server.jsx # SSR entry
+├── public/             # Static assets
+├── scripts/            # Build and utility scripts
+│   ├── generate-certs.sh
+│   ├── trust-cert.sh
+│   └── untrust-cert.sh
+├── dist/               # Build output
+├── index.html
+├── package.json
+└── README.md
+
 ```
-=======
-packmovego/
-├── SSD/                          # Backend Application
-│   ├── config/                   # Configuration files
-│   ├── src/
-│   │   ├── controllers/          # Request handlers
-│   │   ├── routes/               # API routes
-│   │   ├── models/               # Database models
-│   │   ├── middlewares/          # Express middlewares
-│   │   ├── services/             # Business logic
-│   │   ├── util/                 # Utility functions
-│   │   ├── gateway/              # API Gateway
-│   │   ├── server.ts             # Main server
-│   │   └── ...
-│   ├── data/                     # Database files
-│   └── package.json
-│
-├── Views/
-│   └── desktop/
-│       └── domain_V1/            # Frontend Application
-│           ├── src/
-│           │   ├── components/   # React components
-│           │   ├── pages/        # Page components
-│           │   ├── hooks/        # Custom React hooks
-│           │   ├── services/     # API services
-│           │   ├── types/        # TypeScript types
-│           │   ├── utils/        # Utility functions
-│           │   └── ...
-│           ├── config/           # Vite & build configs
-│           ├── public/           # Static assets
-│           └── package.json
-│
-├── package.json                  # Root package.json with monorepo scripts
-├── README.md                     # This file
-├── PROJECT_STATUS.md             # Project status and milestones
-├── CHANGELOG.txt                 # Detailed changelog
-└── ...
->>>>>>> f5058b2 (Initial commit: Multi-view dashboard application)
 
 ## Features
 
-- Modern React with TypeScript
-- Form handling with React Hook Form and Zod validation
-- API integration with Axios
-- Routing with React Router
-- State management with React Query
-- Styling with TailwindCSS
-- Analytics integration with Vercel
-- Google Analytics 4 integration
+- ✅ Modern React 18 with TypeScript
+- ✅ HTTPS development environment with SSL certificates
+- ✅ Form handling with React Hook Form and Zod validation
+- ✅ API integration with Axios and React Query
+- ✅ Client-side and Server-side rendering support
+- ✅ Routing with React Router v6
+- ✅ Responsive design with TailwindCSS
+- ✅ Analytics integration (Vercel & Google Analytics 4)
+- ✅ Performance optimized with code splitting
+- ✅ PWA support with service workers
+- ✅ Cookie consent management
+- ✅ SEO optimized with React Helmet
+
+## Environment Variables
+
+All environment variables should be placed in `config/.env.development.local` for development.
+
+### Required Variables
+- `NODE_ENV` - Environment (development/production)
+- `DEV_HTTPS` - Enable HTTPS (true/false)
+- `API_URL` - Backend API URL
+- `PORT` - Development server port (default: 5001)
+
+### Optional Variables
+- `SKIP_BACKEND_CHECK` - Skip backend health check
+- `JWT_SECRET` - JWT secret for token validation
+- `CORS_ORIGIN` - CORS origin URL
+- `ENABLE_DEV_TOOLS` - Enable React DevTools
+- `REDUCE_LOGGING` - Reduce console logging
+
+See `config/.env` for a complete list of available variables.
+
+## Troubleshooting
+
+### SSL Certificate Issues
+
+**Problem:** Browser shows "Your connection is not private" or `ERR_CERT_AUTHORITY_INVALID`
+
+**Solution:**
+1. Generate certificates: `npm run certs:generate`
+2. Trust the certificate: `npm run certs:trust`
+3. Completely quit browser (Cmd+Q) and reopen
+4. If still not working, try removing and re-trusting:
+   ```bash
+   npm run certs:untrust
+   npm run certs:trust
+   ```
+
+**Alternative:** Click "Advanced" → "Proceed to localhost (unsafe)" in your browser
+
+### Port Already in Use
+
+**Problem:** Port 5001 is already in use
+
+**Solution:**
+```bash
+npm run kill:port
+# or manually
+lsof -ti:5001 | xargs kill -9
+```
+
+### HMR/Hot Reload Not Working
+
+**Problem:** Changes not reflecting in browser
+
+**Solution:**
+1. Check if WebSocket connection is working (should use `wss://` for HTTPS)
+2. Try clearing browser cache and hard reload (Cmd+Shift+R)
+3. Restart the dev server
+
+### API Connection Issues
+
+**Problem:** Cannot connect to backend API
+
+**Solution:**
+1. Verify backend is running on the configured API_URL
+2. Check CORS settings in backend
+3. Verify SSL certificates are trusted
+4. Check API status: `npm run dev:api:status`
 
 ## Building for Production
 
@@ -213,31 +292,48 @@ To create a production build:
 
 ```bash
 npm run build
-# or
-yarn build
 ```
 
-The build output will be in the `dist` directory.
+The build output will be in the `dist/` directory. For SSR builds, server assets will be in `dist/server/`.
 
 ## Deployment
 
-The application is configured for deployment on Vercel, with analytics and speed insights enabled.
+The application is configured for deployment on Vercel with:
+- Automatic SSL certificate handling
+- Analytics and speed insights
+- Server-side rendering support
+- Environment variable management
+
+See `vercel.json` for deployment configuration.
 
 ## Contributing
 
 1. Create a new branch for your feature
-2. Make your changes
-3. Submit a pull request
+2. Make your changes following the code style
+3. Run tests and linting: `npm run test && npm run lint`
+4. Submit a pull request
 
-Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing to this project.
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 ## Security
 
 We take security seriously. Please review our [Security Policy](SECURITY.md) for reporting vulnerabilities and security-related information.
 
+### Reporting Security Issues
+
+**DO NOT** create public GitHub issues for security vulnerabilities. Instead, email security@packmovego.com with:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
 ## License
 
-This software is proprietary and confidential. Unauthorized copying, modification, distribution, or use is strictly prohibited. For licensing inquiries, please contact support@packmovego.com.
+This software is proprietary and confidential. Unauthorized copying, modification, distribution, or use is strictly prohibited. 
 
-# Domain V0
+For licensing inquiries, please contact: support@packmovego.com
 
+---
+
+**PackMoveGo** - Professional Moving Services Platform  
+Version 0.1.0 | © 2025 PackMoveGo. All rights reserved.

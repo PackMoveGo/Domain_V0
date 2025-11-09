@@ -6,7 +6,7 @@
  */
 
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+// import { existsSync } from 'fs'; // Reserved for future use
 
 console.log('🚀 PackMoveGo Vercel Deployment Monitor');
 console.log('=======================================');
@@ -15,7 +15,7 @@ console.log('=======================================');
 try {
   const commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
   console.log(`📋 Current Commit: ${commitHash}`);
-} catch (error) {
+} catch (_error) { // Reserved for future use
   console.log('⚠️  Could not get commit hash');
 }
 
@@ -23,7 +23,7 @@ try {
 try {
   const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
   console.log(`🔗 Repository: ${remoteUrl}`);
-} catch (error) {
+} catch (_error) { // Reserved for future use
   console.log('⚠️  Could not get remote URL');
 }
 
@@ -57,7 +57,7 @@ try {
   } else {
     console.log(`   ⚠️  Live site responded with HTTP ${response.trim()}`);
   }
-} catch (error) {
+} catch (_error) { // Reserved for future use
   console.log('   ❌ Could not reach live site (may be deploying)');
 }
 

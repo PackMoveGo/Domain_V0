@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { api } from '../../services/service.apiSW';
 import { 
   handleApiError, 
-  withApiErrorHandling, 
+  // withApiErrorHandling, // Reserved for future use
   useApiErrorHandler,
   getFriendlyErrorMessage 
 } from '../../util/apiErrorHandler';
@@ -31,7 +31,7 @@ const ApiErrorHandlingExample: React.FC = () => {
     setResult('');
     
     try {
-      const response = await api.getServices();
+      const _response = await api.getServices(); // Reserved for future use
       setResult('Success: Services loaded');
     } catch (error) {
       // Use centralized error handling
@@ -52,7 +52,7 @@ const ApiErrorHandlingExample: React.FC = () => {
     setResult('');
     
     try {
-      const response = await wrapApiCall(() => api.getNav());
+      const _response = await wrapApiCall(() => api.getNav()); // Reserved for future use
       setResult('Success: Navigation loaded');
     } catch (error) {
       setResult(`Error: ${getFriendlyErrorMessage(error)}`);
@@ -67,7 +67,7 @@ const ApiErrorHandlingExample: React.FC = () => {
     setResult('');
     
     try {
-      const response = await api.getLocations();
+      const _response = await api.getLocations(); // Reserved for future use
       setResult('Success: Locations loaded');
     } catch (error) {
       handleError(error); // Uses the hook's error handler

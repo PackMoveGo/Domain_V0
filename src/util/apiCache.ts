@@ -131,7 +131,7 @@ class ApiCache {
           this.compressionSavings += (entrySize - compressedSize);
           entrySize = compressedSize;
         }
-      } catch (error) {
+      } catch (_error) { // Reserved for future use
         console.warn('Compression failed for cache entry:', key);
       }
     }

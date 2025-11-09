@@ -2,7 +2,6 @@
 
 import { useReferral } from '../hook/useReferral';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
-import Layout from '../component/layout/Layout';
 import SEO from '../component/business/SEO';
 import ErrorBoundary from '../component/ui/feedback/ErrorBoundary';
 import ReferPage from '../component/pages/ReferPage';
@@ -13,7 +12,6 @@ const ReferPageComponent = () => {
 
   return (
     <ErrorBoundary>
-      <Layout>
         <SEO
           title="Referral Program - Pack Move Go"
           description="Join our referral program and earn rewards for recommending Pack Move Go services to friends and family."
@@ -35,7 +33,6 @@ const ReferPageComponent = () => {
             />
           )}
         </div>
-      </Layout>
     </ErrorBoundary>
   );
 };

@@ -39,7 +39,7 @@ export const JWT_AUTH = {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const currentTime = Math.floor(Date.now() / 1000);
       return payload.exp < currentTime;
-    } catch (error) {
+    } catch (_error) { // Reserved for future use
       return true;
     }
   },
@@ -55,7 +55,7 @@ export const JWT_AUTH = {
       const timeLeft = payload.exp - currentTime;
       
       return Math.max(0, Math.floor(timeLeft / 60));
-    } catch (error) {
+    } catch (_error) { // Reserved for future use
       return null;
     }
   },
@@ -72,7 +72,7 @@ export const JWT_AUTH = {
       
       // Consider refresh needed if less than 5 minutes left
       return timeLeft < 300;
-    } catch (error) {
+    } catch (_error) { // Reserved for future use
       return true;
     }
   },

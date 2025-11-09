@@ -3,7 +3,7 @@ export const ultraFastPreloader = {
   preloadCriticalResources: () => {
     console.log('Ultra fast preloader temporarily disabled');
   },
-  preloadRoute: (route: string) => {
+  preloadRoute: (_route: string) => {
     console.log('Route preloading temporarily disabled');
   }
 };

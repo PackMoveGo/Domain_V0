@@ -62,6 +62,7 @@ function useLazyApiData<T>(
       globalExecutionState.set(hookKey, true);
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preload, hasConsent, hookKey]); // Removed loadData from dependencies to prevent infinite loops
 
   return { data, error, isLoading, retry: loadData };

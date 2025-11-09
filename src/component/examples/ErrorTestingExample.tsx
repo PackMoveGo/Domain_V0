@@ -4,7 +4,7 @@ import { getErrorLog, get503Errors, clearErrorLog, resetHealthGate } from '../..
 const ErrorTestingExample: React.FC = () => {
   const [errorLog, setErrorLog] = useState<any[]>([]);
   const [errors503, setErrors503] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false); // Reserved for future use
 
   const refreshErrorLog = () => {
     setErrorLog(getErrorLog());

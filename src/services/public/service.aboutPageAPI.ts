@@ -15,7 +15,7 @@
  */
 
 import { api } from '../service.apiSW';
-import { handleApiError, getFailedEndpoints, has503Errors } from '../../util/apiErrorHandler';
+import { /* handleApiError, */ getFailedEndpoints /* , has503Errors */ } from '../../util/apiErrorHandler'; // Reserved for future use
 
 // =============================================================================
 // TYPES AND INTERFACES
@@ -90,7 +90,7 @@ export const getAboutPageData = async (): Promise<AboutPageServiceData> => {
     // First check health status - if it fails, all routes are considered 503
     try {
       await api.checkHealth();
-    } catch (healthError) {
+    } catch (_healthError) { // Reserved for future use
       // Track all routes as failed since health check failed
       aboutPageRoutes.forEach(route => {
         api.trackApiCall(route);

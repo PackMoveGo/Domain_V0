@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState /* , useEffect */ } from 'react'; // useEffect reserved for future use
 import { useNavigate } from 'react-router-dom';
 import { useApiStatus } from '../../hook/useApiStatus';
 

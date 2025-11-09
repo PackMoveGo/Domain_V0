@@ -58,11 +58,11 @@ export const getServices = async () => {
 };
 
 // Generic API call with retry using centralized API service
-export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+export const apiCall = async (endpoint: string, _options: RequestInit = {}) => {
   try {
     // Import here to avoid circular dependency issues
     const { api } = await import('../services/service.apiSW');
-    const endpointPath = endpoint.startsWith('/') ? endpoint : `/v0/${endpoint}`;
+    const _endpointPath = endpoint.startsWith('/') ? endpoint : `/v0/${endpoint}`;
     return await api.getNav();
   } catch (error) {
     console.error(`API call failed for ${endpoint}:`, error);

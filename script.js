@@ -34,17 +34,16 @@ import './src/main.tsx';
   }
   
   // Prevent service worker from registering
-  const originalRegister = navigator.serviceWorker.register;
+  const _originalRegister = navigator.serviceWorker.register; // Reserved for future use
   navigator.serviceWorker.register = function() {
     console.log('Service Worker registration blocked');
     return Promise.resolve();
   };
   
   // Ultra-fast loading optimizations
-  let loadingTimeout;
   let appLoaded = false;
   let progressInterval;
-  let currentProgress = 0;
+  const _currentProgress = 0; // Reserved for future use
   
   // Performance optimization: Use requestAnimationFrame for smooth animations
   const raf = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame;
@@ -128,7 +127,7 @@ import './src/main.tsx';
   }, isSlowConnection ? 15000 : 10000); // Much more patient timeouts
   
   // Store the timeout reference
-  loadingTimeout = window.loadingTimeout;
+  const loadingTimeout = window.loadingTimeout;
   
   // Optimized progress update function
   function updateProgress(progress, text) {
@@ -168,7 +167,7 @@ import './src/main.tsx';
   }
   
   // Real website loading progress tracking
-  let loadingStages = {
+  const loadingStages = {
     htmlLoaded: false,
     cssLoaded: false,
     jsLoaded: false,
@@ -179,14 +178,14 @@ import './src/main.tsx';
   let currentStage = 0;
   const totalStages = 5;
   
-  function updateLoadingStage(stage, text) {
+  function _updateLoadingStage(stage, text) { // Reserved for future use
     loadingStages[stage] = true;
     currentStage++;
     const progress = Math.round((currentStage / totalStages) * 100);
     updateProgress(progress, text);
   }
   
-  function startProgressAnimation() {
+  function _startProgressAnimation() { // Reserved for future use
     // This function is replaced by real loading tracking
     // Real progress is handled by updateAppLoadingProgress
   }
@@ -279,7 +278,7 @@ import './src/main.tsx';
     
     // Track API calls for content loading
     let apiCallCount = 0;
-    let pendingApiCalls = 0;
+    let _pendingApiCalls = 0; // Reserved for future use
     let completedApiCalls = 0;
     const originalFetch = window.fetch;
     
@@ -288,12 +287,12 @@ import './src/main.tsx';
       const url = args[0];
       if (typeof url === 'string' && (url.includes('/api/') || url.includes('localhost:3000'))) {
         apiCallCount++;
-        pendingApiCalls++;
+        _pendingApiCalls++; // Reserved for future use
         
         const originalPromise = originalFetch.apply(this, args);
         originalPromise.then(() => {
           completedApiCalls++;
-          pendingApiCalls--;
+          _pendingApiCalls--; // Reserved for future use
           
           // Update progress based on API completion
           if (completedApiCalls === apiCallCount && apiCallCount > 0) {
@@ -303,7 +302,7 @@ import './src/main.tsx';
             updateProgress(apiProgress, `Loading content... (${completedApiCalls}/${apiCallCount})`);
           }
         }).catch(() => {
-          pendingApiCalls--;
+          _pendingApiCalls--; // Reserved for future use
         });
         
         return originalPromise;

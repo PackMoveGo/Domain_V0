@@ -1,6 +1,13 @@
-// Temporarily disabled for Next.js build
-export const NODE_ENV = process.env.NODE_ENV || 'development';
-export const HOST = process.env.HOST || '';
-export const PORT = process.env.PORT || '5001';
-export const SKIP_BACKEND_CHECK = process.env.NEXT_PUBLIC_SKIP_BACKEND_CHECK || 'false';
-export const ENABLE_DEV_TOOLS = process.env.NEXT_PUBLIC_ENABLE_DEV_TOOLS || 'false';
+// Environment variables utility
+// Uses Vite's import.meta.env for frontend variables
+// For SSR/Node.js, use process.env.NODE_ENV directly
+
+export const NODE_ENV = (import.meta as any).env?.MODE || process.env.NODE_ENV || 'development';
+
+// Get ENABLE_DEV_TOOLS from Vite env (VITE_ENABLE_DEV_TOOLS)
+export const ENABLE_DEV_TOOLS = (() => {
+  const env = (import.meta as any).env || {};
+  const value = env.VITE_ENABLE_DEV_TOOLS;
+  if (value === '') return false;
+  return value === 'true' || value === '1';
+})();

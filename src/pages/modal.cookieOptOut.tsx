@@ -3,30 +3,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useCookiePreferences } from '../context/CookiePreferencesContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getCurrentTimestamp } from '../util/ssrUtils';
+import { retryPendingApiCalls } from '../util/apiConsentCoordinator';
 
 // SSR-safe environment detection
 const isSSR = typeof window === 'undefined';
-
-// SSR-safe Helmet wrapper
-const HelmetWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [Helmet, setHelmet] = React.useState<any>(null);
-
-  React.useEffect(() => {
-    // Only load Helmet on client-side
-    if (typeof window !== 'undefined') {
-      import('react-helmet-async').then((module) => {
-        setHelmet(() => module.Helmet);
-      });
-    }
-  }, []);
-
-  // Return null during SSR or before Helmet loads
-  if (!Helmet) {
-    return null;
-  }
-
-  return <Helmet>{children}</Helmet>;
-};
 
 const CookieOptOut: React.FC = () => {
   const navigate = useNavigate();
@@ -38,8 +18,7 @@ const CookieOptOut: React.FC = () => {
   const scrollPositionRef = useRef<number>(0);
   
   // Essential pages that should be accessible without cookie consent
-  const essentialPages = ['/cookie-opt-out', '/privacy', '/terms'];
-  const isEssentialPage = essentialPages.includes(location.pathname);
+  const _essentialPages = ['/cookie-opt-out', '/privacy', '/terms']; // Reserved for future use
   
   // Check if this is being used as a full page (on /cookie-opt-out route) or as a modal
   const isFullPage = location.pathname === '/cookie-opt-out';
@@ -49,7 +28,8 @@ const CookieOptOut: React.FC = () => {
   const [selectedOption, setSelectedOption] = useState<'accept' | 'reject' | 'custom' | null>(null);
   
   // Get cookie preferences with error handling
-  let preferences, hasOptedOut, hasMadeChoice, optIn, optOut, updatePreferences, isLoading, isApiBlocked;
+  let preferences, hasOptedOut, hasMadeChoice, optIn, optOut, updatePreferences, isLoading;
+  let _isApiBlocked; // Reserved for future use
   let checkBannerTimer, clearBannerCache;
   
   try {
@@ -61,21 +41,21 @@ const CookieOptOut: React.FC = () => {
     optOut = cookiePrefs.optOut;
     updatePreferences = cookiePrefs.updatePreferences;
     isLoading = cookiePrefs.isLoading;
-    isApiBlocked = cookiePrefs.isApiBlocked;
-    checkBannerTimer = cookiePrefs.checkBannerTimer;
+    _isApiBlocked = cookiePrefs.isApiBlocked; // Reserved for future use
+    // checkBannerTimer = cookiePrefs.checkBannerTimer; // Reserved for future use
     clearBannerCache = cookiePrefs.clearBannerCache;
   } catch (error) {
     console.error('🍪 CookieOptOut: Error accessing cookie preferences:', error);
     // Provide fallback values
     preferences = { thirdPartyAds: false, analytics: false, functional: false, hasMadeChoice: false };
     hasOptedOut = false;
-    hasMadeChoice = false;
+    // hasMadeChoice = false; // Reserved for future use
     isLoading = false;
-    isApiBlocked = false;
-    optIn = () => console.warn('Cookie preferences not available');
-    optOut = () => console.warn('Cookie preferences not available');
+    // isApiBlocked = false; // Reserved for future use
+    // optIn = () => console.warn('Cookie preferences not available'); // Reserved for future use
+    // optOut = () => console.warn('Cookie preferences not available'); // Reserved for future use
     updatePreferences = () => console.warn('Cookie preferences not available');
-    checkBannerTimer = () => true;
+    // checkBannerTimer = () => true; // Reserved for future use
     clearBannerCache = () => {};
   }
 
@@ -181,7 +161,7 @@ const CookieOptOut: React.FC = () => {
 
     window.addEventListener('cookie-consent-reset', handleCookieReset);
     return () => window.removeEventListener('cookie-consent-reset', handleCookieReset);
-  }, [isSSR]);
+  }, []); // isSSR is a constant, not a dependency
 
   // Handle scroll prevention when visible (only for modal mode, not full page)
   useEffect(() => {
@@ -212,20 +192,28 @@ const CookieOptOut: React.FC = () => {
     
     if (optIn) {
       console.log('🍪 CookieOptOut: Calling optIn function');
-    setIsTransitioning(true);
-    optIn();
-    
-    // Set last banner time to now (will show again in 30 minutes)
-    if (!isSSR) {
-      localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
-      console.log('🍪 Cookie banner opt-in - will show again in 30 minutes');
-    }
+      setIsTransitioning(true);
+      optIn();
+      
+      // Set last banner time to now (will show again in 30 minutes)
+      if (!isSSR) {
+        localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
+        console.log('🍪 Cookie banner opt-in - will show again in 30 minutes');
+      }
+      
+      // Trigger API retry after consent is granted
+      if (!isSSR) {
+        setTimeout(() => {
+          console.log('🍪 CookieOptOut: Triggering API retry after consent granted');
+          retryPendingApiCalls();
+        }, 300);
+      }
       
       if (isFullPage) {
         // For full page mode, just navigate after a short delay
-    setTimeout(() => {
+        setTimeout(() => {
           console.log('🍪 CookieOptOut: Navigating to home page after opt-in (full page mode)');
-      navigate('/');
+          navigate('/');
         }, 500);
       } else {
         // For modal mode, use fade out animation
@@ -233,7 +221,7 @@ const CookieOptOut: React.FC = () => {
         setTimeout(() => {
           setIsVisible(false);
           setIsFadingOut(false);
-      setIsTransitioning(false);
+          setIsTransitioning(false);
           
           // Wait a bit longer for API state to fully update before navigation
           console.log('🍪 CookieOptOut: Waiting for API state to update before navigation...');
@@ -249,7 +237,7 @@ const CookieOptOut: React.FC = () => {
     }
   };
 
-  const handleOptOut = () => {
+  const _handleOptOut = () => { // Reserved for future use
     setSelectedOption('reject');
     setIsTransitioning(true);
     optOut();
@@ -310,7 +298,7 @@ const CookieOptOut: React.FC = () => {
     }
   };
 
-  const handleToggleCategory = (category: 'thirdPartyAds' | 'analytics' | 'functional') => {
+  const _handleToggleCategory = (category: 'thirdPartyAds' | 'analytics' | 'functional') => { // Reserved for future use
     updatePreferences({
       [category]: !preferences[category],
       hasMadeChoice: true

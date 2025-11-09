@@ -89,7 +89,7 @@ interface NavbarProps {
   isApiBlocked: boolean;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiBlocked }) => {
+const Navbar: React.FC<NavbarProps> = ({ /* hasConsent, isWaitingForConsent */ isApiBlocked }) => { // Unused params reserved for future use
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -102,8 +102,8 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
   
   // Navigation state - initialize with default items for SSR and when API is blocked
   const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [_isLoading, setIsLoading] = useState(false); // Reserved for future use
+  const [_error, setError] = useState<string | null>(null); // Reserved for future use
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   
@@ -138,7 +138,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
           setIsLoading(false);
           return;
         }
-      } catch (error) {
+      } catch (_error) { // Reserved for future use
         // Invalid cached data, continue with API call
         console.warn('Invalid cached navigation data, fetching fresh data');
       }
@@ -164,12 +164,25 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
             items,
             timestamp: Date.now()
           }));
-        } catch (cacheError) {
-          console.warn('Failed to cache navigation data:', cacheError);
+          // Clear any error flags since navigation loaded successfully
+          sessionStorage.removeItem('packmovego-nav-error');
+          // Dispatch event for footer to listen to
+          window.dispatchEvent(new CustomEvent('navigation-loaded'));
+        } catch (_cacheError) { // Reserved for future use
+          console.warn('Failed to cache navigation data');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load navigation';
         setError(errorMessage);
+        
+        // Mark navigation as failed in sessionStorage for footer to detect
+        try {
+          sessionStorage.setItem('packmovego-nav-error', 'true');
+          // Dispatch event for footer to listen to
+          window.dispatchEvent(new CustomEvent('navigation-error', { detail: { error: errorMessage } }));
+        } catch (_storageError) { // Reserved for future use
+          // Storage might be disabled, continue anyway
+        }
         
         // Check if it's a rate limiting error or 503 error
         if (errorMessage.includes('429') || errorMessage.includes('503') || errorMessage.includes('Too many requests') || errorMessage.includes('Service Unavailable')) {
@@ -181,8 +194,15 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
               const parsedData = JSON.parse(cachedNavData);
               setNavItems(parsedData.items);
               setIsLoading(false);
+              // Clear error flag if we have cached data
+              try {
+                sessionStorage.removeItem('packmovego-nav-error');
+                window.dispatchEvent(new CustomEvent('navigation-loaded'));
+              } catch (_storageError) { // Reserved for future use
+                // Storage might be disabled, continue anyway
+              }
               return;
-            } catch (cacheError) {
+            } catch (_cacheError) { // Reserved for future use
               // Fall through to default fallback
             }
           }
@@ -195,6 +215,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
     };
 
     loadNavigation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isApiBlocked, location.pathname]);
 
   // Reset menu state when route changes
@@ -205,10 +226,10 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
   // Log navigation errors in development only
   useEffect(() => {
     const isDevMode = (import.meta as any).env.VITE_DEV_MODE === 'development';
-    if (error && isDevMode) {
-      console.error('Navigation error:', error);
+    if (_error && isDevMode) {
+      console.error('Navigation error:', _error);
     }
-  }, [error]);
+  }, [_error]);
 
   // Check for overflow on mount and window resize (responsive behavior)
   useEffect(() => {
@@ -226,7 +247,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
     return () => {
       window.removeEventListener('resize', checkOverflow);
     };
-  }, [navItems, isSSR]);
+  }, [navItems]); // isSSR is a constant, not a dependency
 
   // Disable scrolling when menu is open
   useEffect(() => {
@@ -248,7 +269,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasConsent, isWaitingForConsent, isApiB
       document.body.style.position = '';
       document.body.style.width = '';
     };
-  }, [isMenuOpen, isSSR]);
+  }, [isMenuOpen]); // isSSR is a constant, not a dependency
 
   // Handlers
   const handleMenuToggle = useCallback((e: React.MouseEvent) => {

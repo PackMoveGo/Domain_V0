@@ -12,8 +12,8 @@
  *   node scripts/dev-api-toggle.js status   # Check current status
  */
 
-const fs = require('fs');
-const path = require('path');
+// const fs = require('fs'); // Reserved for future use
+// const path = require('path'); // Reserved for future use
 
 const SESSION_STORAGE_KEY = 'use-dev-api';
 const SCRIPT_NAME = 'dev-api-toggle.js';
@@ -85,7 +85,7 @@ function showStatus() {
   console.log('📋 Development API Override Status');
   console.log('=====================================');
   
-  const status = getStatus();
+  const _status = getStatus();
   
   console.log('');
   console.log('🔧 Current Configuration:');

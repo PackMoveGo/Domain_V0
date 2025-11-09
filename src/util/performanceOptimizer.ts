@@ -85,8 +85,8 @@ export class PerformanceOptimizer {
       });
 
       console.log('✅ Image optimization applied');
-    } catch (error) {
-      console.warn('Image optimization failed:', error);
+    } catch (_error) { // Reserved for future use
+      console.warn('Image optimization failed:', _error);
     }
   }
 
@@ -112,8 +112,8 @@ export class PerformanceOptimizer {
       });
 
       console.log('✅ Code splitting optimization applied');
-    } catch (error) {
-      console.warn('Code splitting optimization failed:', error);
+    } catch (_error) { // Reserved for future use
+      console.warn('Code splitting optimization failed:', _error);
     }
   }
 
@@ -154,8 +154,8 @@ export class PerformanceOptimizer {
       });
 
       console.log('✅ Preloading optimization applied');
-    } catch (error) {
-      console.warn('Preloading optimization failed:', error);
+    } catch (_error) { // Reserved for future use
+      console.warn('Preloading optimization failed:', _error);
     }
   }
 
@@ -184,8 +184,8 @@ export class PerformanceOptimizer {
               const cache = await caches.open('api-cache');
               await cache.put(endpoint, response.clone());
             }
-          } catch (error) {
-            console.warn('Failed to cache API response:', endpoint, error);
+          } catch (_error) { // Reserved for future use
+            console.warn('Failed to cache API response:', endpoint, _error);
           }
         }
       };
@@ -198,8 +198,8 @@ export class PerformanceOptimizer {
       }
 
       console.log('✅ Caching optimization applied');
-    } catch (error) {
-      console.warn('Caching optimization failed:', error);
+    } catch (_error) { // Reserved for future use
+      console.warn('Caching optimization failed:', _error);
     }
   }
 
@@ -219,8 +219,8 @@ export class PerformanceOptimizer {
 
       enableCompression();
       console.log('✅ Compression optimization applied');
-    } catch (error) {
-      console.warn('Compression optimization failed:', error);
+    } catch (_error) { // Reserved for future use
+      console.warn('Compression optimization failed:', _error);
     }
   }
 
@@ -230,7 +230,7 @@ export class PerformanceOptimizer {
   getPerformanceMetrics(): PerformanceMeasure | null {
     try {
       return performance.getEntriesByName('performance-optimizer-time')[0] as PerformanceMeasure;
-    } catch (error) {
+    } catch (_error) { // Reserved for future use
       return null;
     }
   }

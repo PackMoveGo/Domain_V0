@@ -50,7 +50,7 @@ export class OptimizationAnalyzer {
           if (rules) {
             cssRules += rules.length;
           }
-        } catch (e) {
+        } catch (_e) { // Reserved for future use
           // Cross-origin stylesheets will throw
         }
       });

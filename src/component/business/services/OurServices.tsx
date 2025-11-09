@@ -20,8 +20,8 @@ export default function OurServices({ services: propServices }: OurServicesProps
   const navigate = useNavigate();
   
   // State for API availability (SSR-safe)
-  const [apiAvailable, setApiAvailable] = React.useState(false);
-  const [apiUrl, setApiUrl] = React.useState('');
+  const [_apiAvailable, setApiAvailable] = React.useState(false); // Reserved for future use
+  const [_apiUrl, setApiUrl] = React.useState(''); // Reserved for future use
   
   // Get services from props only (no API calls)
   const services = propServices || [];
@@ -33,7 +33,7 @@ export default function OurServices({ services: propServices }: OurServicesProps
         const config = api.getConfig();
         setApiAvailable(true);
         setApiUrl(config.apiUrl);
-      } catch (error) {
+      } catch (_error) { // Reserved for future use
         setApiAvailable(false);
         setApiUrl('');
       }

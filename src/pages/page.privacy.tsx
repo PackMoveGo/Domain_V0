@@ -71,7 +71,8 @@ export default function Privacy() {
    * @param query - Search query string
    * @returns Search results array
    */
-  const handleSearch = useCallback((query: string) => {
+  // const handleSearch = useCallback((query: string) => { // Reserved for future use
+  const _handleSearch = useCallback((query: string) => {
     if (isDevMode) {
       console.log('🔍 Privacy: Search triggered with query:', query);
     }
@@ -89,7 +90,8 @@ export default function Privacy() {
    * Handle search completion callback
    * @param results - Array of search results
    */
-  const handleSearchComplete = useCallback((results: SearchResult[]) => {
+  // const handleSearchComplete = useCallback((results: SearchResult[]) => { // Reserved for future use
+  const _handleSearchComplete = useCallback((results: SearchResult[]) => {
     if (isDevMode) {
       console.log('✅ Privacy: Search completed with results:', results.length);
     }

@@ -16,7 +16,7 @@
 
 import { handleApiError } from '../util/apiErrorHandler';
 import { apiCache } from '../util/apiCache';
-import { isConnectionError, is503Error, normalizeTo503Error, log503Error, createConnectionError } from '../util/errorUtils';
+import { isConnectionError, is503Error, normalizeTo503Error, /* log503Error, */ createConnectionError } from '../util/errorUtils'; // Reserved for future use
 
 // =============================================================================
 // API FAILURE MODAL MANAGEMENT
@@ -28,29 +28,24 @@ import { isConnectionError, is503Error, normalizeTo503Error, log503Error, create
 
 // API configuration functions (moved from config/api)
 const getApiKey = (): string => {
-  // Get API key from environment variables
-  const getEnvVar = (key: string, fallback?: string): string => {
-    // Priority 1: process.env (for SSR and Node.js)
-    if (typeof process !== 'undefined' && process.env && process.env[key]) {
-      return process.env[key];
-    }
-    
-    // Priority 2: Vite global variables (from vite.config.js define)
-    const globalKey = `__${key.replace('VITE_', '')}__`;
-    if (typeof window !== 'undefined' && (window as any)[globalKey]) {
-      return (window as any)[globalKey];
-    }
-    
-    // Priority 3: Check for Vite environment variables in window object
-    if (typeof window !== 'undefined' && (window as any).__VITE_ENV__ && (window as any).__VITE_ENV__[key]) {
-      return (window as any).__VITE_ENV__[key];
-    }
-    
-    // Return fallback or empty string
-    return fallback || '';
-  };
-
-  return getEnvVar('VITE_API_KEY_FRONTEND') || '';
+  // Get API key from Vite's import.meta.env
+  // Try multiple ways to access the env variable
+  const env = (import.meta as any).env || import.meta.env || {};
+  const apiKey = env.VITE_API_KEY_FRONTEND || (import.meta as any).env?.VITE_API_KEY_FRONTEND || '';
+  
+  // Debug in development
+  if (import.meta.env.MODE === 'development') {
+    console.log('🔑 [API-KEY-DEBUG] getApiKey check:', {
+      hasImportMeta: !!import.meta,
+      hasEnv: !!(import.meta as any).env,
+      hasViteEnv: !!import.meta.env,
+      apiKeyFound: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      rawValue: env.VITE_API_KEY_FRONTEND ? 'present' : 'missing'
+    });
+  }
+  
+  return apiKey;
 };
 
 const getSigninHost = (): string => {
@@ -99,7 +94,7 @@ export const performGlobalHealthCheck = async (): Promise<boolean> => {
       
       setGlobal503Status(false);
       return true;
-    } catch (error) {
+    } catch {
       setGlobal503Status(true);
       return false;
     }
@@ -242,31 +237,31 @@ const shouldThrottleRequest = (endpoint: string): boolean => {
 // Load configuration from Vite environment variables following ENVIRONMENT_SETUP.md
 
 const getEnvironmentConfig = () => {
-  // Get environment variables from Vite's import.meta.env (primary source)
-  const getEnvVar = (key: string, fallback?: string): string => {
-    // Priority 1: Vite's import.meta.env (for client-side)
-    if (typeof window !== 'undefined' && import.meta && (import.meta as any).env && (import.meta as any).env[key]) {
-      return (import.meta as any).env[key];
+  // Get environment variables from Vite's import.meta.env
+  // Vite automatically loads .env files and exposes VITE_ prefixed variables
+  // Try both import.meta.env and (import.meta as any).env for compatibility
+  const env = import.meta.env || (import.meta as any).env || {};
+  
+  // Debug environment access in development
+  if (import.meta.env.MODE === 'development') {
+    console.log('🔧 [ENV-DEBUG] Environment access check:', {
+      hasImportMeta: !!import.meta,
+      hasImportMetaEnv: !!import.meta.env,
+      hasAnyEnv: !!(import.meta as any).env,
+      sampleKeys: Object.keys(env).filter(k => k.startsWith('VITE_')).slice(0, 5),
+      hasViteApiUrl: !!env.VITE_API_URL,
+      hasViteApiKey: !!env.VITE_API_KEY_FRONTEND
+    });
+  }
+  
+  // Helper to get env var with fallback
+  const getEnvVar = (key: string, fallback: string = ''): string => {
+    const value = env[key] || '';
+    // Debug in development for critical vars
+    if (import.meta.env.MODE === 'development' && (key === 'VITE_API_URL' || key === 'VITE_API_KEY_FRONTEND')) {
+      console.log(`🔧 [ENV-VAR] ${key}:`, value ? `"${value.substring(0, 20)}${value.length > 20 ? '...' : ''}"` : 'NOT_FOUND');
     }
-    
-    // Priority 2: process.env (for SSR and Node.js)
-    if (typeof process !== 'undefined' && process.env && process.env[key]) {
-      return process.env[key];
-    }
-    
-    // Priority 3: Vite global variables (from vite.config.js define)
-    const globalKey = `__${key.replace('VITE_', '')}__`;
-    if (typeof window !== 'undefined' && (window as any)[globalKey]) {
-      return (window as any)[globalKey];
-    }
-    
-    // Priority 4: Check for Vite environment variables in window object
-    if (typeof window !== 'undefined' && (window as any).__VITE_ENV__ && (window as any).__VITE_ENV__[key]) {
-      return (window as any).__VITE_ENV__[key];
-    }
-    
-    // Return fallback or empty string
-    return fallback || '';
+    return value || fallback;
   };
 
   // Get boolean environment variable
@@ -285,17 +280,17 @@ const getEnvironmentConfig = () => {
   };
 
   // Build configuration object using environment variables
+  // IMPORTANT: Use /api as default for development to use Vite proxy
   const config = {
-    API_URL: getEnvVar('VITE_API_URL') || getEnvVar('VITE_API_BASE_URL') || 'https://localhost:3000',
+    API_URL: getEnvVar('VITE_API_URL', '/api'), // Default to /api for proxy
     SKIP_BACKEND_CHECK: getBoolEnvVar('VITE_SKIP_BACKEND_CHECK'),
-    DEV_MODE: getEnvVar('VITE_DEV_MODE'),
-    APP_NAME: getEnvVar('VITE_APP_NAME'),
-    APP_VERSION: getEnvVar('VITE_APP_VERSION'),
-    PORT: getEnvVar('VITE_PORT'),
+    DEV_MODE: getEnvVar('VITE_DEV_MODE', import.meta.env.MODE || 'development'),
+    APP_NAME: getEnvVar('VITE_APP_NAME', 'PackMoveGo'),
+    APP_VERSION: getEnvVar('VITE_APP_VERSION', '0.1.0'),
     DEV_HTTPS: getBoolEnvVar('VITE_DEV_HTTPS'),
     IS_SSR: getBoolEnvVar('VITE_IS_SSR'),
-    MODE: getEnvVar('VITE_MODE'),
-    ENABLE_DEV_TOOLS: getBoolEnvVar('ENABLE_DEV_TOOLS'),
+    MODE: getEnvVar('VITE_MODE', import.meta.env.MODE || 'development'),
+    ENABLE_DEV_TOOLS: getBoolEnvVar('VITE_ENABLE_DEV_TOOLS'),
     REDUCE_LOGGING: getBoolEnvVar('VITE_REDUCE_LOGGING'),
     API_TIMEOUT: getNumberEnvVar('VITE_API_TIMEOUT'),
     API_RETRY_ATTEMPTS: getNumberEnvVar('VITE_API_RETRY_ATTEMPTS'),
@@ -305,24 +300,30 @@ const getEnvironmentConfig = () => {
     API_KEY_FRONTEND: getApiKey()
   };
 
-  // Ensure API URL has protocol
-  if (config.API_URL && !/^https?:\/\//i.test(config.API_URL)) {
+  // Ensure API URL has protocol (unless it's a relative path like /api)
+  // Relative paths are used with Vite proxy to avoid SSL certificate issues
+  // IMPORTANT: Preserve relative paths starting with / (like /api)
+  if (config.API_URL && !config.API_URL.startsWith('/') && !/^https?:\/\//i.test(config.API_URL)) {
     config.API_URL = `http://${config.API_URL}`;
+  }
+  
+  // Debug API URL in development
+  if (config.DEV_MODE === 'development' && !config.REDUCE_LOGGING) {
+    console.log('🔧 [API-URL-DEBUG] API URL configuration:', {
+      rawEnvVar: getEnvVar('VITE_API_URL', 'NOT_FOUND'),
+      finalApiUrl: config.API_URL,
+      isRelative: config.API_URL.startsWith('/'),
+      isAbsolute: /^https?:\/\//i.test(config.API_URL)
+    });
   }
 
   // Debug environment loading in development
-  if (typeof window !== 'undefined' && config.DEV_MODE === 'development') {
+  if (config.DEV_MODE === 'development' && !config.REDUCE_LOGGING) {
     console.log('🔧 [API-CONFIG] Environment Configuration Loaded:');
     console.log('   • API_URL:', config.API_URL);
     console.log('   • SKIP_BACKEND_CHECK:', config.SKIP_BACKEND_CHECK);
     console.log('   • DEV_MODE:', config.DEV_MODE);
-    console.log('   • PORT:', config.PORT);
     console.log('   • API_KEY_FRONTEND:', config.API_KEY_FRONTEND ? 'set (length: ' + config.API_KEY_FRONTEND.length + ')' : 'not set');
-    console.log('   • import.meta.env available:', !!(import.meta && (import.meta as any).env));
-    if (import.meta && (import.meta as any).env) {
-      console.log('   • import.meta.env.API_URL:', (import.meta as any).env.API_URL);
-      console.log('   • import.meta.env.VITE_API_URL:', (import.meta as any).env.VITE_API_URL);
-    }
   }
 
   return config;
@@ -337,7 +338,7 @@ const updateSigninHost = (): string => {
 
 // Development guard: force use real API in development mode
 if (typeof window !== 'undefined') {
-  const isDev = ENV_CONFIG.DEV_MODE === 'development' || (process.env && process.env.NODE_ENV === 'development');
+  // const isDev = ENV_CONFIG.DEV_MODE === 'development' || (process.env && process.env.NODE_ENV === 'development'); // Reserved for future use
 }
 
 
@@ -507,6 +508,9 @@ export class APIsw {
   };
   private modalStateListeners: Set<() => void> = new Set();
   
+  // Event system for consent state changes
+  private consentEventListeners: Set<(hasConsent: boolean) => void> = new Set();
+  
   // Track API calls for each page
   private pageApiCalls: string[] = [];
   private currentPageName: string = '';
@@ -540,6 +544,8 @@ export class APIsw {
   private globalRequestBlocked: boolean = false;
   private globalBlockTime: number = 0;
   private globalBlockCooldown: number = 30000; // 30 seconds global block
+  private globalBlockClearedTime: number = 0; // Track when global block was last cleared
+  private globalBlockGracePeriod: number = 2000; // 2 seconds grace period after clearing
   
   // Modal cooldown to prevent infinite loops
   private lastModalShowTime: number = 0;
@@ -558,7 +564,7 @@ export class APIsw {
         API_URL: ENV_CONFIG.API_URL,
         SKIP_BACKEND_CHECK: ENV_CONFIG.SKIP_BACKEND_CHECK,
         DEV_MODE: ENV_CONFIG.DEV_MODE,
-        PORT: ENV_CONFIG.PORT,
+        // PORT: ENV_CONFIG.PORT, // Reserved for future use
         IS_SSR: ENV_CONFIG.IS_SSR,
         MODE: ENV_CONFIG.MODE,
         ENABLE_DEV_TOOLS: ENV_CONFIG.ENABLE_DEV_TOOLS,
@@ -583,7 +589,25 @@ export class APIsw {
    * Set API blocking state based on cookie consent
    */
   setApiBlocked(isBlocked: boolean): void {
+    const previousState = this.isApiBlocked;
     this.isApiBlocked = isBlocked;
+    
+    if (!isBlocked && previousState) {
+      // Consent was just granted - clear all blocks and reset state
+      // IMPORTANT: Clear global block FIRST, then reset health gate
+      // This ensures the global block is cleared before any health checks run
+      this.clearGlobalBlock();
+      this.resetHealthGate(); // Clears apiIsDown, failedEndpoints, and endpointFailureTimes
+      
+      // Force clear any pending health check state to prevent immediate reactivation
+      this.healthCheckInProgress = false;
+      this.lastHealthCheckTime = 0;
+      
+      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+        console.log('🔄 [API-CONSENT] Consent granted - cleared circuit breakers, global block, and reset health check');
+      }
+    }
+    
     if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
       console.log(`🚫 API blocking state changed: ${isBlocked ? 'BLOCKED' : 'ALLOWED'}`);
     }
@@ -629,23 +653,31 @@ export class APIsw {
       } catch (error) {
         console.error(`❌ [CONSENT-MIDDLEWARE] ${context} Error for ${endpoint}:`, error);
         
-        // Check if it's a consent error (don't show API failure modal)
-        const isConsentError = error instanceof Error && 
-          error.message.includes('cookie consent') && 
-          error.message.includes('user must opt in first');
+        // Check if it's a consent error FIRST (don't show API failure modal)
+        const isConsentBlocked = error instanceof Error && (
+          (error as any).isConsentBlocked === true ||
+          (error.message.includes('cookie consent') && error.message.includes('user must opt in first'))
+        );
         
-        if (isConsentError) {
+        if (isConsentBlocked) {
           console.log(`🍪 [CONSENT-MIDDLEWARE] Consent required for ${endpoint} - not showing API failure modal`);
+          // Ensure error is properly marked
+          if (error instanceof Error) {
+            (error as any).isConsentBlocked = true;
+            (error as any).is503Error = false; // Explicitly mark as NOT a 503 error
+          }
           // Don't show API failure modal for consent issues
           throw error;
         }
         
-        // Check if it's a 503 error (show API failure modal)
-        const is503Error = error instanceof Error && (
-          error.message.includes('503') || 
-          error.message.includes('Service Unavailable') ||
-          error.message.includes('temporarily unavailable')
-        );
+        // Check if it's a 503 error (but NOT consent-blocked)
+        const is503Error = error instanceof Error && 
+          !(error as any).isConsentBlocked &&
+          (
+            error.message.includes('503') || 
+            error.message.includes('Service Unavailable') ||
+            error.message.includes('temporarily unavailable')
+          );
         
         if (is503Error) {
           console.log(`🚨 [CONSENT-MIDDLEWARE] 503 Error detected for ${endpoint}, showing API failure modal`);
@@ -690,6 +722,15 @@ export class APIsw {
   private async checkApiHealth(): Promise<boolean> {
     const now = Date.now();
     
+    // If API is blocked by consent, don't mark it as down
+    // The health check should still pass through, but if it fails due to consent,
+    // we shouldn't mark the API as down
+    if (this.isApiBlocked) {
+      // If blocked by consent, return false but don't mark API as down
+      // This allows the request to proceed and detect real 503 errors
+      return false;
+    }
+    
     // If we already know API is down, check if cooldown period has passed
     if (this.apiIsDown) {
       if (now - this.lastHealthCheckTime < this.healthCheckCooldown) {
@@ -712,6 +753,8 @@ export class APIsw {
       
       // Check if health check returned an error response
       if (healthResult && healthResult.error) {
+        // Only mark API as down if not blocked by consent
+        // If blocked by consent, the health check should still work, so this is a real failure
         this.apiIsDown = true;
         setGlobal503Status(true);
         return false;
@@ -719,9 +762,13 @@ export class APIsw {
       
       this.apiIsDown = false;
       return true;
-    } catch (error) {
+    } catch {
+      // Only mark API as down if not blocked by consent
+      // If blocked by consent, don't mark it as down - it will be cleared when consent is granted
+      if (!this.isApiBlocked) {
       this.apiIsDown = true;
       setGlobal503Status(true);
+      }
       
       // Don't show modal here - let the calling function handle it
       // The modal should only be shown when we have actual failed endpoints
@@ -742,6 +789,7 @@ export class APIsw {
     this.endpointFailureTimes.clear();
     this.globalRequestBlocked = false;
     this.globalBlockTime = 0;
+    this.globalBlockClearedTime = Date.now(); // Track when we cleared it for grace period
     
     // Clear all pending requests
     this.pendingRequests.clear();
@@ -804,6 +852,19 @@ export class APIsw {
   private activateGlobalRequestBlock(): void {
     this.globalRequestBlocked = true;
     this.globalBlockTime = Date.now();
+    this.globalBlockClearedTime = 0; // Reset grace period when block is activated
+  }
+
+  /**
+   * Clear global request blocking
+   */
+  clearGlobalBlock(): void {
+    this.globalRequestBlocked = false;
+    this.globalBlockTime = 0;
+    this.globalBlockClearedTime = Date.now(); // Track when we cleared it
+    if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+      console.log('🔄 [GLOBAL-BLOCK] Cleared global request block');
+    }
   }
 
   /**
@@ -921,14 +982,29 @@ export class APIsw {
     }
 
     // Check cookie consent middleware FIRST (except for health endpoint itself)
-    if (endpoint !== '/v0/health') {
-      this.checkConsentMiddleware();
+    // IMPORTANT: Allow requests to go through even when blocked so we can detect real 503 errors
+    // The modal will distinguish between real 503s (API down) and consent-blocked errors
+    if (endpoint !== '/v0/health' && this.isApiBlocked) {
+      // Log but don't block - allows detection of real 503 errors from the API
+      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+        console.log('🍪 [CONSENT] API is blocked but allowing request to detect real 503 errors:', endpoint);
+      }
+      // Don't call checkConsentMiddleware() - let the request go through to the proxy/gateway
+      // This way we can see if the API is actually down (real 503) vs just blocked by consent
     }
 
     // Check API health second (except for health endpoint itself)
-    if (endpoint !== '/v0/health' && !await this.checkApiHealth()) {
-      // Activate global request blocking
+    // IMPORTANT: Skip health check if we just cleared the global block (grace period)
+    // This allows requests to go through immediately after consent is granted
+    const justClearedGlobalBlock = this.globalBlockClearedTime > 0 && 
+      (Date.now() - this.globalBlockClearedTime) < this.globalBlockGracePeriod;
+    
+    if (endpoint !== '/v0/health' && !justClearedGlobalBlock && !this.isGlobalRequestBlocked() && !await this.checkApiHealth()) {
+      // Only activate global block if API is not blocked by consent
+      // If API is blocked by consent, don't activate global block - it will be cleared when consent is granted
+      if (!this.isApiBlocked) {
       this.activateGlobalRequestBlock();
+      }
       
       // Add endpoint to circuit breaker
       this.addEndpointToCircuitBreaker(endpoint);
@@ -947,11 +1023,24 @@ export class APIsw {
     const buildUrl = (base: string, ep: string) => {
       const baseTrimmed = base.replace(/\/+$/, '');
       const epTrimmed = ep.startsWith('/') ? ep : `/${ep}`;
-      return `${baseTrimmed}${epTrimmed}`;
+      const finalUrl = `${baseTrimmed}${epTrimmed}`;
+      
+      // Debug URL construction in development
+      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+        console.log(`🔗 [URL-BUILD] Base: "${base}" + Endpoint: "${ep}" = "${finalUrl}"`);
+      }
+      
+      return finalUrl;
     };
 
     // Use only the correct endpoint - no fallbacks since backend is working
     const url = buildUrl(ENV_CONFIG.API_URL, endpoint);
+    
+    // Debug final URL in development
+    if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+      console.log(`🌐 [FINAL-URL] Making request to: ${url}`);
+      console.log(`🌐 [FINAL-URL] API_URL config: ${ENV_CONFIG.API_URL}`);
+    }
 
     // Create the actual request promise with retry for critical endpoints
     const requestPromise = this.executeRequestWithRetry<T>(url, endpoint, options, requireAuth);
@@ -1091,14 +1180,29 @@ export class APIsw {
     }
 
     // Check cookie consent middleware FIRST (except for health endpoint itself)
-    if (endpoint !== '/v0/health') {
-      this.checkConsentMiddleware();
+    // IMPORTANT: Allow requests to go through even when blocked so we can detect real 503 errors
+    // The modal will distinguish between real 503s (API down) and consent-blocked errors
+    if (endpoint !== '/v0/health' && this.isApiBlocked) {
+      // Log but don't block - allows detection of real 503 errors from the API
+      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+        console.log('🍪 [CONSENT] API is blocked but allowing request to detect real 503 errors:', endpoint);
+      }
+      // Don't call checkConsentMiddleware() - let the request go through to the proxy/gateway
+      // This way we can see if the API is actually down (real 503) vs just blocked by consent
     }
 
     // Check API health second (except for health endpoint itself)
-    if (endpoint !== '/v0/health' && !await this.checkApiHealth()) {
-      // Activate global request blocking
+    // IMPORTANT: Skip health check if we just cleared the global block (grace period)
+    // This allows requests to go through immediately after consent is granted
+    const justClearedGlobalBlock = this.globalBlockClearedTime > 0 && 
+      (Date.now() - this.globalBlockClearedTime) < this.globalBlockGracePeriod;
+    
+    if (endpoint !== '/v0/health' && !justClearedGlobalBlock && !this.isGlobalRequestBlocked() && !await this.checkApiHealth()) {
+      // Only activate global block if API is not blocked by consent
+      // If API is blocked by consent, don't activate global block - it will be cleared when consent is granted
+      if (!this.isApiBlocked) {
       this.activateGlobalRequestBlock();
+      }
       
       // Add endpoint to circuit breaker
       this.addEndpointToCircuitBreaker(endpoint);
@@ -1117,10 +1221,22 @@ export class APIsw {
     const buildUrl = (base: string, ep: string) => {
       const baseTrimmed = base.replace(/\/+$/, '');
       const epTrimmed = ep.startsWith('/') ? ep : `/${ep}`;
-      return `${baseTrimmed}${epTrimmed}`;
+      const finalUrl = `${baseTrimmed}${epTrimmed}`;
+      
+      // Debug URL construction in development
+      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+        console.log(`🔗 [URL-BUILD-PUBLIC] Base: "${base}" + Endpoint: "${ep}" = "${finalUrl}"`);
+      }
+      
+      return finalUrl;
     };
 
     const url = buildUrl(ENV_CONFIG.API_URL, endpoint);
+    
+    // Debug final URL in development
+    if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+      console.log(`🌐 [FINAL-URL-PUBLIC] Making request to: ${url}`);
+    }
 
     // Create the actual request promise and add it to pending requests
     const requestPromise = this.executePublicRequest<T>(url, options);
@@ -1154,7 +1270,7 @@ export class APIsw {
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
         apiKeyPrefix: apiKey?.substring(0, 10) + '...' || 'none',
-        fullApiKey: apiKey,
+        // fullApiKey removed for security - never log full API keys
         headers: headers
       });
     }
@@ -1162,7 +1278,7 @@ export class APIsw {
     // Only set restricted headers in SSR (Node). Browsers block these.
     if (typeof window === 'undefined') {
       headers['User-Agent'] = `${ENV_CONFIG.APP_NAME}-Client/${ENV_CONFIG.APP_VERSION}`;
-      headers['Origin'] = `${ENV_CONFIG.DEV_HTTPS ? 'https' : 'http'}://localhost:${ENV_CONFIG.PORT}`;
+      headers['Origin'] = `${ENV_CONFIG.DEV_HTTPS ? 'https' : 'http'}://localhost:5001`; // Using hardcoded port since VITE_PORT is not set
     }
 
     // Add JWT token if required and available
@@ -1181,6 +1297,11 @@ export class APIsw {
     const tryFetch = async (url: string): Promise<Response> => {
       if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
         console.log(`🌐 API Request: ${url}`);
+        console.log(`🌐 API Request Headers:`, {
+          'x-api-key': headers['x-api-key'] ? 'present' : 'missing',
+          'Content-Type': headers['Content-Type'],
+          'Accept': headers['Accept']
+        });
       }
       
       try {
@@ -1253,7 +1374,7 @@ export class APIsw {
         setGlobal503Status(true);
         
         // Create a 503 error response
-        const error503 = createConnectionError(endpoint, error);
+        const error503 = createConnectionError(url, error);
         return {
           error: true,
           statusCode: 503,
@@ -1299,7 +1420,7 @@ export class APIsw {
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
         apiKeyPrefix: apiKey?.substring(0, 10) + '...' || 'none',
-        fullApiKey: apiKey,
+        // fullApiKey removed for security - never log full API keys
         headers: headers
       });
     }
@@ -1307,7 +1428,7 @@ export class APIsw {
     // Only set restricted headers in SSR (Node). Browsers block these.
     if (typeof window === 'undefined') {
       headers['User-Agent'] = `${ENV_CONFIG.APP_NAME}-Client/${ENV_CONFIG.APP_VERSION}`;
-      headers['Origin'] = `${ENV_CONFIG.DEV_HTTPS ? 'https' : 'http'}://localhost:${ENV_CONFIG.PORT}`;
+      headers['Origin'] = `${ENV_CONFIG.DEV_HTTPS ? 'https' : 'http'}://localhost:5001`; // Using hardcoded port since VITE_PORT is not set
     }
 
     const config: RequestInit = {
@@ -1381,7 +1502,7 @@ export class APIsw {
         setGlobal503Status(true);
         
         // Create a 503 error response
-        const error503 = createConnectionError(endpoint, error);
+        const error503 = createConnectionError(url, error);
         return {
           error: true,
           statusCode: 503,
@@ -1564,7 +1685,7 @@ export class APIsw {
       }
       
       return result;
-    } catch (error) {
+    } catch {
       return { success: false, message: 'Not authenticated' };
     }
   }
@@ -1942,8 +2063,8 @@ export class APIsw {
       
       // Load about page data only (no navigation)
       const [about, totalMovesCount] = await Promise.allSettled([
-        this.makeRequest(API_ENDPOINTS.PRIVATE.ABOUT), // /v0/about
-        this.makeRequest('/v0/recentMoves/total') // /v0/recentMoves/total
+        this.makePublicRequest(API_ENDPOINTS.PRIVATE.ABOUT), // /v0/about
+        this.makePublicRequest('/v0/recentMoves/total') // /v0/recentMoves/total
       ]);
 
       const result = {
@@ -1974,7 +2095,7 @@ export class APIsw {
       console.log('🚀 Loading consolidated contact page data...');
       
       // Load contact page data only (no navigation)
-      const contact = await this.makeRequest(API_ENDPOINTS.PRIVATE.CONTACT); // /v0/contact
+      const contact = await this.makePublicRequest(API_ENDPOINTS.PRIVATE.CONTACT); // /v0/contact
 
       const result = {
         contact: contact
@@ -1997,9 +2118,24 @@ export class APIsw {
 
   /**
    * Show the API failure modal with specific error details
+   * Shows 503 errors even when API is blocked by consent (appears behind cookie consent)
+   * Never shows modal for non-503 consent-blocked errors
    */
   showApiFailureModal(failedEndpoints: string[], is503Error: boolean = false, onClose?: () => void): void {
     const now = Date.now();
+    
+    // Allow showing 503 errors even when API is blocked by consent
+    // Real 503 errors (API is down) should be visible behind cookie consent
+    // Only skip if it's NOT a real 503 error and API is blocked
+    if (this.isApiBlocked && !is503Error) {
+      console.log('🍪 [API-MODAL] Skipping modal display - API blocked by cookie consent (not a 503 error)');
+      return;
+    }
+    
+    // For 503 errors, show even when API is blocked (will appear behind cookie consent)
+    if (this.isApiBlocked && is503Error) {
+      console.log('🍪 [API-MODAL] Showing 503 error modal even though API is blocked - will appear behind cookie consent');
+    }
     
     // Prevent showing modal if already visible to avoid infinite loops
     if (this.modalState.isVisible) {
@@ -2036,6 +2172,52 @@ export class APIsw {
         currentPage: this.currentPageName,
         totalEndpoints: pageSpecificEndpoints.length
       });
+    }
+  }
+
+  /**
+   * Add listener for consent state changes
+   */
+  addConsentStateListener(listener: (hasConsent: boolean) => void): () => void {
+    this.consentEventListeners.add(listener);
+    // Return unsubscribe function
+    return () => {
+      this.consentEventListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Remove listener for consent state changes
+   */
+  removeConsentStateListener(listener: (hasConsent: boolean) => void): void {
+    this.consentEventListeners.delete(listener);
+  }
+
+  /**
+   * Emit consent state change event
+   * Called when consent state changes (e.g., user opts in)
+   */
+  emitConsentStateChange(hasConsent: boolean): void {
+    console.log(`🍪 [API-CONSENT] Consent state changed: ${hasConsent ? 'granted' : 'blocked'}`);
+    this.consentEventListeners.forEach(listener => {
+      try {
+        listener(hasConsent);
+      } catch (error) {
+        console.error('Error in consent state listener:', error);
+      }
+    });
+  }
+
+  /**
+   * Update API blocked state (called by cookie context)
+   */
+  updateApiBlockedState(isBlocked: boolean): void {
+    const previousState = this.isApiBlocked;
+    this.isApiBlocked = isBlocked;
+    
+    // Emit event if state changed
+    if (previousState !== isBlocked) {
+      this.emitConsentStateChange(!isBlocked);
     }
   }
 
@@ -2466,6 +2648,12 @@ export const trackApiCall = (endpoint: string) => api.trackApiCall(endpoint);
 export const getTrackedApiCalls = () => api.getTrackedApiCalls();
 export const getCurrentPageName = () => api.getCurrentPageName();
 export const resetApiCallTracking = () => api.resetApiCallTracking();
+
+// Export consent state management functions
+export const addConsentStateListener = (listener: (hasConsent: boolean) => void) => api.addConsentStateListener(listener);
+export const removeConsentStateListener = (listener: (hasConsent: boolean) => void) => api.removeConsentStateListener(listener);
+export const emitConsentStateChange = (hasConsent: boolean) => api.emitConsentStateChange(hasConsent);
+export const updateApiBlockedState = (isBlocked: boolean) => api.updateApiBlockedState(isBlocked);
 
 // Export health check middleware functions
 export const checkHealthWithCache = () => api.checkHealthWithCache();

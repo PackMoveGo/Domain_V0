@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { resetHealthGate, getTrackedApiCalls, getCurrentPageName } from '../../../services/service.apiSW';
+import { isConsentBlockedError } from '../../../util/apiConsentCoordinator';
 
 // SSR-safe environment detection
 const isSSR = typeof window === 'undefined';
@@ -18,6 +19,20 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
   const [allTrackedCalls, setAllTrackedCalls] = useState<string[]>([]);
   const [currentPageName, setCurrentPageName] = useState<string>('');
   const [has503Error, setHas503Error] = useState(false);
+  const [mightBeConsentIssue, setMightBeConsentIssue] = useState(false);
+  
+  // Check consent status safely (without using hook conditionally)
+  const checkConsentStatus = () => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const preferences = localStorage.getItem('packmovego-cookie-preferences');
+      if (!preferences) return false;
+      const parsed = JSON.parse(preferences);
+      return parsed.hasMadeChoice && parsed.thirdPartyAds && parsed.analytics && parsed.functional;
+    } catch {
+      return false;
+    }
+  };
 
   // Get all tracked API calls and failed endpoints for the current page
   useEffect(() => {
@@ -30,8 +45,21 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
       setCurrentPageName(pageName);
       setAllFailedEndpoints(failedEndpoints);
       setHas503Error(is503Error);
+      
+      // Check if this might be a consent issue
+      const isConsentBlocked = failureDetails && isConsentBlockedError(failureDetails);
+      const hasNoConsent = !checkConsentStatus();
+      setMightBeConsentIssue(isConsentBlocked || (hasNoConsent && !is503Error));
+      
+      // If it's a consent issue, don't show this modal
+      if (isConsentBlocked) {
+        console.log('🍪 [MODAL] Consent-blocked error detected - not showing 503 modal');
+        onClose();
+        return;
+      }
     }
-  }, [isVisible, failedEndpoints, is503Error, isSSR]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVisible, failedEndpoints, is503Error, failureDetails]);
 
   useEffect(() => {
     if (isVisible && !isSSR) {
@@ -41,10 +69,11 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
     } else {
       setIsAnimating(false);
     }
-  }, [isVisible, isSSR]);
+  }, [isVisible]);
 
   // SSR-safe visibility check - don't render during SSR
-  if (isSSR || !isVisible) {
+  // Also don't render if this is a consent-blocked error
+  if (isSSR || !isVisible || (failureDetails && isConsentBlockedError(failureDetails))) {
     return null;
   }
 
@@ -149,7 +178,9 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
                   {has503Error ? 'Our services are temporarily unavailable' : 'We\'re experiencing technical difficulties'}
                 </p>
                 <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                  {has503Error 
+                  {mightBeConsentIssue
+                    ? 'This might be related to cookie consent settings. Please check your cookie preferences to ensure API access is enabled.'
+                    : has503Error 
                     ? 'Our API services are currently down for maintenance. This affects the dynamic content on our website, but you can still browse our static content and contact us directly.'
                     : 'The website failed to load properly. This could be due to a temporary server issue, network problem, or browser compatibility issue.'
                   }
@@ -220,6 +251,27 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
 
             {/* Action Buttons */}
             <div className="space-y-2 sm:space-y-3">
+              {mightBeConsentIssue && (
+                <button
+                  onClick={() => {
+                    if (!isSSR) {
+                      // Trigger cookie consent modal
+                      window.dispatchEvent(new CustomEvent('cookie-consent-reset'));
+                      onClose();
+                    }
+                  }}
+                  className="
+                    w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg
+                    transition-colors duration-200 flex items-center justify-center space-x-2 text-sm sm:text-base
+                  "
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  <span>Check Cookie Consent</span>
+                </button>
+              )}
+              
               <button
                 onClick={handleRetry}
                 className="

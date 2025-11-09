@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from 'express';
  * Get health status from API
  * Route: GET /v0/health
  */
-export const getHealthStatus = async (req?: Request, res?: Response, next?: NextFunction) => {
+export const getHealthStatus = async (_req?: Request, _res?: Response, _next?: NextFunction) => { // Reserved for future use
   try {
     console.log('🏥 [HEALTH] Checking API health status...');
     

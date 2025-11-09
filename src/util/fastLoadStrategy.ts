@@ -284,7 +284,7 @@ export class FastLoadStrategy {
   getPerformanceMetrics(): PerformanceMeasure | null {
     try {
       return performance.getEntriesByName('fast-load-time')[0] as PerformanceMeasure;
-    } catch (error) {
+    } catch (_error) { // Reserved for future use
       return null;
     }
   }

@@ -11,6 +11,7 @@ import QuoteFormSection from '../component/forms/QuoteFormSection';
 import { useServicesData } from '../util/serviceParser';
 import { LoadingSpinner } from '../component/ui/LoadingSpinner';
 import { ServicesUnavailable } from '../component/business/services/ServicesUnavailable';
+import { isConsentBlockedError } from '../util/apiConsentCoordinator';
 
 interface FormData {
   fromZip: string;
@@ -59,8 +60,13 @@ const Services: FC = () => {
     window.location.reload();
   }, []);
 
-  // Check if cookie consent is blocking services
-  const isCookieConsentBlocking = error && error.includes('cookie consent required');
+  // Check if cookie consent is blocking services using coordinator
+  const isCookieConsentBlocking = useMemo(() => {
+    if (!error) return false;
+    // Check if error is consent-blocked using coordinator
+    const errorObj = typeof error === 'string' ? { message: error } : error;
+    return isConsentBlockedError(errorObj);
+  }, [error]);
 
   // Get unique categories from services
   const availableCategories = useMemo(() => {
@@ -127,14 +133,16 @@ const Services: FC = () => {
       switch (sortBy) {
         case 'name':
           return a.title.localeCompare(b.title);
-        case 'price':
+        case 'price': {
           const priceA = a.price ? parseFloat(a.price.replace(/[^0-9.]/g, '')) : 0;
           const priceB = b.price ? parseFloat(b.price.replace(/[^0-9.]/g, '')) : 0;
           return priceA - priceB;
-        case 'duration':
+        }
+        case 'duration': {
           const durationA = a.duration ? parseFloat(a.duration.replace(/[^0-9.]/g, '')) : 0;
           const durationB = b.duration ? parseFloat(b.duration.replace(/[^0-9.]/g, '')) : 0;
           return durationA - durationB;
+        }
         default:
           return 0;
       }
@@ -180,11 +188,11 @@ const Services: FC = () => {
     navigate('/booking');
   }, [navigate]);
 
-  const handleSearch = useCallback((query: string) => {
+  const _handleSearch = useCallback((query: string) => { // Reserved for future use
     return searchContent(query);
   }, []);
 
-  const handleSearchComplete = useCallback((results: SearchResult[]) => {
+  const _handleSearchComplete = useCallback((results: SearchResult[]) => { // Reserved for future use
     console.log('Search completed:', results);
   }, []);
 
@@ -215,12 +223,7 @@ const Services: FC = () => {
   }, []);
 
   return (
-    <div
-      onSearch={handleSearch}
-      onSearchComplete={handleSearchComplete}
-      isRelative={true}
-      focusSearch={true}
-    >
+    <div>
       <SEO 
         title="Moving Services - Pack Move Go | Residential & Commercial Moving"
         description="Comprehensive moving services including residential, commercial, packing, and storage solutions. Professional and reliable moving services in Orange County."

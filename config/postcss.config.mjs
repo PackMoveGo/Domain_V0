@@ -67,7 +67,7 @@ export default {
     // - Removes comments, whitespace, and optimizes selectors
     // - Uses 'default' preset for balanced optimization
     // EDIT GUIDE: Modify preset or add custom CSSnano options as needed
-    ...(process.env.NODE_ENV === 'production'
+    ...((typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production')
       ? [cssnano({ 
           preset: 'default',
           // Additional CSSnano options can be added here:

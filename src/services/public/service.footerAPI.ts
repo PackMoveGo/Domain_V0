@@ -15,7 +15,7 @@
  */
 
 import { api } from '../service.apiSW';
-import { handleApiError, getFailedEndpoints, has503Errors } from '../../util/apiErrorHandler';
+import { /* handleApiError, */ getFailedEndpoints, has503Errors } from '../../util/apiErrorHandler'; // Reserved for future use
 
 // =============================================================================
 // TYPES AND INTERFACES
@@ -147,14 +147,66 @@ export const getFooterSocialLinks = async (): Promise<FooterSocialLink[]> => {
 
 /**
  * Get quick links for footer
- * Returns static quick links
+ * Fetches from /v0/nav/footer API endpoint, falls back to static links if API fails
  */
 export const getFooterQuickLinks = async (): Promise<FooterQuickLink[]> => {
-  return [
+  // Static fallback links
+  const staticLinks: FooterQuickLink[] = [
     { title: 'About Us', url: '/about' },
     { title: 'Privacy Policy', url: '/privacy' },
     { title: 'Terms of Service', url: '/terms' }
   ];
+
+  try {
+    // Import getFooterNavigation dynamically to avoid circular dependencies
+    const { getFooterNavigation } = await import('../routes/route.navAPI');
+    const navItems = await getFooterNavigation();
+    
+    if (navItems && navItems.length > 0) {
+      // Transform NavItem[] to FooterQuickLink[]
+      const apiLinks: FooterQuickLink[] = navItems
+        .filter(item => item.isVisible !== false)
+        .map(item => ({
+          title: item.label,
+          url: item.path
+        }));
+      
+      // Add Blog and Supplies links when API has loaded successfully
+      const additionalLinks: FooterQuickLink[] = [
+        { title: 'Blog', url: '/blog' },
+        { title: 'Supplies', url: '/supplies' }
+      ];
+      
+      // Merge additional links (Blog and Supplies) with API links
+      // Blog and Supplies come first, then API links
+      const allLinks = [...additionalLinks, ...apiLinks];
+      
+      // Return merged links if API returned links, otherwise use static fallback
+      return allLinks.length > 0 ? allLinks : staticLinks;
+    }
+    
+    // If API returns empty array, use static fallback
+    return staticLinks;
+  } catch (error) {
+    // Check if it's a consent error - don't log as error
+    if (error instanceof Error && error.message.includes('cookie consent')) {
+      // This is expected when user hasn't opted in - return static links silently
+      return staticLinks;
+    }
+    
+    // Check if it's a 503 error
+    if (error instanceof Error && (error.message.includes('503') || error.message.includes('Service Unavailable'))) {
+      console.warn('⚠️ Footer quick links API returned 503 - using static fallback');
+      // The middleware in service.apiSW.ts will handle 503 error tracking
+      // Return static fallback but don't suppress the error
+      return staticLinks;
+    }
+    
+    // Only log actual API errors (not consent or 503 errors)
+    console.error('Footer quick links error:', error);
+    // Return static fallback on any other error
+    return staticLinks;
+  }
 };
 
 /**

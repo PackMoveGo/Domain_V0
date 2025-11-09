@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { StaticRouter } from 'react-router-dom/server';
 import { HelmetProvider } from 'react-helmet-async';
-import AppSSR from './AppSSR';
+import AppSSR from './appSSR';
 import { UserTrackingProvider } from './component/business/UserTrackingProvider';
 import { CookiePreferencesProvider } from './context/CookiePreferencesContext';
 import { SectionDataProvider } from './context/SectionDataContext';

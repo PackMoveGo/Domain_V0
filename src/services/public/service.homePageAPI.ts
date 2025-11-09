@@ -12,13 +12,13 @@
  */
 
 import { handleApiError, getFailedEndpoints, has503Errors } from '../../util/apiErrorHandler';
-import { api, healthCheckMiddleware, preTrackRoutesMiddleware, consentAwareMiddleware } from '../service.apiSW';
+import { api, healthCheckMiddleware, /* preTrackRoutesMiddleware, */ consentAwareMiddleware } from '../service.apiSW'; // Reserved for future use
 
 // Import individual route controllers
 import { getAllServices } from '../routes/route.servicesAPI';
 import { getAllRecentMoves, getTotalRecentMovesCount } from '../routes/route.recentMovesAPI';
 import { getAllTestimonials } from '../routes/route.testimonalsAPI';
-import { getMainNavigation } from '../routes/route.navAPI';
+// import { getMainNavigation } from '../routes/route.navAPI'; // Reserved for future use
 
 // =============================================================================
 // TYPES AND INTERFACES
@@ -237,7 +237,7 @@ export const apiErrorMiddleware = (req: Request, res: Response, next: NextFuncti
 /**
  * Handle API errors in response (Express.js style)
  */
-const handleApiErrorInResponse = (req: Request, res: Response, data: any) => {
+const handleApiErrorInResponse = (req: Request, res: Response, _data: any) => { // Reserved for future use
   const endpoint = req.url;
   const is503Error = res.statusCode === 503;
   
@@ -358,7 +358,7 @@ export const removeModalStateListener = (listener: () => void) => {
  * API Error Handler Middleware
  * Works like Express.js middleware: (req, res, next)
  */
-const apiErrorHandlerMiddleware = (endpoint: string, context: string) => {
+const _apiErrorHandlerMiddleware = (endpoint: string, context: string) => { // Reserved for future use
   return async (req: any, res: any, next: any) => {
     try {
       // Call the next function (the actual route handler)
@@ -417,15 +417,11 @@ class HomePageRouter {
    */
   get(path: string, middleware: (req: any, res: any, next: any) => Promise<void>, handler: (req: any, res: any, next: any) => Promise<any>) {
     const routeHandler = async (req: any, res: any, next: any) => {
-      try {
-        // Apply middleware first
-        await middleware(req, res, next);
-        
-        // If middleware didn't call next with error, proceed with handler
-        return await handler(req, res, next);
-      } catch (error) {
-        throw error;
-      }
+      // Apply middleware first
+      await middleware(req, res, next);
+      
+      // If middleware didn't call next with error, proceed with handler
+      return await handler(req, res, next);
     };
     
     this.routes.set(path, routeHandler);
@@ -463,20 +459,15 @@ const homePageRouter = new HomePageRouter();
  * Pattern: homeService.get('/v0/services', healthCheckMiddleware, getAllServices)
  */
 export const getServicesRoute = async (req: any, res: any, next: any) => {
+  // Apply health check middleware first
+  await healthCheckMiddleware(req, res, next);
   
-  try {
-    // Apply health check middleware first
-    await healthCheckMiddleware(req, res, next);
-    
-    // If we get here, health check passed, proceed with service call
-    const data = await getAllServices();
-    
-    res.statusCode = 200;
-    res.data = data;
-    return data;
-  } catch (error) {
-    throw error;
-  }
+  // If we get here, health check passed, proceed with service call
+  const data = await getAllServices();
+  
+  res.statusCode = 200;
+  res.data = data;
+  return data;
 };
 
 /**
@@ -484,20 +475,15 @@ export const getServicesRoute = async (req: any, res: any, next: any) => {
  * Pattern: homeService.get('/v0/testimonials', healthCheckMiddleware, getAllTestimonials)
  */
 export const getTestimonialsRoute = async (req: any, res: any, next: any) => {
+  // Apply health check middleware first
+  await healthCheckMiddleware(req, res, next);
   
-  try {
-    // Apply health check middleware first
-    await healthCheckMiddleware(req, res, next);
-    
-    // If we get here, health check passed, proceed with service call
-    const data = await getAllTestimonials();
-    
-    res.statusCode = 200;
-    res.data = data;
-    return data;
-  } catch (error) {
-    throw error;
-  }
+  // If we get here, health check passed, proceed with service call
+  const data = await getAllTestimonials();
+  
+  res.statusCode = 200;
+  res.data = data;
+  return data;
 };
 
 /**
@@ -505,20 +491,15 @@ export const getTestimonialsRoute = async (req: any, res: any, next: any) => {
  * Pattern: homeService.get('/v0/recentMoves', healthCheckMiddleware, getAllRecentMoves)
  */
 export const getRecentMovesRoute = async (req: any, res: any, next: any) => {
+  // Apply health check middleware first
+  await healthCheckMiddleware(req, res, next);
   
-  try {
-    // Apply health check middleware first
-    await healthCheckMiddleware(req, res, next);
-    
-    // If we get here, health check passed, proceed with service call
-    const data = await getAllRecentMoves();
-    
-    res.statusCode = 200;
-    res.data = data;
-    return data;
-  } catch (error) {
-    throw error;
-  }
+  // If we get here, health check passed, proceed with service call
+  const data = await getAllRecentMoves();
+  
+  res.statusCode = 200;
+  res.data = data;
+  return data;
 };
 
 /**
@@ -526,20 +507,15 @@ export const getRecentMovesRoute = async (req: any, res: any, next: any) => {
  * Pattern: homeService.get('/v0/recentMoves/total', healthCheckMiddleware, getTotalRecentMovesCount)
  */
 export const getTotalMovesRoute = async (req: any, res: any, next: any) => {
+  // Apply health check middleware first
+  await healthCheckMiddleware(req, res, next);
   
-  try {
-    // Apply health check middleware first
-    await healthCheckMiddleware(req, res, next);
-    
-    // If we get here, health check passed, proceed with service call
-    const data = await getTotalRecentMovesCount();
-    
-    res.statusCode = 200;
-    res.data = data;
-    return data;
-  } catch (error) {
-    throw error;
-  }
+  // If we get here, health check passed, proceed with service call
+  const data = await getTotalRecentMovesCount();
+  
+  res.statusCode = 200;
+  res.data = data;
+  return data;
 };
 
 // Register all routes with Express.js-style pattern using consent-aware middleware
@@ -647,7 +623,7 @@ export const getRecentMovesController = async () => {
  * Middleware: apiErrorHandlerMiddleware
  * Controller: getTotalRecentMovesCount from route.recentMovesAPI.ts
  */
-export const getTotalMovesController = async (req: any, res: any, next: any) => {
+export const getTotalMovesController = async (_req: any, _res: any, _next: any) => { // Reserved for future use
   
   try {
     // Delegate to individual route controller
@@ -682,108 +658,111 @@ export const getTotalMovesController = async (req: any, res: any, next: any) => 
  * Uses health check middleware to prevent API calls if health fails
  */
 // Track how many times getHomePageData is called
-let getHomePageDataCallCount = 0;
+// let getHomePageDataCallCount = 0; // Reserved for future use
 
 export const getHomePageData = async (): Promise<HomePageServiceData> => {
-  getHomePageDataCallCount++;
+  // getHomePageDataCallCount++; // Reserved for future use
+  // Start tracking API calls for home page (this resets previous tracking)
+  api.startPageTracking('home-page');
+  
+  // Define all routes that will be called for this page
+  const homePageRoutes = ['/v0/nav', '/v0/services', '/v0/auth/status', '/v0/testimonials', '/v0/recentMoves', '/v0/recentMoves/total'];
+  
+  // First check health status - if it fails, all routes are considered 503
   try {
-    // Start tracking API calls for home page (this resets previous tracking)
-    api.startPageTracking('home-page');
+    await api.checkHealth();
+    homePageStatusCode = 200;
+  } catch (_healthError) { // Reserved for future use
+    homePageStatusCode = 503;
     
-    // Define all routes that will be called for this page
-    const homePageRoutes = ['/v0/nav', '/v0/services', '/v0/auth/status', '/v0/testimonials', '/v0/recentMoves', '/v0/recentMoves/total'];
+    // Track all routes as failed since health check failed
+    homePageRoutes.forEach(route => {
+      api.trackApiCall(route);
+    });
     
-    // First check health status - if it fails, all routes are considered 503
-    try {
-      await api.checkHealth();
-      homePageStatusCode = 200;
-    } catch (healthError) {
-      homePageStatusCode = 503;
-      
-      // Track all routes as failed since health check failed
-      homePageRoutes.forEach(route => {
-        api.trackApiCall(route);
-      });
-      
-      // Show modal with all routes as failed
-      api.showApiFailureModal(homePageRoutes, true);
-      
-      // Return empty data with 503 status
-      return {
-        nav: null,
-        services: null,
-        authStatus: null,
-        testimonials: null,
-        recentMoves: null,
-        totalMoves: 500,
-        lastUpdated: new Date().toISOString()
-      };
-    }
+    // Show modal with all routes as failed
+    api.showApiFailureModal(homePageRoutes, true);
     
-    // Health check passed - proceed with individual route calls
-    const [navData, servicesData, authStatus, testimonialsData, recentMovesData, totalMovesData] = await Promise.allSettled([
-      api.getNav(),
-      api.getServices(),
-      api.checkAuthStatus(),
-      api.makeRequest('/v0/testimonials'),
-      api.makeRequest('/v0/recentMoves'),
-      api.makeRequest('/v0/recentMoves/total')
-    ]);
-    
-    // Collect failed endpoints for this page only
-    const failedEndpoints: string[] = [];
-    let has503Error = false;
-    
-    // Check each endpoint result
-    if (navData.status === 'rejected') {
-      failedEndpoints.push('/v0/nav');
-      if (navData.reason?.message?.includes('503')) has503Error = true;
-    }
-    if (servicesData.status === 'rejected') {
-      failedEndpoints.push('/v0/services');
-      if (servicesData.reason?.message?.includes('503')) has503Error = true;
-    }
-    if (authStatus.status === 'rejected') {
-      failedEndpoints.push('/v0/auth/status');
-      if (authStatus.reason?.message?.includes('503')) has503Error = true;
-    }
-    if (testimonialsData.status === 'rejected') {
-      failedEndpoints.push('/v0/testimonials');
-      if (testimonialsData.reason?.message?.includes('503')) has503Error = true;
-    }
-    if (recentMovesData.status === 'rejected') {
-      failedEndpoints.push('/v0/recentMoves');
-      if (recentMovesData.reason?.message?.includes('503')) has503Error = true;
-    }
-    if (totalMovesData.status === 'rejected') {
-      failedEndpoints.push('/v0/recentMoves/total');
-      if (totalMovesData.reason?.message?.includes('503')) has503Error = true;
-    }
-    
-    // Update status code
-    if (has503Error) {
-      homePageStatusCode = 503;
-    }
-    
-    // Show modal only for this page's failed endpoints
-    if (failedEndpoints.length > 0) {
-      api.showApiFailureModal(failedEndpoints, has503Error);
-    }
-    
-    const result: HomePageServiceData = {
-      nav: navData.status === 'fulfilled' ? navData.value : null,
-      services: servicesData.status === 'fulfilled' ? servicesData.value : null,
-      authStatus: authStatus.status === 'fulfilled' ? authStatus.value : null,
-      testimonials: testimonialsData.status === 'fulfilled' ? testimonialsData.value : null,
-      recentMoves: recentMovesData.status === 'fulfilled' ? recentMovesData.value : null,
-      totalMoves: totalMovesData.status === 'fulfilled' ? (totalMovesData.value as number) : 500,
+    // Return empty data with 503 status
+    return {
+      nav: null,
+      services: null,
+      authStatus: null,
+      testimonials: null,
+      recentMoves: null,
+      totalMoves: 500,
       lastUpdated: new Date().toISOString()
     };
-    
-    return result;
-  } catch (error) {
-    throw error;
   }
+  
+  // Health check passed - proceed with individual route calls
+  const [navData, servicesData, authStatus, testimonialsData, recentMovesData, totalMovesData] = await Promise.allSettled([
+    api.getNav(),
+    api.getServices(),
+    api.checkAuthStatus(),
+    api.makeRequest('/v0/testimonials'),
+    api.makeRequest('/v0/recentMoves'),
+    api.makeRequest('/v0/recentMoves/total')
+  ]);
+  
+  // Collect failed endpoints for this page only
+  const failedEndpoints: string[] = [];
+  let has503Error = false;
+  
+  // Check each endpoint result
+  if (navData.status === 'rejected') {
+    failedEndpoints.push('/v0/nav');
+    if (navData.reason?.message?.includes('503')) has503Error = true;
+  }
+  if (servicesData.status === 'rejected') {
+    failedEndpoints.push('/v0/services');
+    if (servicesData.reason?.message?.includes('503')) has503Error = true;
+  }
+  if (authStatus.status === 'rejected') {
+    failedEndpoints.push('/v0/auth/status');
+    if (authStatus.reason?.message?.includes('503')) has503Error = true;
+  }
+  if (testimonialsData.status === 'rejected') {
+    failedEndpoints.push('/v0/testimonials');
+    if (testimonialsData.reason?.message?.includes('503')) has503Error = true;
+  }
+  if (recentMovesData.status === 'rejected') {
+    failedEndpoints.push('/v0/recentMoves');
+    if (recentMovesData.reason?.message?.includes('503')) has503Error = true;
+  }
+  if (totalMovesData.status === 'rejected') {
+    failedEndpoints.push('/v0/recentMoves/total');
+    if (totalMovesData.reason?.message?.includes('503')) has503Error = true;
+  }
+  
+  // Update status code
+  if (has503Error) {
+    homePageStatusCode = 503;
+  }
+  
+  // Show modal only for this page's failed endpoints
+  if (failedEndpoints.length > 0) {
+    api.showApiFailureModal(failedEndpoints, has503Error);
+  }
+  
+  const result: HomePageServiceData = {
+    nav: navData.status === 'fulfilled' ? navData.value : null,
+    services: servicesData.status === 'fulfilled' ? servicesData.value : null,
+    authStatus: authStatus.status === 'fulfilled' ? authStatus.value : null,
+    testimonials: testimonialsData.status === 'fulfilled' ? testimonialsData.value : null,
+    recentMoves: recentMovesData.status === 'fulfilled' ? recentMovesData.value : null,
+    totalMoves: totalMovesData.status === 'fulfilled' ? (totalMovesData.value as number) : 500,
+    lastUpdated: new Date().toISOString()
+  };
+  
+  return result;
+};
+
+/**
+ * Get comprehensive home page data (alias for getHomePageData for consistency)
+ */
+export const getComprehensiveHomePageData = async (): Promise<HomePageServiceData> => {
+  return await getHomePageData();
 };
 
 // Track status code for home page

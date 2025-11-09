@@ -16,7 +16,7 @@
  */
 
 import { api } from '../service.apiSW';
-import { handleApiError, getFailedEndpoints, has503Errors } from '../../util/apiErrorHandler';
+import { /* handleApiError, */ getFailedEndpoints, has503Errors } from '../../util/apiErrorHandler'; // Reserved for future use
 
 // =============================================================================
 // TYPES AND INTERFACES
@@ -391,7 +391,7 @@ export const getContactPageData = async (): Promise<ContactPageServiceData> => {
     // First check health status - if it fails, all routes are considered 503
     try {
       await api.checkHealth();
-    } catch (healthError) {
+    } catch (_healthError) { // Reserved for future use
       // Track all routes as failed since health check failed
       contactPageRoutes.forEach(route => {
         api.trackApiCall(route);
@@ -667,7 +667,7 @@ export const getComprehensiveContactPageData = async () => {
     // First check health status - if it fails, all routes are considered 503
     try {
       await api.checkHealth();
-    } catch (healthError) {
+    } catch (_healthError) { // Reserved for future use
       // Track all routes as failed since health check failed
       contactPageRoutes.forEach(route => {
         api.trackApiCall(route);
@@ -680,7 +680,7 @@ export const getComprehensiveContactPageData = async () => {
       return {
         nav: null,
         contact: null,
-        health: null
+        lastUpdated: new Date().toISOString()
       };
     }
     
@@ -712,7 +712,7 @@ export const getComprehensiveContactPageData = async () => {
     const result = {
       nav: navData.status === 'fulfilled' ? navData.value : null,
       contact: contactData.status === 'fulfilled' ? contactData.value : null,
-      health: null // Not needed for contact page
+      lastUpdated: new Date().toISOString()
     };
     
     console.log('✅ Comprehensive contact page data loaded successfully:', {

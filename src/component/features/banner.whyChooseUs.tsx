@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { styles } from "../../styles/common";
-import Feature from "./Feature";
-import { api } from "../../services/service.apiSW";
+// import Feature from "./Feature"; // Reserved for future use
+// import { api } from "../../services/service.apiSW"; // Reserved for future use
 
 interface FeatureData {
   id: number;
@@ -65,7 +65,7 @@ export default function WhyChooseUs({
   isLoading = false,
   error = null
 }: WhyChooseUsProps) {
-  const displayFeatures = customFeatures || features;
+  const _featuresToDisplay = customFeatures || features; // Reserved for future use
   
   // Determine what to display for total moves count
   const getTotalMovesDisplay = () => {

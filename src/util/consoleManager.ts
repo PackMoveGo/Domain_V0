@@ -1,6 +1,6 @@
 // Console manager for development tools
 import { apiCache } from './apiCache';
-import { JWT_AUTH, setTestToken } from './jwtAuth';
+import { JWT_AUTH } from './jwtAuth';
 import { getRandomString } from './ssrUtils';
 import { isClient } from './ssrUtils';
 import { ENABLE_DEV_TOOLS } from './env';
@@ -29,8 +29,9 @@ class ConsoleManager {
   private startupMessages: string[] = [];
 
   private constructor() {
-    const isDevMode = process.env.NODE_ENV === 'development';
-    const devToolsEnabled = isClient ? (ENABLE_DEV_TOOLS === 'true') : false;
+    const env = (import.meta as any).env || {};
+    const isDevMode = env.MODE === 'development' || env.VITE_DEV_MODE === 'development';
+    const devToolsEnabled = isClient ? ENABLE_DEV_TOOLS : false;
     
     this.isDevelopment = isDevMode && devToolsEnabled;
     this.sessionId = getRandomString(13);
@@ -40,7 +41,7 @@ class ConsoleManager {
       // Collect startup messages instead of logging immediately
       this.startupMessages.push('🔧 Console Manager Initialized');
       this.startupMessages.push(`Session ID: ${this.sessionId}`);
-      this.startupMessages.push(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      this.startupMessages.push(`Environment: ${env.MODE || env.VITE_DEV_MODE || 'development'}`);
       
       // Log startup messages in a single group after a delay
       setTimeout(() => {
@@ -355,13 +356,13 @@ const consoleCommands = {
           responseTime: `${responseTime}ms`,
           statusCode: response.status
         });
-      } catch (error) {
+      } catch (_error) { // Reserved for future use
         const endTime = Date.now();
         results.push({
           endpoint,
           status: '❌ Failed',
           responseTime: `${endTime - startTime}ms`,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: _error instanceof Error ? _error.message : 'Unknown error'
         });
       }
     }
@@ -508,8 +509,8 @@ const consoleCommands = {
       hardwareConcurrency: navigator.hardwareConcurrency,
       deviceMemory: (navigator as any).deviceMemory,
       connection: (navigator as any).connection,
-      environment: process.env.NODE_ENV,
-      devMode: process.env.NODE_ENV
+      environment: (import.meta as any).env?.MODE || (import.meta as any).env?.VITE_DEV_MODE || 'development',
+      devMode: (import.meta as any).env?.MODE || (import.meta as any).env?.VITE_DEV_MODE || 'development'
     });
   },
 
@@ -597,20 +598,21 @@ const consoleCommands = {
   // Check API key configuration
   checkApiKey: () => {
     if (typeof window !== 'undefined') {
-      const apiKey = process.env.NEXT_PUBLIC_API_KEY_FRONTEND;
-      const isEnabled = process.env.NEXT_PUBLIC_API_KEY_ENABLED === 'true';
+      const env = (import.meta as any).env || {};
+      const apiKey = env.VITE_API_KEY_FRONTEND;
+      const isEnabled = env.VITE_API_KEY_ENABLED === 'true';
       console.log('🔑 API Key Status:', {
         isEnabled: isEnabled,
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
         apiKeyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none',
-        apiUrl: process.env.NEXT_PUBLIC_API_URL
+        apiUrl: env.VITE_API_URL
       });
       return {
         isEnabled,
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
-        apiUrl: process.env.NEXT_PUBLIC_API_URL
+        apiUrl: env.VITE_API_URL
       };
     }
     return 'Not available in server environment';
@@ -620,14 +622,14 @@ const consoleCommands = {
   checkApiConfig: async () => {
     if (typeof window !== 'undefined') {
       try {
-        const { api } = await import('../services/service.apiSW');
+        const { api: _api } = await import('../services/service.apiSW');
+        const env = (import.meta as any).env || {};
         console.log('🔧 API Configuration:', {
-          apiUrl: process.env.NEXT_PUBLIC_API_URL,
-          apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
-          skipBackendCheck: process.env.NEXT_PUBLIC_SKIP_BACKEND_CHECK,
-          devMode: process.env.NODE_ENV,
-          devHttps: process.env.NEXT_PUBLIC_DEV_HTTPS,
-          port: process.env.PORT
+          apiUrl: env.VITE_API_URL,
+          apiBaseUrl: env.VITE_API_BASE_URL,
+          skipBackendCheck: env.VITE_SKIP_BACKEND_CHECK,
+          devMode: env.MODE || env.VITE_DEV_MODE,
+          devHttps: env.VITE_DEV_HTTPS,
         });
         return 'API configuration logged to console';
       } catch (error) {
@@ -642,8 +644,9 @@ const consoleCommands = {
   testApiConnection: async () => {
     if (typeof window !== 'undefined') {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-        const apiKey = process.env.NEXT_PUBLIC_API_KEY_FRONTEND || '';
+        const env = (import.meta as any).env || {};
+        const apiUrl = env.VITE_API_URL || 'http://localhost:3000';
+        const apiKey = env.VITE_API_KEY_FRONTEND || '';
         console.log('🔧 Testing API connection to:', apiUrl);
         console.log('🔑 API Key being sent:', {
           hasKey: !!apiKey,
@@ -669,9 +672,9 @@ const consoleCommands = {
           console.error('❌ API connection failed:', response.status, response.statusText);
           return `API connection failed: ${response.status} ${response.statusText}`;
         }
-      } catch (error) {
-        console.error('❌ API connection error:', error);
-        return `API connection error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      } catch (_error) { // Reserved for future use
+        console.error('❌ API connection error:', _error);
+        return `API connection error: ${_error instanceof Error ? _error.message : 'Unknown error'}`;
       }
     }
     return 'Not available in server environment';
@@ -688,8 +691,8 @@ const consoleCommands = {
         console.log('🔄 Please refresh the page to retry API calls');
         
         return 'Real API forced. Please refresh the page.';
-      } catch (error) {
-        console.error('Failed to force retry:', error);
+      } catch (_error) { // Reserved for future use
+        console.error('Failed to force retry:', _error);
         return 'Failed to force retry';
       }
     }
@@ -700,11 +703,19 @@ const consoleCommands = {
   testApiKey: async () => {
     if (typeof window !== 'undefined') {
       try {
-        const apiKey = 'pmg_frontend_live_sk_a7f8e2d9c1b4x6m9p3q8r5t2w7y1z4a6';
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        const env = (import.meta as any).env || {};
+        const apiKey = env.VITE_API_KEY_FRONTEND || '';
+        const apiUrl = env.VITE_API_URL || 'http://localhost:3000';
         
-        console.log('🔑 Testing with manual API key:', {
-          apiKey: apiKey,
+        if (!apiKey) {
+          console.warn('⚠️ No API key configured. Set VITE_API_KEY_FRONTEND in your .env file.');
+          return 'No API key configured';
+        }
+        
+        console.log('🔑 Testing with API key from environment:', {
+          hasApiKey: !!apiKey,
+          apiKeyLength: apiKey.length,
+          apiKeyPrefix: apiKey.substring(0, 10) + '...',
           apiUrl: apiUrl
         });
         
@@ -725,9 +736,9 @@ const consoleCommands = {
           console.error('❌ API key test failed:', response.status, response.statusText);
           return `API key test failed: ${response.status} ${response.statusText}`;
         }
-      } catch (error) {
-        console.error('❌ API key test error:', error);
-        return `API key test error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      } catch (_error) { // Reserved for future use
+        console.error('❌ API key test error:', _error);
+        return `API key test error: ${_error instanceof Error ? _error.message : 'Unknown error'}`;
       }
     }
     return 'Not available in server environment';
@@ -757,6 +768,13 @@ Cache Commands:
 
 API Commands:
   testEndpoints()          - Test all API endpoints
+  checkApiMode()           - Check current API mode (mock/real)
+  forceRealApi()           - Force use of real API (disable mock data)
+  checkApiKey()            - Check API key configuration status
+  checkApiConfig()         - Check API configuration details
+  testApiConnection()      - Test API connection and health
+  forceRetryApi()          - Force retry API calls (clear throttling)
+  testApiKey()             - Manually test API key authentication
 
 Performance Commands:
   measurePerformance()     - Measure current performance metrics
@@ -793,8 +811,9 @@ Utility Commands:
 
 // Add commands to global window object in development - SSR SAFE
 // Only load dev tools when NODE_ENV is development AND ENABLE_DEV_TOOLS is true
-const isDevMode = process.env.NODE_ENV === 'development';
-const devToolsEnabled = ENABLE_DEV_TOOLS === 'true';
+const env = (import.meta as any).env || {};
+const isDevMode = env.MODE === 'development' || env.VITE_DEV_MODE === 'development';
+const devToolsEnabled = ENABLE_DEV_TOOLS;
 
 if (isDevMode && devToolsEnabled && typeof window !== 'undefined') {
   Object.entries(consoleCommands).forEach(([name, fn]) => {

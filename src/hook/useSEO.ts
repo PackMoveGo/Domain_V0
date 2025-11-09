@@ -78,18 +78,7 @@ export const useSEO = (config: SEOConfig = {}): SEOData => {
       fullImageUrl,
       isWebP
     };
-  }, [
-    config.title,
-    config.description,
-    config.keywords,
-    config.image,
-    config.url,
-    config.type,
-    config.siteName,
-    config.twitterCard,
-    config.imageWidth,
-    config.imageHeight
-  ]);
+  }, [config]);
 };
 
 /**

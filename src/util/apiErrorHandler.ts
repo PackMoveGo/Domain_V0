@@ -119,7 +119,7 @@ export function handleApiError(
   // Extract comprehensive error details if available
   const comprehensiveError = error as any;
   const allFailedEndpoints = comprehensiveError?.failedEndpoints || [];
-  const allAttemptedEndpoints = comprehensiveError?.attemptedEndpoints || [];
+  // const allAttemptedEndpoints = comprehensiveError?.attemptedEndpoints || []; // Reserved for future use
   const primaryError = comprehensiveError?.primaryError;
   
   // Create error details with comprehensive information

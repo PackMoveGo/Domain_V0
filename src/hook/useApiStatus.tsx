@@ -14,7 +14,7 @@ export const useApiStatus = () => {
       const result = await api.checkHealth();
       setIsOnline(!!result && !result.error);
       setLastCheck(Date.now());
-    } catch (error) {
+    } catch (_error) { // Reserved for future use
       setIsOnline(false);
     }
     };

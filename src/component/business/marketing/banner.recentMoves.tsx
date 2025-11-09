@@ -31,7 +31,7 @@ export default function RecentMoves({
 }: RecentMovesProps = {}) {
   const [recentMoves, setRecentMoves] = useState<RecentMove[]>(propRecentMoves || []);
   const [isLoading, setIsLoading] = useState<boolean>(propIsLoading || true);
-  const [error, setError] = useState<string | null>(propError || null);
+  const [_error, setError] = useState<string | null>(propError || null); // Reserved for future use
 
   // Update state when props change
   useEffect(() => {

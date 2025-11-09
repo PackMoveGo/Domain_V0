@@ -185,8 +185,8 @@ export class UltraFastRoutePreloader {
       
       this.preloadedRoutes.add(routeName);
       console.log(`⚡ Route preloaded immediately: ${routeName}`);
-    } catch (error) {
-      console.warn(`Route preload failed for ${routeName}:`, error);
+    } catch (_error) { // Reserved for future use
+      console.warn(`Route preload failed for ${routeName}:`, _error);
     } finally {
       this.loadingQueue.delete(routeName);
     }
@@ -219,8 +219,8 @@ export class UltraFastRoutePreloader {
       
       this.preloadedRoutes.add(routeName);
       console.log(`✅ Route preloaded in background: ${routeName}`);
-    } catch (error) {
-      console.warn(`Route preload failed for ${routeName}:`, error);
+    } catch (_error) { // Reserved for future use
+      console.warn(`Route preload failed for ${routeName}:`, _error);
     } finally {
       this.loadingQueue.delete(routeName);
     }
@@ -245,7 +245,7 @@ export class UltraFastRoutePreloader {
       await Promise.race([preloadPromise, timeoutPromise]);
       this.preloadedRoutes.add(routeName);
       console.log(`🎯 Route preloaded predictively: ${routeName}`);
-    } catch (error) {
+    } catch (_error) { // Reserved for future use
       // Ignore predictive preload failures
     }
   }

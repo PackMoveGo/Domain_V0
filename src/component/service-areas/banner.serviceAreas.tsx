@@ -7,7 +7,7 @@ interface ServiceAreasProps {
   simulationEnabled?: boolean;
 }
 
-const ServiceAreas: React.FC<ServiceAreasProps> = ({ error: propError, simulationEnabled = false }) => {
+const ServiceAreas: React.FC<ServiceAreasProps> = ({ error: propError, /* simulationEnabled = false */ }) => { // simulationEnabled reserved for future use
   const [error, setError] = useState<string | null>(propError || null);
   const [isLoading, setIsLoading] = useState(false);
   const [serviceAreas, setServiceAreas] = useState<any[]>([]);
@@ -64,8 +64,20 @@ const ServiceAreas: React.FC<ServiceAreasProps> = ({ error: propError, simulatio
           <p className="mt-4 text-lg text-gray-600">
             We provide moving services across multiple locations
           </p>
-          
-          {/* Service Areas Temporarily Unavailable Warning */}
+        </div>
+        
+        {isLoading ? (
+          <div className="mt-12 text-center">
+            <div className="flex justify-center items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">Loading service areas...</span>
+            </div>
+          </div>
+        ) : (error || propError) ? (
+          <div className="mt-12">
+            <div className="text-center">
+              {/* Only show error message when there's an actual API error (503) */}
+              {(error?.includes('503') || propError?.includes('503') || error?.includes('Service Unavailable') || propError?.includes('Service Unavailable')) && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6 max-w-2xl mx-auto">
             <div className="flex items-center justify-center mb-3">
               <div className="text-yellow-600 text-2xl mr-2">⚠️</div>
@@ -89,21 +101,13 @@ const ServiceAreas: React.FC<ServiceAreasProps> = ({ error: propError, simulatio
               </a>
             </div>
           </div>
-        </div>
-        
-        {isLoading ? (
-          <div className="mt-12 text-center">
-            <div className="flex justify-center items-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-600">Loading service areas...</span>
-            </div>
-          </div>
-        ) : (error || propError) ? (
-          <div className="mt-12">
-            <div className="text-center">
+              )}
+              {/* Show generic message for other errors */}
+              {(!error?.includes('503') && !propError?.includes('503') && !error?.includes('Service Unavailable') && !propError?.includes('Service Unavailable')) && (
               <div className="text-gray-500 text-lg">
                 Service areas information is currently unavailable
               </div>
+              )}
             </div>
           </div>
         ) : serviceAreas.length > 0 ? (

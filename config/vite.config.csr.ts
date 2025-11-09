@@ -1,148 +1,65 @@
-import { defineConfig, type UserConfig } from 'vite'
+import { defineConfig, loadEnv, type UserConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import fs from 'fs'
 
-export default defineConfig(({ mode, command }): UserConfig => {
-  // Load environment variables from .env file
-  const loadEnvFile = (filePath: string): Record<string, string> => {
-    try {
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-      const env: Record<string, string> = {};
-      
-      fileContent.split('\n').forEach(line => {
-        if (!line.trim() || line.trim().startsWith('#')) {
-          return;
-        }
-        
-        const [key, ...valueParts] = line.split('=');
-        if (key && valueParts.length && key.trim()) {
-          let value = valueParts.join('=').trim();
-          
-          if (value.includes('#')) {
-            value = value.split('#')[0].trim();
-          }
-          
-          if ((value.startsWith('"') && value.endsWith('"')) || 
-              (value.startsWith("'") && value.endsWith("'"))) {
-            value = value.slice(1, -1);
-          }
-          
-          if (value && value !== '') {
-            env[key.trim()] = value;
-          }
-        }
-      });
-      
-      return env;
-    } catch (error) {
-      console.warn(`Could not load environment file: ${filePath}`);
-      return {};
-    }
-  };
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+// Get project root (parent of config directory)
+const projectRoot = resolve(__dirname, '..')
 
-  const nodeEnv = process.env.NODE_ENV || 'development';
-  const envPath = resolve(__dirname, `.env.${nodeEnv}.local`);
-  const envVars = loadEnvFile(envPath);
+export default defineConfig(({ mode, _command }): UserConfig => { // Reserved for future use
+  // Load environment variables using Vite's built-in loadEnv
+  // IMPORTANT: Load from project root, not config directory
+  // Vite automatically exposes VITE_ prefixed vars from .env files in project root to import.meta.env
+  const env = loadEnv(mode, projectRoot, '');
   
-  // Log environment loading for debugging
-  console.log('🔧 Loading environment from:', envPath);
-  console.log('🔧 DEV_HTTPS value:', envVars.DEV_HTTPS);
+  // Get port from env or use default
+  const port = parseInt(env.VITE_PORT || process.env.PORT || (mode === 'production' ? '5000' : '5001'), 10);
   
-  let port;
-  if (envVars.PORT) {
-    port = parseInt(envVars.PORT);
-  } else if (envVars.NODE_ENV === 'production') {
-    port = 5000;
-  } else {
-    port = 5001;
-  }
-
-  const isProduction = envVars.NODE_ENV === 'production';
+  const isProduction = mode === 'production';
   
+  // Normalize API URL for frontend use (preserves relative paths for proxy)
   const normalizeApiUrl = (value: string | undefined): string => {
-    if (!value || typeof value !== 'string') return value || '';
+    if (!value || typeof value !== 'string') return value || 'https://localhost:3000';
     const trimmed = value.split('#')[0].trim();
+    // If it's a relative path (starts with /), return as-is (for Vite proxy)
+    if (trimmed.startsWith('/')) return trimmed;
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     if (/^(localhost|127\.)/i.test(trimmed)) return `http://${trimmed}`;
     return `https://${trimmed}`;
   };
   
-  const apiUrl = normalizeApiUrl(envVars.API_URL)
-  const skipBackendCheck = envVars.SKIP_BACKEND_CHECK || 'false';
-  const enableDevTools = envVars.ENABLE_DEV_TOOLS !== undefined 
-    ? envVars.ENABLE_DEV_TOOLS 
-    : (envVars.NODE_ENV === 'development' ? 'true' : 'false');
-  const reduceLogging = envVars.REDUCE_LOGGING || 'false';
-  const devMode = envVars.NODE_ENV || mode;
-  
-  // Dynamic environment variable logging (terminal only)
-  const logEnvironmentVariables = () => {
-    console.log('🔧 Environment Configuration Loaded:');
-    
-    // Define all possible environment variables from both files
-    const allEnvVars = {
-      'NODE_ENV': envVars.NODE_ENV || 'not set',
-      'DEV_HTTPS': envVars.DEV_HTTPS || 'not set',
-      'HOST': envVars.HOST || 'not set',
-      'PORT': envVars.PORT || 'not set',
-      'SKIP_BACKEND_CHECK': envVars.SKIP_BACKEND_CHECK || 'not set',
-      'API_URL': apiUrl || 'not set',
-      'JWT_SECRET': envVars.JWT_SECRET ? '***hidden***' : 'not set',
-      'JWT_EXPIRES_IN': envVars.JWT_EXPIRES_IN || 'not set',
-      'JWT_REFRESH_EXPIRES_IN': envVars.JWT_REFRESH_EXPIRES_IN || 'not set',
-      'CORS_ORIGIN': envVars.CORS_ORIGIN || 'not set',
-      'CORS_CREDENTIALS': envVars.CORS_CREDENTIALS || 'not set',
-      'REDUCE_LOGGING': reduceLogging,
-      'ENABLE_DEV_TOOLS': enableDevTools,
-      'API_TIMEOUT': envVars.API_TIMEOUT || 'not set',
-      'API_RETRY_ATTEMPTS': envVars.API_RETRY_ATTEMPTS || 'not set',
-      'API_RETRY_DELAY': envVars.API_RETRY_DELAY || 'not set',
-      'CACHE_ENABLED': envVars.CACHE_ENABLED || 'not set',
-      'CACHE_TTL': envVars.CACHE_TTL || 'not set',
-      'CACHE_MAX_SIZE': envVars.CACHE_MAX_SIZE || 'not set',
-      'API_KEY_ENABLED': envVars.API_KEY_ENABLED || 'not set',
-      'API_KEY_FRONTEND': envVars.API_KEY_FRONTEND ? '***hidden***' : 'not set',
-      'API_KEY_ADMIN': envVars.API_KEY_ADMIN ? '***hidden***' : 'not set',
-      'SIGNIN_HOST': envVars.SIGNIN_HOST || 'not set'
-    };
-
-    // Log only variables that are set (not 'not set')
-    Object.entries(allEnvVars).forEach(([key, value]) => {
-      if (value !== 'not set') {
-        console.log(`   • ${key}: ${value}`);
-      }
-    });
+  // Get the actual backend URL for proxy target (always use full URL, not relative path)
+  const getBackendUrl = (): string => {
+    const apiUrl = env.VITE_API_URL;
+    // If using relative path for proxy, default to localhost:3000
+    if (apiUrl && apiUrl.startsWith('/')) {
+      return 'https://localhost:3000';
+    }
+    return normalizeApiUrl(apiUrl);
   };
-
-  // Log environment variables on startup
-  logEnvironmentVariables();
+  
+  const apiUrl = normalizeApiUrl(env.VITE_API_URL);
+  const backendUrl = getBackendUrl();
+  const devHttps = env.VITE_DEV_HTTPS === 'true';
+  
+  // Log proxy configuration in development
+  if (mode === 'development') {
+    console.log('🔧 [Vite Config] Proxy Configuration:');
+    console.log(`   • API URL (frontend): ${apiUrl}`);
+    console.log(`   • Backend URL (proxy target): ${backendUrl}`);
+    console.log(`   • Proxy rule: /api/* -> ${backendUrl}/*`);
+  }
   
   return {
+    // Vite automatically exposes VITE_ prefixed variables to import.meta.env
+    // No need to manually define them here
     define: {
-      __APP_NAME__: JSON.stringify(envVars.APP_NAME || 'PackMoveGo'),
-      __APP_VERSION__: JSON.stringify(envVars.APP_VERSION || '0.1.0'),
-      'process.env': JSON.stringify({
-        NODE_ENV: devMode,
-        HOST: envVars.HOST,
-        API_URL: apiUrl,
-        PORT: port.toString(),
-        SKIP_BACKEND_CHECK: skipBackendCheck,
-        API_TIMEOUT: envVars.API_TIMEOUT,
-        API_RETRY_ATTEMPTS: envVars.API_RETRY_ATTEMPTS,
-        API_RETRY_DELAY: envVars.API_RETRY_DELAY,
-        CACHE_ENABLED: envVars.CACHE_ENABLED,
-        CACHE_TTL: envVars.CACHE_TTL,
-        CACHE_MAX_SIZE: envVars.CACHE_MAX_SIZE,
-        REDUCE_LOGGING: reduceLogging,
-        ENABLE_DEV_TOOLS: enableDevTools,
-        API_KEY_FRONTEND: envVars.API_KEY_FRONTEND,
-        JWT_SECRET: envVars.JWT_SECRET,
-        JWT_EXPIRES_IN: envVars.JWT_EXPIRES_IN,
-        JWT_REFRESH_EXPIRES_IN: envVars.JWT_REFRESH_EXPIRES_IN,
-        CORS_ORIGIN: envVars.CORS_ORIGIN,
-        CORS_CREDENTIALS: envVars.CORS_CREDENTIALS
-      })
+      // Only define build-time constants if needed
+      __APP_NAME__: JSON.stringify(env.VITE_APP_NAME || 'PackMoveGo'),
+      __APP_VERSION__: JSON.stringify(env.VITE_APP_VERSION || '0.1.0'),
     },
     plugins: [
       react({
@@ -227,11 +144,11 @@ export default defineConfig(({ mode, command }): UserConfig => {
     },
     server: {
       port: port,
-      host: true,
+      host: 'localhost',
       hmr: { 
         overlay: false, // Disable HMR overlay for faster reloads
         // Fix WebSocket connection for HTTPS
-        ...(mode === 'development' && envVars.DEV_HTTPS === 'true' ? {
+        ...(mode === 'development' && devHttps ? {
           port: port,
           host: 'localhost',
           protocol: 'wss'
@@ -243,28 +160,39 @@ export default defineConfig(({ mode, command }): UserConfig => {
       fs: { strict: false }, // Optimize for faster loading
       proxy: {
         '/api': {
-          target: apiUrl,
+          target: backendUrl,
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api/, '')
+          rewrite: (path) => path.replace(/^\/api/, ''),
+          configure: (proxy, _options) => {
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
+              console.log(`[Vite Proxy] ${req.method} ${req.url} -> ${backendUrl}${req.url?.replace(/^\/api/, '')}`);
+            });
+            proxy.on('proxyRes', (proxyRes, req, _res) => {
+              console.log(`[Vite Proxy] ${req.method} ${req.url} -> ${proxyRes.statusCode}`);
+            });
+            proxy.on('error', (err, req, _res) => {
+              console.error(`[Vite Proxy] Error proxying ${req.url}:`, err.message);
+            });
+          }
         }
-      }, // Proxy API calls to API_URL (supports 3000 or 3003 gateway)
-      // Optional HTTPS for local dev (enable by setting DEV_HTTPS=true)
-      ...(mode === 'development' && envVars.DEV_HTTPS === 'true' ? {
+      }, // Proxy API calls to backend URL (supports 3000 or 3003 gateway)
+      // Optional HTTPS for local dev (enable by setting VITE_DEV_HTTPS=true)
+      ...(mode === 'development' && devHttps ? {
         https: {
-          key: fs.readFileSync('./config/certs/localhost-key.pem'),
-          cert: fs.readFileSync('./config/certs/localhost.pem'),
+          key: fs.readFileSync(resolve(__dirname, './certs/localhost-key.pem')),
+          cert: fs.readFileSync(resolve(__dirname, './certs/localhost.pem')),
         }
       } : {}),
     },
     preview: {
       port: port,
-      host: true,
+      host: 'localhost',
       // Enable HTTPS for preview/production builds
-      ...(envVars.DEV_HTTPS === 'true' ? {
+      ...(devHttps ? {
         https: {
-          key: fs.readFileSync('./config/certs/localhost-key.pem'),
-          cert: fs.readFileSync('./config/certs/localhost.pem'),
+          key: fs.readFileSync(resolve(__dirname, './certs/localhost-key.pem')),
+          cert: fs.readFileSync(resolve(__dirname, './certs/localhost.pem')),
         }
       } : {}),
     }

@@ -7,9 +7,63 @@ const Footer=()=>{
   const [footerData, setFooterData] = useState<FooterData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [statusCode, setStatusCode] = useState<number>(200);
+  const [navbarFailed, setNavbarFailed] = useState<boolean>(false);
   
   // Check if we're in SSR mode
   const isSSR = typeof window === 'undefined';
+  
+  // Check if navbar failed to load
+  useEffect(() => {
+    if (isSSR) return;
+    
+    // Check if navigation data failed to load
+    const checkNavbarStatus = () => {
+      // Check sessionStorage for navigation error indicator
+      const navError = sessionStorage.getItem('packmovego-nav-error');
+      if (navError === 'true') {
+        setNavbarFailed(true);
+        return;
+      }
+      
+      // Check if navigation data exists and is valid
+      const cachedNavData = sessionStorage.getItem('packmovego-nav-data');
+      if (cachedNavData) {
+        // Has cached data - navbar likely loaded successfully
+        setNavbarFailed(false);
+      } else {
+        // No cached data - check if we should wait a bit for navbar to load
+        // Only set as failed if we've waited and there's an explicit error
+        setTimeout(() => {
+          const stillNoData = !sessionStorage.getItem('packmovego-nav-data');
+          const hasError = sessionStorage.getItem('packmovego-nav-error') === 'true';
+          if (stillNoData && hasError) {
+            setNavbarFailed(true);
+          }
+        }, 3000); // Wait 3 seconds for navbar to load
+      }
+    };
+    
+    checkNavbarStatus();
+    
+    // Listen for navigation load events
+    const handleNavLoad = () => {
+      const navError = sessionStorage.getItem('packmovego-nav-error');
+      setNavbarFailed(navError === 'true');
+    };
+    
+    const handleNavError = () => {
+      sessionStorage.setItem('packmovego-nav-error', 'true');
+      setNavbarFailed(true);
+    };
+    
+    window.addEventListener('navigation-loaded', handleNavLoad);
+    window.addEventListener('navigation-error', handleNavError);
+    
+    return () => {
+      window.removeEventListener('navigation-loaded', handleNavLoad);
+      window.removeEventListener('navigation-error', handleNavError);
+    };
+  }, [isSSR]);
 
   useEffect(() => {
     // Skip loading in SSR mode
@@ -27,7 +81,7 @@ const Footer=()=>{
         let healthStatusCode = 200;
         try {
           healthStatusCode = await getFooterStatusCode();
-        } catch (healthError) {
+        } catch (_healthError) { // Reserved for future use
           healthStatusCode = 503;
         }
         
@@ -120,27 +174,73 @@ const Footer=()=>{
           </div>
 
           {/* Services */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-center">Services</h3>
+            {(() => {
+              // Check if services API failed - show 503 if statusCode is 503 or services API failed
+              // This takes priority over navbar failure check
+              if (statusCode === 503 || isApiGlobally503()) {
+                return (
+                  <div className="text-center">
+                    <p className="text-red-500 font-bold">503</p>
+                  </div>
+                );
+              }
+              
+              // Check if navbar failed to load - show 503 as secondary indicator
+              if (navbarFailed) {
+                return (
           <div className="text-center">
-            <h3 className="text-lg font-semibold mb-4">Services</h3>
-            <div className="text-gray-400 text-sm">
-              {(() => {
-                // Force 503 for testing - remove this after confirming it works
-                if (isApiGlobally503()) {
-                  return <p className="text-red-500 font-bold">503</p>;
-                }
-                
-                // Always check for 503 first - this takes priority over everything else
-                if (statusCode === 503) {
-                  return <p className="text-red-500 font-bold">503</p>;
-                } else if (statusCode >= 500) {
-                  return <p className="text-red-500 font-bold">{statusCode}</p>;
-                } else if (footerData?.services && Array.isArray(footerData.services)) {
-                  return <p>{footerData.services.length}</p>;
-                } else {
-                  return <p>0</p>;
-                }
+                    <p className="text-red-500 font-bold">503</p>
+                  </div>
+                );
+              }
+              
+              // Show service links when API succeeds
+              if (footerData?.services && Array.isArray(footerData.services) && footerData.services.length > 0) {
+                return (
+                  <ul className="space-y-2 text-gray-300 text-center">
+                    {footerData.services.slice(0, 5).map((service) => (
+                      <li key={service.id}>
+                        <a 
+                          href={`/services${service.id ? `#${service.id}` : ''}`}
+                          className="hover:text-white transition-colors"
+                        >
+                          {service.icon && <span className="mr-2">{service.icon}</span>}
+                          {service.name}
+                        </a>
+                      </li>
+                    ))}
+                    {footerData.services.length > 5 && (
+                      <li>
+                        <a 
+                          href="/services"
+                          className="hover:text-white transition-colors font-semibold"
+                        >
+                          View All Services →
+                        </a>
+                      </li>
+                    )}
+                  </ul>
+                );
+              }
+              
+              // Show empty state if services array exists but is empty (no error, just no services)
+              if (footerData?.services && Array.isArray(footerData.services)) {
+                return (
+                  <div className="text-center text-gray-400 text-sm">
+                    <p>No services available</p>
+                  </div>
+                );
+              }
+              
+              // Default: show loading state
+              return (
+                <div className="text-center text-gray-400 text-sm">
+                  <p>Loading services...</p>
+                </div>
+              );
               })()}
-            </div>
           </div>
 
           {/* Quick Links */}

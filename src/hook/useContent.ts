@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 
-interface ContentState {
-  content: any;
-  loading: boolean;
-  error: string | null;
-}
+// interface ContentState { // Reserved for future use
+//   content: any;
+//   loading: boolean;
+//   error: string | null;
+// }
 
 export const useContent = (contentType: string) => {
   const [content, setContent] = useState<any>(null);

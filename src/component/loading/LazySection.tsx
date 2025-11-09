@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React /* , { useEffect } */ from 'react'; // useEffect reserved for future use
 import { useIntersectionObserver } from '../../hook/useIntersectionObserver';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 
@@ -11,7 +11,7 @@ interface LazySectionProps {
 }
 
 export const LazySection: React.FC<LazySectionProps> = ({
-  sectionId,
+  sectionId: _sectionId, // Reserved for future use
   children,
   fallback,
   preload = false,

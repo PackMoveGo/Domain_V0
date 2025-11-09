@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react'; // Added missing import
 import { useGiveSectionId } from '../hook/useGiveSectionId';
-import { getHomePageData, getHomePageStatusCode, getHomePageFailedEndpoints, HomePageServiceData } from '../services/public/service.homePageAPI';
+import { getHomePageData, /* getHomePageStatusCode, getHomePageFailedEndpoints */ HomePageServiceData } from '../services/public/service.homePageAPI'; // Reserved for future use
+import { useCookiePreferences } from '../context/CookiePreferencesContext';
 // Modal state is handled by Layout component
 // import SEO from '../component/business/SEO'; // SEO complation
 // const { getSectionProps, isTampered, SectionWarning } = useGiveSectionId(contactPageSections); Hash validation example implmintation
@@ -36,18 +37,21 @@ const FinalCTA = lazy(() => import('../component/business/marketing/banner.final
 export default function HomePage(){
   // Check if we're in SSR mode
   const isSSR = typeof window === 'undefined';
-  const isProduction = process.env.NODE_ENV === 'production';
+  // const isProduction = process.env.NODE_ENV === 'production'; // Reserved for future use
+  
+  // Get cookie preferences to listen for consent changes
+  const { hasConsent, addConsentListener } = useCookiePreferences();
   
   // State for home page data - initialize with SSR-safe defaults
   const [homePageData, setHomePageData] = React.useState<HomePageServiceData | null>(null);
   const [isLoadingData, setIsLoadingData] = React.useState(false); // Never show loading during SSR
   const [dataError, setDataError] = React.useState<string | null>(null);
-  const [statusCode, setStatusCode] = React.useState<number>(200);
+  const [_statusCode, setStatusCode] = React.useState<number>(200); // Reserved for future use
   
   // Modal state is handled by Layout component
   
   // Load home page data using service pattern
-  const loadHomePageData = async () => {
+  const loadHomePageData = React.useCallback(async () => {
     // Skip API calls during SSR
     if (isSSR) {
       return;
@@ -62,9 +66,11 @@ export default function HomePage(){
       const data = await getHomePageData();
       
       // Check if the data contains 503 error information
+      // Don't set dataError - let components handle null data gracefully
       if (data && (data as any).error && (data as any).is503Error) {
         setStatusCode(503);
-        setDataError('503 Service Unavailable');
+        // Don't set dataError - components will handle null data gracefully
+        // setDataError('503 Service Unavailable');
         setHomePageData(null);
         return;
       }
@@ -72,21 +78,22 @@ export default function HomePage(){
       setHomePageData(data);
       setStatusCode(200);
       
-      // Check if there are any errors and set appropriate states
-      const hasErrors = !data.services || !data.testimonials || !data.recentMoves || !data.nav || !data.authStatus;
-      if (hasErrors) {
-        setDataError('503 Service Unavailable');
-        setStatusCode(503);
-      }
+      // Don't set error just because data is null - null is valid when API calls fail
+      // Only set error if there's an actual error in the data object itself
+      // The components will handle null data gracefully
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
       
       // Check if this is a 503 error
+      // IMPORTANT: Don't set dataError for 503 errors - let components handle null data gracefully
+      // The API failure modal will be shown by middleware, and components will show friendly messages
       if (error instanceof Error && (error as any).is503Error) {
         setStatusCode(503);
-        setDataError('503 Service Unavailable');
+        // Don't set dataError - let components handle null data gracefully
+        // setDataError('503 Service Unavailable');
       } else {
+        // Only set error for non-503 errors (actual failures, not just API unavailability)
         setDataError(errorMessage);
         setStatusCode(500);
       }
@@ -95,32 +102,83 @@ export default function HomePage(){
     } finally {
       setIsLoadingData(false);
     }
-  };
+  }, [isSSR]);
 
-  // Call load data on component mount (client-side only)
+  // Check initial consent state and load data if already granted - ALWAYS load if consent exists
   React.useEffect(() => {
-    if (!isSSR) {
+    if (!isSSR && hasConsent) {
+      console.log('🍪 [HOME-PAGE] Consent already granted on mount - loading data');
+      // Increased delay to ensure API is fully unblocked
+      setTimeout(() => {
+        loadHomePageData();
+      }, 200);
+    }
+  }, [isSSR, hasConsent, loadHomePageData]);
+
+  // Call load data on component mount (client-side only) - only if no consent yet
+  React.useEffect(() => {
+    if (!isSSR && !hasConsent) {
+      // Try to load anyway - will be blocked by consent but sets up the state
       loadHomePageData();
     }
-  }, [isSSR]);
+  }, [isSSR, hasConsent, loadHomePageData]);
+
+  // Listen for consent granted events - ALWAYS reload when consent is granted
+  React.useEffect(() => {
+    if (!isSSR) {
+      const removeListener = addConsentListener((hasConsent) => {
+        // When consent is granted, reload page data
+        if (hasConsent) {
+          console.log('🍪 [HOME-PAGE] Consent granted - reloading page data');
+          // Increased delay and force reload regardless of existing data
+          setTimeout(() => {
+            loadHomePageData();
+          }, 200);
+        }
+      });
+      
+      // Listen for all consent-related window events
+      const handleConsentGranted = () => {
+        console.log('🍪 [HOME-PAGE] Window event: consent granted - reloading data');
+        setTimeout(() => {
+          loadHomePageData();
+        }, 200);
+      };
+      
+      window.addEventListener('cookie-opt-in', handleConsentGranted);
+      window.addEventListener('api-consent-granted', handleConsentGranted);
+      window.addEventListener('cookie-consent-change', handleConsentGranted);
+      
+      // Cleanup listeners on unmount
+      return () => {
+        removeListener();
+        window.removeEventListener('cookie-opt-in', handleConsentGranted);
+        window.removeEventListener('api-consent-granted', handleConsentGranted);
+        window.removeEventListener('cookie-consent-change', handleConsentGranted);
+      };
+    }
+  }, [isSSR, addConsentListener, loadHomePageData]);
 
   // Modal state is handled by Layout component
   
-  // SSR-safe section props
-  let getSectionProps;
-  try {
-    const sectionHook = useGiveSectionId();
-    getSectionProps = sectionHook.getSectionProps;
-  } catch (error) {
-    // Fallback for SSR when hook is not available
-    getSectionProps = (id: string) => ({ id });
-  }
+  // Always call hooks at the top level (React Hooks rule)
+  const sectionHook = useGiveSectionId();
+  
+  // Use conditional values based on SSR, but hook is always called
+  const getSectionProps = isSSR ? ((id: string) => ({ id })) : sectionHook.getSectionProps;
 
   // Determine if we should show services in Hero (SSR-safe)
   const shouldShowServicesInHero = isSSR ? true : homePageData?.services;
   
   // Transform services data for components (SSR-safe with fallbacks)
-  const servicesData = isSSR ? [] : (homePageData?.services?.services || []);
+  // Handle different response structures: { services: [...] } or [...] directly
+  const servicesData = isSSR ? [] : (
+    homePageData?.services 
+      ? (Array.isArray(homePageData.services) 
+          ? homePageData.services 
+          : (homePageData.services.services || homePageData.services.data || []))
+      : []
+  );
   const recentMovesData = isSSR ? [] : (homePageData?.recentMoves?.recentMoves || homePageData?.recentMoves?.moves || []);
   const testimonialsData = isSSR ? [] : (homePageData?.testimonials?.testimonials || []);
   const totalMoves = isSSR ? 0 : (recentMovesData.length || 0);

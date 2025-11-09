@@ -55,7 +55,7 @@ class ImageOptimizer {
         try {
           await this.preloadImage(config.fallbackSrc);
           return config.fallbackSrc;
-        } catch (fallbackError) {
+        } catch (_fallbackError) { // Reserved for future use
           console.error(`Fallback image also failed: ${config.fallbackSrc}`);
         }
       }

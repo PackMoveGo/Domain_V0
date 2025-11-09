@@ -141,14 +141,14 @@ interface SSRUserTrackingProviderProps {
   serverUrl?: string;
 }
 
-export const SSRUserTrackingProvider: React.FC<SSRUserTrackingProviderProps> = ({ children, serverUrl }) => {
+export const SSRUserTrackingProvider: React.FC<SSRUserTrackingProviderProps> = ({ children, serverUrl: _serverUrl }) => { // serverUrl reserved for future use
   return <>{children}</>;
 };
 
 // Combined SSR-safe providers
-export const SSRProviders: React.FC<{ children: ReactNode; serverUrl?: string }> = ({ children, serverUrl }) => {
+export const SSRProviders: React.FC<{ children: ReactNode; serverUrl?: string }> = ({ children, serverUrl: _serverUrl }) => { // serverUrl reserved for future use
   return (
-    <SSRUserTrackingProvider serverUrl={serverUrl}>
+    <SSRUserTrackingProvider serverUrl={_serverUrl}>
       <SSRCookiePreferencesProvider>
         <SSRSectionDataProvider>
           <SSRSectionVerificationProvider>

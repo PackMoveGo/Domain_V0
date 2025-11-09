@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { getComprehensiveContactPageData } from '../services/public/service.contactPageAPI';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
+import { useCookiePreferences } from '../context/CookiePreferencesContext';
 // Modal state is handled by Layout component
 
 // Lazy load contact components
@@ -24,12 +25,15 @@ const ContactCTA = lazy(() => import('../component/business/contact/banner.conta
 export default function ContactPage() {
   // Check if we're in SSR mode
   const isSSR = typeof window === 'undefined';
-  const isProduction = process.env.NODE_ENV === 'production';
+  // const isProduction = process.env.NODE_ENV === 'production'; // Reserved for future use
+  
+  // Get cookie preferences to listen for consent changes
+  const { hasConsent, addConsentListener } = useCookiePreferences();
   
   // State for contact page data - initialize with SSR-safe defaults
-  const [contactPageData, setContactPageData] = React.useState<any>(null);
+  const [_contactPageData, setContactPageData] = React.useState<any>(null); // Reserved for future use
   const [isLoadingData, setIsLoadingData] = React.useState(false); // Never show loading during SSR
-  const [dataError, setDataError] = React.useState<string | null>(null);
+  const [_dataError, setDataError] = React.useState<string | null>(null); // Reserved for future use
   
   // Modal state is handled by Layout component
 
@@ -37,7 +41,7 @@ export default function ContactPage() {
   const { getSectionProps } = useGiveSectionId();
 
   // Load contact page data using comprehensive API service with modal middleware
-  const loadContactPageData = async () => {
+  const loadContactPageData = React.useCallback(async () => {
     // Skip API calls during SSR
     if (isSSR) {
       return;
@@ -70,31 +74,84 @@ export default function ContactPage() {
       console.log('✅ Contact page data loaded successfully:', {
         nav: !!data.nav,
         contact: !!data.contact,
-        health: !!data.health
+        lastUpdated: !!data.lastUpdated
       });
     } catch (error) {
       console.error('❌ Failed to load contact page data:', error);
       
-      // Check if this is a 503 error
-      if (error instanceof Error && (error as any).is503Error) {
+      // Check if this is a consent-blocked error (don't show 503 modal)
+      const { isConsentBlockedError, isReal503Error } = await import('../util/apiConsentCoordinator');
+      if (isConsentBlockedError(error)) {
+        console.log('🍪 [CONTACT] Consent-blocked error - not showing 503 modal');
+        setDataError('Cookie consent required');
+        // Don't set 503 error, let user handle consent
+      } else if (isReal503Error(error) || (error instanceof Error && (error as any).is503Error)) {
         setDataError('503 Service Unavailable');
       } else {
         const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
         setDataError(errorMessage);
       }
       
-      // Modal will be handled by service middleware automatically
+      // Modal will be handled by service middleware automatically (unless consent-blocked)
     } finally {
       setIsLoadingData(false);
     }
-  };
+  }, [isSSR]);
 
-  // Call load data on component mount (client-side only)
+  // Check initial consent state and load data if already granted - ALWAYS load if consent exists
   React.useEffect(() => {
-    if (!isSSR) {
+    if (!isSSR && hasConsent) {
+      console.log('🍪 [CONTACT-PAGE] Consent already granted on mount - loading data');
+      // Increased delay to ensure API is fully unblocked
+      setTimeout(() => {
+        loadContactPageData();
+      }, 200);
+    }
+  }, [isSSR, hasConsent, loadContactPageData]);
+
+  // Call load data on component mount (client-side only) - only if no consent yet
+  React.useEffect(() => {
+    if (!isSSR && !hasConsent) {
+      // Try to load anyway - will be blocked by consent but sets up the state
       loadContactPageData();
     }
-  }, [isSSR]);
+  }, [isSSR, hasConsent, loadContactPageData]);
+
+  // Listen for consent granted events - ALWAYS reload when consent is granted
+  React.useEffect(() => {
+    if (!isSSR) {
+      const removeListener = addConsentListener((hasConsent) => {
+        // When consent is granted, reload page data
+        if (hasConsent) {
+          console.log('🍪 [CONTACT-PAGE] Consent granted - reloading page data');
+          // Increased delay and force reload regardless of existing data
+          setTimeout(() => {
+            loadContactPageData();
+          }, 200);
+        }
+      });
+      
+      // Listen for all consent-related window events
+      const handleConsentGranted = () => {
+        console.log('🍪 [CONTACT-PAGE] Window event: consent granted - reloading data');
+        setTimeout(() => {
+          loadContactPageData();
+        }, 200);
+      };
+      
+      window.addEventListener('cookie-opt-in', handleConsentGranted);
+      window.addEventListener('api-consent-granted', handleConsentGranted);
+      window.addEventListener('cookie-consent-change', handleConsentGranted);
+      
+      // Cleanup listeners on unmount
+      return () => {
+        removeListener();
+        window.removeEventListener('cookie-opt-in', handleConsentGranted);
+        window.removeEventListener('api-consent-granted', handleConsentGranted);
+        window.removeEventListener('cookie-consent-change', handleConsentGranted);
+      };
+    }
+  }, [isSSR, addConsentListener, loadContactPageData]);
 
   // Modal state is handled by Layout component
 

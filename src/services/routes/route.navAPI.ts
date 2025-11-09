@@ -120,7 +120,7 @@ export const createScrollHandler = (
     if (!ticking) {
       window.requestAnimationFrame(() => {
         const currentScrollY = window.scrollY;
-        const { isScrollingUp, newUpScrollDistance } = calculateScrollMetrics(
+        const { isScrollingUp: _isScrollingUp, newUpScrollDistance } = calculateScrollMetrics( // Reserved for future use
           currentScrollY,
           lastScrollY,
           upScrollDistance

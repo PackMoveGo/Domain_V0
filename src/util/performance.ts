@@ -478,7 +478,7 @@ export const measureCookieConsentPerformance = () => {
       if (!savedPreferences) return false;
       const preferences = JSON.parse(savedPreferences);
       return preferences.hasMadeChoice === true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   })();

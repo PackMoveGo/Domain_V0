@@ -22,7 +22,7 @@ export type ApiMiddleware<T = any> = (
  * This middleware checks if API calls should be blocked based on cookie consent
  */
 export const useApiBlockingMiddleware = (): ApiMiddleware => {
-  const { isApiBlocked, hasConsent } = useCookiePreferences();
+  const { isApiBlocked /* , hasConsent */ } = useCookiePreferences(); // hasConsent reserved for future use
 
   return async <T>(
     apiCall: () => Promise<T>,

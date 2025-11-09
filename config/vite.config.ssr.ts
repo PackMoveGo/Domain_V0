@@ -1,9 +1,13 @@
 import { defineConfig, type UserConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import fs from 'fs'
 
-export default defineConfig(({ mode, command }): UserConfig => {
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+export default defineConfig(({ mode, _command }): UserConfig => { // Reserved for future use
   // Load environment variables from .env file
   const loadEnvFile = (filePath: string): Record<string, string> => {
     try {
@@ -35,7 +39,7 @@ export default defineConfig(({ mode, command }): UserConfig => {
       });
       
       return env;
-    } catch (error) {
+    } catch (_error) { // Reserved for future use
       console.warn(`Could not load environment file: ${filePath}`);
       return {};
     }

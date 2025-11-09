@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { getCurrentTimestamp } from '../util/ssrUtils';
 import { checkPendingApiErrors } from '../util/apiErrorHandler';
-import { resetHealthGate } from '../services/service.apiSW';
+import { resetHealthGate, updateApiBlockedState, emitConsentStateChange } from '../services/service.apiSW';
 
 interface CookiePreferences {
   thirdPartyAds: boolean;
@@ -27,6 +27,8 @@ interface CookiePreferencesContextType {
   isApiBlocked: boolean;
   hasConsent: boolean;
   isWaitingForConsent: boolean;
+  // Event system
+  addConsentListener: (listener: (hasConsent: boolean) => void) => () => void;
 }
 
 const defaultPreferences: CookiePreferences = {
@@ -53,6 +55,28 @@ interface CookiePreferencesProviderProps {
 export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps> = ({ children }) => {
   const [preferences, setPreferences] = useState<CookiePreferences>(defaultPreferences);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Event listeners for consent state changes
+  const consentListenersRef = useRef<Set<(hasConsent: boolean) => void>>(new Set());
+  
+  // Add listener for consent state changes
+  const addConsentListener = (listener: (hasConsent: boolean) => void) => {
+    consentListenersRef.current.add(listener);
+    return () => {
+      consentListenersRef.current.delete(listener);
+    };
+  };
+  
+  // Emit consent state change to all listeners
+  const emitConsentChange = (hasConsent: boolean) => {
+    consentListenersRef.current.forEach(listener => {
+      try {
+        listener(hasConsent);
+      } catch (error) {
+        console.error('Error in consent listener:', error);
+      }
+    });
+  };
 
   // Banner timer functions - SSR-safe
   const checkBannerTimer = (): boolean => {
@@ -89,6 +113,21 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
   const isApiBlocked = !hasOptedIn;
   const hasConsent = hasOptedIn;
   const isWaitingForConsent = !hasOptedIn;
+  
+  // Update API service when consent state changes
+  useEffect(() => {
+    if (!isLoading && typeof window !== 'undefined') {
+      updateApiBlockedState(isApiBlocked);
+      emitConsentStateChange(hasConsent);
+      emitConsentChange(hasConsent);
+      
+      console.log('🍪 [CONTEXT] Consent state updated:', {
+        hasConsent,
+        isApiBlocked,
+        hasOptedIn
+      });
+    }
+  }, [isLoading, hasConsent, isApiBlocked, hasOptedIn]);
 
   useEffect(() => {
     const loadPreferences = () => {
@@ -159,6 +198,11 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cookie-opt-out'));
       
+      // Update API service state
+      updateApiBlockedState(true);
+      emitConsentStateChange(false);
+      emitConsentChange(false);
+      
       // Refresh the page to apply opt-out restrictions
       setTimeout(() => {
         window.location.reload();
@@ -183,13 +227,21 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
     if (typeof window !== 'undefined') {
       localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
       
-      // Notify consent change
-      window.dispatchEvent(new CustomEvent('cookie-consent-change'));
+      // Notify consent change via multiple channels
+      window.dispatchEvent(new CustomEvent('cookie-consent-change', { detail: { hasConsent: true } }));
+      window.dispatchEvent(new CustomEvent('cookie-opt-in'));
+      
+      // Update API service state immediately
+      updateApiBlockedState(false);
+      emitConsentStateChange(true);
+      emitConsentChange(true);
       
       // Check for pending API errors now that consent is given
       console.log('🍪 Checking for pending API errors after consent');
       setTimeout(() => {
         checkPendingApiErrors();
+        // Trigger retry for any pending API calls
+        window.dispatchEvent(new CustomEvent('api-consent-granted'));
       }, 100);
     }
   };
@@ -208,6 +260,7 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
     isApiBlocked,
     hasConsent,
     isWaitingForConsent,
+    addConsentListener,
   };
 
   return (

@@ -2,11 +2,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { styles } from '../../../styles/common';
-import { ServiceData } from '../../../util/serviceParser';
+import { NormalizedService } from '../../../util/serviceNormalizer';
 import { LazySection } from '../../loading/LazySection';
 
 interface OurServicesProps {
-  services?: ServiceData[];
+  services?: NormalizedService[];
   isLoading?: boolean;
   error?: string | null;
 }
@@ -17,7 +17,7 @@ function getDisplay(val: any) {
   return val;
 }
 
-export default function OurServices({ services: propServices, isLoading, error }: OurServicesProps) {
+export default function OurServices({ services: propServices, isLoading: _isLoading, error: _error }: OurServicesProps) { // Reserved for future use
   const navigate = useNavigate();
   
   // Get services from props only (no API calls)
@@ -26,8 +26,14 @@ export default function OurServices({ services: propServices, isLoading, error }
   // Check if we have data
   const hasServices = services && services.length > 0;
 
-  // Show message when no services are provided
+  // Show message when no services are provided - only show error if explicitly passed
   if (!hasServices) {
+    // Only show error message if error prop is explicitly provided AND it's a 503 error
+    // Don't show error during loading or when error is null/undefined
+    const showError = _error && 
+                      typeof _error === 'string' && 
+                      (_error.includes('503') || _error.includes('Service Unavailable'));
+    
     return (
       <LazySection sectionId="services" preload={true}>
         <div className={`${styles.section.default} bg-gray-50`}>
@@ -35,17 +41,18 @@ export default function OurServices({ services: propServices, isLoading, error }
             <div className="text-center mb-16">
               <h2 className={styles.heading.h2}>Our Services</h2>
               <p className={`${styles.text.body} max-w-3xl mx-auto`}>
-                From residential moves to commercial relocations, we offer comprehensive moving solutions tailored to your needs.
+                Professional moving solutions for every need
               </p>
               
-              {/* Services Temporarily Unavailable Warning */}
+              {/* Only show error message if there's an actual 503 API error */}
+              {showError ? (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-6 max-w-2xl mx-auto">
                 <div className="flex items-center justify-center mb-4">
                   <div className="text-yellow-600 text-4xl mr-3">⚠️</div>
                   <h3 className="text-lg font-semibold text-yellow-800">Services Temporarily Unavailable</h3>
                 </div>
                 <p className="text-yellow-700 mb-4">
-                  We're experiencing technical difficulties loading our services. Please contact us directly for information about our coverage areas.
+                  We're experiencing technical difficulties loading our services. Please contact us directly for information about our services.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <a
@@ -62,6 +69,15 @@ export default function OurServices({ services: propServices, isLoading, error }
                   </a>
                 </div>
               </div>
+              ) : (
+                // Show friendly message when data is just not available yet (not an error)
+                // This handles loading state and cases where services simply haven't loaded yet
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6 max-w-2xl mx-auto">
+                  <p className="text-blue-700">
+                    Our services information is being loaded. Please check back in a moment or contact us directly.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -82,7 +98,7 @@ export default function OurServices({ services: propServices, isLoading, error }
           </div>
           
           <div className={styles.grid.services}>
-            {services.map((service: ServiceData) => (
+            {services.map((service: NormalizedService) => (
               <div key={service.title} className={`${styles.card.default} hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1`}>
                 <div className="text-4xl mb-4">{service.icon}</div>
                 <h3 className={styles.heading.h3}>{service.title}</h3>

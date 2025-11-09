@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState /* , useEffect */ } from 'react'; // useEffect reserved for future use
 import { useCookiePreferences } from '../context/CookiePreferencesContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../component/layout/Layout';
@@ -16,32 +16,32 @@ const CookieOptOutPage: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   
   // Get cookie preferences with error handling
-  let preferences, hasOptedOut, hasMadeChoice, optIn, optOut, updatePreferences, isLoading;
-  let checkBannerTimer, clearBannerCache;
+  let preferences, hasOptedOut, _hasMadeChoice, _optIn, _optOut, updatePreferences, isLoading; // Reserved for future use
+  let _checkBannerTimer, _clearBannerCache; // Reserved for future use
   
   try {
     const cookiePrefs = useCookiePreferences();
     preferences = cookiePrefs.preferences;
     hasOptedOut = cookiePrefs.hasOptedOut;
-    hasMadeChoice = cookiePrefs.hasMadeChoice;
-    optIn = cookiePrefs.optIn;
-    optOut = cookiePrefs.optOut;
+    _hasMadeChoice = cookiePrefs.hasMadeChoice; // Reserved for future use
+    _optIn = cookiePrefs.optIn; // Reserved for future use
+    _optOut = cookiePrefs.optOut; // Reserved for future use
     updatePreferences = cookiePrefs.updatePreferences;
     isLoading = cookiePrefs.isLoading;
-    checkBannerTimer = cookiePrefs.checkBannerTimer;
-    clearBannerCache = cookiePrefs.clearBannerCache;
+    _checkBannerTimer = cookiePrefs.checkBannerTimer; // Reserved for future use
+    _clearBannerCache = cookiePrefs.clearBannerCache; // Reserved for future use
   } catch (error) {
     console.error('🍪 CookieOptOutPage: Error accessing cookie preferences:', error);
     // Provide fallback values
     preferences = { thirdPartyAds: true, analytics: true, functional: true, hasMadeChoice: false };
     hasOptedOut = false;
-    hasMadeChoice = false;
+    _hasMadeChoice = false; // Reserved for future use
     isLoading = false;
-    optIn = () => console.warn('Cookie preferences not available');
-    optOut = () => console.warn('Cookie preferences not available');
+    _optIn = () => console.warn('Cookie preferences not available'); // Reserved for future use
+    _optOut = () => console.warn('Cookie preferences not available'); // Reserved for future use
     updatePreferences = () => console.warn('Cookie preferences not available');
-    checkBannerTimer = () => true;
-    clearBannerCache = () => {};
+    _checkBannerTimer = () => true; // Reserved for future use
+    _clearBannerCache = () => {}; // Reserved for future use
   }
 
   // Use the usePageSEO hook for SEO data

@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { useGiveSectionId, defaultAboutSections } from '../hook/useGiveSectionId';
 import { getComprehensiveAboutPageData } from '../services/public/service.aboutPageAPI';
+import { useCookiePreferences } from '../context/CookiePreferencesContext';
 // Modal state is handled by Layout component
 
 // Lazy load Hero component
@@ -24,7 +25,10 @@ const QuoteForm = lazy(() => import('../component/forms/form.quote'));
 export default function AboutPage() {
   // Check if we're in SSR mode
   const isSSR = typeof window === 'undefined';
-  const isProduction = process.env.NODE_ENV === 'production';
+  // const isProduction = process.env.NODE_ENV === 'production'; // Reserved for future use
+  
+  // Get cookie preferences to listen for consent changes
+  const { hasConsent, addConsentListener } = useCookiePreferences();
   
   // State for about page data - initialize with SSR-safe defaults
   const [aboutPageData, setAboutPageData] = React.useState<any>(null);
@@ -34,7 +38,7 @@ export default function AboutPage() {
   // Modal state is handled by Layout component
   
   // Load about page data using comprehensive API service with modal middleware
-  const loadAboutPageData = async () => {
+  const loadAboutPageData = React.useCallback(async () => {
     // Skip API calls during SSR
     if (isSSR) {
       return;
@@ -84,14 +88,62 @@ export default function AboutPage() {
     } finally {
       setIsLoadingData(false);
     }
-  };
+  }, [isSSR]);
 
-  // Call load data on component mount (client-side only)
+  // Check initial consent state and load data if already granted - ALWAYS load if consent exists
   React.useEffect(() => {
-    if (!isSSR) {
+    if (!isSSR && hasConsent) {
+      console.log('🍪 [ABOUT-PAGE] Consent already granted on mount - loading data');
+      // Increased delay to ensure API is fully unblocked
+      setTimeout(() => {
+        loadAboutPageData();
+      }, 200);
+    }
+  }, [isSSR, hasConsent, loadAboutPageData]);
+
+  // Call load data on component mount (client-side only) - only if no consent yet
+  React.useEffect(() => {
+    if (!isSSR && !hasConsent) {
+      // Try to load anyway - will be blocked by consent but sets up the state
       loadAboutPageData();
     }
-  }, [isSSR]);
+  }, [isSSR, hasConsent, loadAboutPageData]);
+
+  // Listen for consent granted events - ALWAYS reload when consent is granted
+  React.useEffect(() => {
+    if (!isSSR) {
+      const removeListener = addConsentListener((hasConsent) => {
+        // When consent is granted, reload page data
+        if (hasConsent) {
+          console.log('🍪 [ABOUT-PAGE] Consent granted - reloading page data');
+          // Increased delay and force reload regardless of existing data
+          setTimeout(() => {
+            loadAboutPageData();
+          }, 200);
+        }
+      });
+      
+      // Listen for all consent-related window events
+      const handleConsentGranted = () => {
+        console.log('🍪 [ABOUT-PAGE] Window event: consent granted - reloading data');
+        setTimeout(() => {
+          loadAboutPageData();
+        }, 200);
+      };
+      
+      window.addEventListener('cookie-opt-in', handleConsentGranted);
+      window.addEventListener('api-consent-granted', handleConsentGranted);
+      window.addEventListener('cookie-consent-change', handleConsentGranted);
+      
+      // Cleanup listeners on unmount
+      return () => {
+        removeListener();
+        window.removeEventListener('cookie-opt-in', handleConsentGranted);
+        window.removeEventListener('api-consent-granted', handleConsentGranted);
+        window.removeEventListener('cookie-consent-change', handleConsentGranted);
+      };
+    }
+  }, [isSSR, addConsentListener, loadAboutPageData]);
 
   // Modal state is handled by Layout component
   

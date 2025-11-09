@@ -18,7 +18,8 @@ const ModalOrderTest: React.FC = () => {
     
     try {
       // This should fail since backend is not running
-      const response = await api.getServices();
+      // const response = await api.getServices(); // Reserved for future use
+      await api.getServices();
       setResult('API call succeeded (unexpected)');
     } catch (error) {
       setResult('API call failed as expected');

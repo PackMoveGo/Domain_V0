@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+dist/
+build/
+
+# Config files
+*.config.js
+*.config.ts
+*.config.mjs
+
+# Build outputs
+*.d.ts
+*.js.map
+
+# Test files (optional - uncomment if you want to lint tests)
+# **/*.test.ts
+# **/*.test.tsx
+# **/*.spec.ts
+# **/*.spec.tsx
+
+# Legacy files
+*.backup
+*.bak
+
+# Generated files
+coverage/
+.nyc_output/
+

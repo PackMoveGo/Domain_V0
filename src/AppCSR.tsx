@@ -1,10 +1,10 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import ErrorBoundary from './component/ui/feedback/ErrorBoundary';
-import Layout from './component/layout/Layout';
+import ErrorBoundary from './component/ui/feedback/errorboundary';
+import Layout from './component/layout/layout';
 
 // Optimized lazy loading with error boundaries and SSR compatibility
-const createLazyComponent = (importFunc: () => Promise<any>, fallback?: React.ReactNode) => {
+const createLazyComponent = (importFunc: () => Promise<any>, _fallback?: React.ReactNode) => { // Reserved for future use
   const LazyComponent = lazy(() => 
     importFunc().catch((error) => {
       console.error('Failed to load component:', error);
@@ -30,11 +30,13 @@ const createLazyComponent = (importFunc: () => Promise<any>, fallback?: React.Re
     })
   );
   
-  return (props: any) => (
+  const LazyComponentWrapper = (props: any) => (
     <ErrorBoundary>
       <LazyComponent {...props} />
     </ErrorBoundary>
   );
+  LazyComponentWrapper.displayName = 'LazyComponentWrapper';
+  return LazyComponentWrapper;
 };
 
 // Lazy load pages with error boundaries and SSR compatibility
@@ -60,9 +62,9 @@ const NotFoundPage = createLazyComponent(() => import('./pages/page.404'));
 
 // Import ServicesTest component directly for testing
 // import ServicesTest from './component/devtools/ServicesTest';
-import ApiErrorHandlingExample from './component/examples/ApiErrorHandlingExample';
-import ModalOrderTest from './component/examples/ModalOrderTest';
-import ErrorTestingExample from './component/examples/ErrorTestingExample';
+import ApiErrorHandlingExample from './component/examples/apierrorhandlingexample';
+import ModalOrderTest from './component/examples/modalordertest';
+import ErrorTestingExample from './component/examples/errortestingexample';
 
 const AppContent: React.FC = () => {
   console.log('🚀 AppCSR rendering...');

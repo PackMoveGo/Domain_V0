@@ -13,7 +13,7 @@ const QuoteFormSection: FC<QuoteFormSectionProps> = ({
   formData,
   onChange,
   onSubmit,
-  onQuoteSubmit
+  /* onQuoteSubmit */ // Reserved for future use
 }) => {
   const { isOnline } = useOfflineStatus();
   

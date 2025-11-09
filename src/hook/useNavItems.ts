@@ -15,7 +15,7 @@ export const useNavItems = () => {
   const [navItems, setNavItems] = useState<NavItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [waitingForConsent, setWaitingForConsent] = useState(false);
+  const [waitingForConsent, _setWaitingForConsent] = useState(false); // setWaitingForConsent reserved for future use
   const hasInitialized = useRef(false);
 
   useEffect(() => {

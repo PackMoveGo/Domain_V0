@@ -7,7 +7,7 @@
 
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,13 +28,13 @@ console.log('\n🔍 Vite Availability Check:');
 try {
   const vitePath = execSync('which vite', { encoding: 'utf8' }).trim();
   console.log(`   ✅ Vite found at: ${vitePath}`);
-} catch (error) {
-  console.log('   ❌ Vite not found in PATH');
+  } catch (_error) {
+    console.log('   ❌ Vite not found in PATH');
   console.log('   🔧 Trying npx vite...');
   try {
     execSync('npx vite --version', { stdio: 'inherit' });
     console.log('   ✅ Vite available via npx');
-  } catch (npxError) {
+  } catch (_npxError) {
     console.log('   ❌ Vite not available via npx either');
   }
 }
@@ -64,7 +64,7 @@ if (nodeModulesExists) {
     const packageJson = JSON.parse(execSync('cat package.json', { encoding: 'utf8' }));
     console.log(`   📋 Project: ${packageJson.name} v${packageJson.version}`);
     console.log(`   🔧 Build script: ${packageJson.scripts.build}`);
-  } catch (error) {
+  } catch (_error) {
     console.log('   ❌ Could not read package.json');
   }
 }

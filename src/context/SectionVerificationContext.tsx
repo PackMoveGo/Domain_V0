@@ -42,7 +42,7 @@ export const SectionVerificationProvider: React.FC<SectionVerificationProviderPr
 
 
 
-  const verifySections = useCallback(async (sections: string[], path: string) => {
+  const verifySections = useCallback(async (_sections: string[], _path: string) => { // Reserved for future use
     try {
       // Skip verification in production since the backend endpoint doesn't exist
       // This was causing 405 errors on /api/verify-sections

@@ -30,7 +30,7 @@ const Page404: FC = () => {
     // Debug logging
     console.log('404 Page rendered for path:', location.pathname);
     console.log('Current location:', location);
-  }, [location.pathname]);
+  }, [location]); // Include full location object as dependency
 
   // Popular pages to suggest
   const popularPages = [

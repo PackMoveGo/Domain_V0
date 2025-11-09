@@ -2,7 +2,7 @@
 export class BundleOptimizer {
   private preloadedChunks = new Set<string>();
 
-  preloadChunk(chunkName: string): void {
+  preloadChunk(_chunkName: string): void { // Reserved for future use
     // Temporarily disabled
   }
 

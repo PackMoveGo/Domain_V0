@@ -125,7 +125,7 @@ export class PerformanceMonitor {
   getPerformanceMetrics(): PerformanceMeasure | null {
     try {
       return performance.getEntriesByName('performance-monitor-time')[0] as PerformanceMeasure;
-    } catch (error) {
+    } catch (_error) { // Reserved for future use
       return null;
     }
   }

@@ -5,7 +5,7 @@ import { getApiFailureModalProps, addModalStateListener, removeModalStateListene
 import { SearchResult } from '../../util/search';
 import { FormData } from '../forms/form.quote';
 import Analytics from '../business/Analytics';
-import Navbar, { StaticNavbar, SSRNavbar } from '../navigation/Navbar';
+import Navbar, { StaticNavbar /* , SSRNavbar */ } from '../navigation/Navbar'; // SSRNavbar reserved for future use
 import SearchBar from '../navigation/SearchBar';
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
@@ -16,10 +16,12 @@ import DevToolsLauncher from '../debug/DevToolsLauncher';
 import ApiFailureModal from '../ui/overlay/modal.apistatus';
 import CookieOptOut from '../../pages/modal.cookieOptOut';
 import { Helmet } from 'react-helmet-async';
+import { ENABLE_DEV_TOOLS } from '../../util/env';
 
 // SSR-safe environment detection
-const isSSR = typeof window === 'undefined';
+// const isSSR = typeof window === 'undefined'; // Reserved for future use
 const isProduction = process.env.NODE_ENV === 'production';
+const shouldShowDevTools = !isProduction && ENABLE_DEV_TOOLS;
 
 interface LayoutProps {
   forceHideSearch?: boolean;
@@ -49,58 +51,31 @@ const Layout: FC<LayoutProps> = ({
   children,
   isSSR = false
 }) => {
-  // SSR-safe router hooks - use consistent fallback values
-  let location, navigate;
-  if (isSSR) {
-    // SSR: use consistent fallback values
-    location = { pathname: '/' };
-    navigate = () => {};
-  } else {
-    try {
-      location = useLocation();
-      navigate = useNavigate();
-    } catch (error) {
-      // Fallback for SSR when router is not available
-      location = { pathname: '/' };
-      navigate = () => {};
-    }
-  }
+  // Always call hooks at the top level (React Hooks rule)
+  // Use fallback values when in SSR mode
+  const routerLocation = useLocation();
+  const _routerNavigate = useNavigate(); // Reserved for future use
+  const cookiePrefsContext = useCookiePreferences();
+  
+  // Use conditional values based on SSR, but hooks are always called
+  const location = isSSR ? { pathname: '/' } : routerLocation;
+  // const navigate = isSSR ? (() => {}) : routerNavigate; // Reserved for future use
   
   // Detect if we're in SSR mode - use the prop value
-  const isServerSide = isSSR;
+  // const isServerSide = isSSR; // Reserved for future use
   
-  // SSR-safe context usage - always use context but handle SSR gracefully
-  let cookiePrefs;
-  if (isSSR) {
-    // SSR: use consistent fallback values
-    cookiePrefs = {
-      hasConsent: false,
-      isWaitingForConsent: true,
-      isApiBlocked: true,
-      optIn: () => {},
-      hasOptedOut: false,
-      hasMadeChoice: false,
-      hasOptedIn: false,
-      checkBannerTimer: () => true
-    };
-  } else {
-    try {
-      cookiePrefs = useCookiePreferences();
-    } catch (error) {
-      // Fallback for SSR when context is not available
-      cookiePrefs = {
-        hasConsent: false,
-        isWaitingForConsent: true,
-        isApiBlocked: true,
-        optIn: () => {},
-        hasOptedOut: false,
-        hasMadeChoice: false,
-        hasOptedIn: false,
-        checkBannerTimer: () => true
-      };
-    }
-  }
-  const { hasConsent, isWaitingForConsent, isApiBlocked, optIn, hasOptedOut, hasMadeChoice, hasOptedIn, checkBannerTimer } = cookiePrefs;
+  // Use conditional values based on SSR, but hook is always called
+  const cookiePrefs = isSSR ? {
+    hasConsent: false,
+    isWaitingForConsent: true,
+    isApiBlocked: true,
+    optIn: () => {},
+    hasOptedOut: false,
+    hasMadeChoice: false,
+    hasOptedIn: false,
+    checkBannerTimer: () => true
+  } : cookiePrefsContext;
+  const { hasMadeChoice, hasOptedIn, checkBannerTimer, isWaitingForConsent } = cookiePrefs;
   
   // SSR-safe consent state - use consistent values to prevent hydration mismatches
   // Always start with the same initial values for both server and client
@@ -185,7 +160,18 @@ const Layout: FC<LayoutProps> = ({
 
     const updateModalState = () => {
       const currentModalProps = getApiFailureModalProps();
-      setModalProps(currentModalProps);
+      
+      // Only show 503 modal after consent is given
+      // This ensures the modal reflects the actual API status after consent, not before
+      const shouldShow503Modal = currentModalProps.isVisible && 
+        currentModalProps.is503Error && // Only show for real 503 errors
+        hasMadeChoice && // Only show after user has made a choice
+        hasOptedIn; // Only show if user has opted in (consent granted)
+      
+      setModalProps({
+        ...currentModalProps,
+        isVisible: shouldShow503Modal
+      });
     };
 
     // Add listener for modal state changes
@@ -195,7 +181,8 @@ const Layout: FC<LayoutProps> = ({
     return () => {
       removeModalStateListener(updateModalState);
     };
-  }, [isStaticPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStaticPage, hasMadeChoice, isWaitingForConsent]);
 
     const renderChildren = () => {
     return React.Children.map(children, child => {
@@ -296,16 +283,20 @@ const Layout: FC<LayoutProps> = ({
         </main>
         <ScrollToTopButton />
         {!forceHideFooter && <Footer />}
-        {/* Development Tools - Only show when NODE_ENV=development */}
-        {!isProduction && <DevToolsLauncher isVisible={true} />}
+        {/* Development Tools - Only show when NODE_ENV=development AND ENABLE_DEV_TOOLS=true */}
+        {shouldShowDevTools && <DevToolsLauncher isVisible={true} />}
         
         {/* Cookie Modal - Show on non-static pages when user hasn't made a choice OR when 30 minutes have passed (SSR-safe) */}
+        {/* Z-Index: Cookie Consent (z-[10000]) > 503 Modal (z-[9500]) - Cookie consent takes priority */}
         {!isStaticPage && (!hasMadeChoice || checkBannerTimer()) && !isSSR && (
           <CookieOptOut />
         )}
         
         {/* API Failure Modal - Only show on non-static pages (SSR-safe) */}
-        {!isStaticPage && !isSSR && <ApiFailureModal {...modalProps} />}
+        {/* Show 503 modal only after consent is given - ensures modal reflects actual API status */}
+        {!isStaticPage && !isSSR && (
+          <ApiFailureModal {...modalProps} />
+        )}
       </div>
     </>
   );

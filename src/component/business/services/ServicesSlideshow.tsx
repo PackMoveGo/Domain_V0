@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import type { ServiceData } from "../../../util/serviceParser";
 import { useNavigate } from "react-router-dom";
-import { styles } from "../../../styles/common";
-import { api } from "../../../services/service.apiSW";
+// import { styles } from "../../../styles/common"; // Reserved for future use
+// import { api } from "../../../services/service.apiSW"; // Reserved for future use
 
 const AUTO_ROTATE_INTERVAL = 5e3;
 
