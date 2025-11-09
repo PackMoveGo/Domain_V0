@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm ci && npm run build:csr",
+  "buildCommand": "npm run build:csr",
   "outputDirectory": "dist",
   "rewrites": [
     {
