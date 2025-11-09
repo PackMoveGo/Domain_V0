@@ -1,6 +1,7 @@
 {
-  "buildCommand": "npm install && npm run build:csr",
+  "buildCommand": "npm run build:csr",
   "outputDirectory": "dist",
+  "rootDirectory": null,
   "rewrites": [
     {
       "source": "/(.*)",
