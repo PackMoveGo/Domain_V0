@@ -29,7 +29,7 @@ try {
   const vitePath = execSync('which vite', { encoding: 'utf8' }).trim();
   console.log(`   ✅ Vite found at: ${vitePath}`);
   } catch (_error) {
-    console.log('   ❌ Vite not found in PATH');
+  console.log('   ❌ Vite not found in PATH');
   console.log('   🔧 Trying npx vite...');
   try {
     execSync('npx vite --version', { stdio: 'inherit' });
