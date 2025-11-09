@@ -1,7 +1,8 @@
 {
   "buildCommand": "npm run build:csr",
   "outputDirectory": "dist",
-  "installCommand": "npm install --legacy-peer-deps --force",
+  "installCommand": "npm install",
+  "framework": null,
   "rewrites": [
     {
       "source": "/(.*)",
