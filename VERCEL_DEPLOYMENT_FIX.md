@@ -35,12 +35,19 @@ Vercel checks if the Git author email from your repository commits is associated
    git commit --amend --author="Your Name <your-vercel-email@example.com>" --no-edit
    ```
 
-### Solution 3: Use GitHub Integration (Easiest)
+### Solution 3: Connect GitHub Account to Vercel (REQUIRED)
+Your email is verified but GitHub must be connected:
+1. Go to https://vercel.com/account/login-connections
+2. Click **"Connect"** next to GitHub
+3. Authorize the connection
+4. Then try `vercel --prod` again
+
+### Solution 4: Use GitHub Integration (Easiest - Bypasses CLI Issues)
 Instead of using CLI, use Vercel's GitHub integration:
 1. Go to Vercel Dashboard → Your Project → Settings → Git
 2. Connect your GitHub repository
 3. Push to GitHub - Vercel will deploy automatically
-4. This bypasses the Git author check
+4. This bypasses the Git author check entirely
 
 ### Solution 4: Use Deployment Script
 The project includes a deployment script that sets Git author environment variables:
