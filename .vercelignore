@@ -8,8 +8,8 @@ node_modules/
 
 # Build artifacts that should be in dist/ instead
 *.log
-*.lock
-package-lock.json
+# *.lock - Keep package-lock.json for Vercel builds
+# package-lock.json - Keep for dependency resolution
 
 # Development and testing files
 *.test.*
