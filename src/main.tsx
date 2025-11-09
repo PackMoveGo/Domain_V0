@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import * as ReactDOMClient from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import App from './App';
+import App from './app';
 
 // SSR-safe environment detection
 const isSSR = typeof window === 'undefined';

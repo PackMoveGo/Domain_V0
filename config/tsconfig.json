@@ -6,8 +6,10 @@
     "module":"ESNext",
     "skipLibCheck":true,
 
-    /* Bundler mode */
+    /* Bundler mode - fallback to node for better CI compatibility */
     "moduleResolution":"bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "allowImportingTsExtensions":true,
     "resolveJsonModule":true,
     "isolatedModules":true,
@@ -32,6 +34,6 @@
       "@vercel/speed-insights":["./node_modules/@vercel/speed-insights/dist/index.js"]
     }
   },
-  "include":["../src/**/*.ts","../src/**/*.tsx","../src/**/*.js","../src/**/*.jsx","../src/types/**/*.d.ts","vercel.tsx","contentSecurityPolicy.ts","api.ts","cors.ts"],
+  "include":["../src/**/*.ts","../src/**/*.tsx","../src/**/*.js","../src/**/*.jsx","../src/types/**/*.d.ts","../src/appCSR.tsx","vercel.tsx","contentSecurityPolicy.ts","api.ts","cors.ts"],
   "exclude":["../dist/*","../node_modules/*"]
 } 
