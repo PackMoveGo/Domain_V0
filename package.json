@@ -5,7 +5,7 @@
   "description": "PackMoveGo Desktop Application - Moving and Packing Services",
   "main": "src/entry-server.jsx",
   "scripts": {
-    "dev": "chmod +x scripts/turnOFFPort.sh && ./scripts/turnOFFPort.sh 5001 && vite --config config/vite.config.csr.ts --mode development --port 5001",
+    "dev": "chmod +x scripts/turnOFFPort.sh && ./scripts/turnOFFPort.sh 5001 && VITE_DEV_HTTPS=true vite --config config/vite.config.csr.ts --mode development --port 5001",
     "dev:react": "vite --config config/vite.config.csr.ts",
     "dev:redirect": "node scripts/http-redirect-server.js",
     "dev:secure": "concurrently -n redirect,vite -c cyan,magenta \"npm run dev:redirect\" \"chmod +x scripts/turnOFFPort.sh && ./scripts/turnOFFPort.sh 5001 && vite --config config/vite.config.csr.ts --mode development --port 5001\"",
