@@ -64,7 +64,14 @@ const Testimonials: React.FC<TestimonialsProps> = ({ testimonials, isLoading, er
         <div className="container mx-auto px-4">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Customers Say</h2>
-            <p className="text-gray-600 mb-8">No testimonials available at the moment.</p>
+            <p className="text-gray-600 mb-4">
+              {error && error.includes('503') 
+                ? 'Testimonials temporarily unavailable. Please check back soon.' 
+                : 'No testimonials available at the moment.'}
+            </p>
+            {error && error.includes('503') && (
+              <p className="text-sm text-gray-500 mb-4">Status: 503 Service Unavailable</p>
+            )}
           </div>
         </div>
       </div>
@@ -85,10 +92,10 @@ const Testimonials: React.FC<TestimonialsProps> = ({ testimonials, isLoading, er
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {testimonials.map((testimonial, index) => (
             <Testimonial
-              key={index}
-              quote={testimonial.quote || testimonial.text || testimonial.content || 'Great service!'}
-              author={testimonial.author || testimonial.name || testimonial.customer}
-              role={testimonial.role || testimonial.title || testimonial.location}
+              key={testimonial.id || index}
+              quote={testimonial.comment || testimonial.quote || testimonial.text || testimonial.content || 'Great service!'}
+              author={testimonial.customerName || testimonial.author || testimonial.name || testimonial.customer || 'Customer'}
+              role={testimonial.location || testimonial.role || testimonial.title || 'Customer'}
               rating={testimonial.rating || testimonial.stars || 5}
             />
           ))}

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { LocationRegion, City, ServiceType, getPopularCities, searchLocations, getCitiesByService } from '../../util/locationsParser';
+import React, { useState, useMemo } from 'react';
+import { LocationRegion, City, ServiceType, getPopularCities, searchLocations, getCitiesByService, enrichCitiesWithLocation, getCitiesNearby } from '../../util/locationsParser';
+import { useGeolocation } from '../../hook/useGeolocation';
 
 interface LocationsProps {
   locations: LocationRegion[];
@@ -12,6 +13,7 @@ const Locations: React.FC<LocationsProps> = ({ locations, serviceTypes, isLoadin
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedService, setSelectedService] = useState<string>('all');
+  const { latitude, longitude, error: geoError, isLoading: geoLoading } = useGeolocation();
 
   // Debug logging with better error handling
   console.log('🔧 Locations component received:', { 
@@ -26,6 +28,14 @@ const Locations: React.FC<LocationsProps> = ({ locations, serviceTypes, isLoadin
   // Safety checks for undefined arrays
   const safeLocations = locations && Array.isArray(locations) ? locations : [];
   const safeServiceTypes = serviceTypes && Array.isArray(serviceTypes) ? serviceTypes : [];
+
+  // Get nearby cities if user location is available - MUST be before early returns
+  const nearbyCities = useMemo(() => {
+    if (latitude !== null && longitude !== null && safeLocations.length > 0) {
+      return getCitiesNearby(safeLocations, latitude, longitude, 6);
+    }
+    return [];
+  }, [safeLocations, latitude, longitude]);
 
   if (isLoading) {
     return (
@@ -64,6 +74,20 @@ const Locations: React.FC<LocationsProps> = ({ locations, serviceTypes, isLoadin
   } else {
     filteredCities = safeLocations.flatMap(region => region.cities);
   }
+  
+  // Enrich filtered cities with distance if user location is available
+  if (latitude !== null && longitude !== null) {
+    filteredCities = enrichCitiesWithLocation(filteredCities, latitude, longitude);
+    // Sort by distance if available
+    filteredCities.sort((a, b) => {
+      if (a.distance !== undefined && b.distance !== undefined) {
+        return a.distance - b.distance;
+      }
+      if (a.distance !== undefined) return -1;
+      if (b.distance !== undefined) return 1;
+      return 0;
+    });
+  }
 
   const regions = [
     { id: 'all', name: 'All Regions', icon: '🗺️', count: safeLocations.flatMap(r => r.cities).length },
@@ -92,7 +116,7 @@ const Locations: React.FC<LocationsProps> = ({ locations, serviceTypes, isLoadin
           Service Locations
         </h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          Professional moving and packing services throughout Orange County and surrounding areas
+          Professional moving and packing services throughout California. Find service areas near you in Orange County, Los Angeles County, Riverside County, and San Bernardino County.
         </p>
         {/* Debug info */}
         <div className="text-sm text-gray-500 mt-2">
@@ -141,8 +165,22 @@ const Locations: React.FC<LocationsProps> = ({ locations, serviceTypes, isLoadin
         </div>
       </div>
 
+      {/* Nearby Cities Section */}
+      {!searchTerm && selectedRegion === 'all' && selectedService === 'all' && nearbyCities.length > 0 && (
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            📍 Service Areas Near You
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {nearbyCities.map((city) => (
+              <CityCard key={`${city.name}-${city.county}`} city={city} showDistance={true} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Popular Cities Section */}
-      {!searchTerm && selectedRegion === 'all' && selectedService === 'all' && popularCities.length > 0 && (
+      {!searchTerm && selectedRegion === 'all' && selectedService === 'all' && popularCities.length > 0 && nearbyCities.length === 0 && (
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Popular Service Areas</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -180,7 +218,7 @@ const Locations: React.FC<LocationsProps> = ({ locations, serviceTypes, isLoadin
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCities.map((city) => (
-              <CityCard key={`${city.name}-${city.county}`} city={city} />
+              <CityCard key={`${city.name}-${city.county}`} city={city} showDistance={latitude !== null && longitude !== null} />
             ))}
           </div>
         )}
@@ -209,9 +247,10 @@ const Locations: React.FC<LocationsProps> = ({ locations, serviceTypes, isLoadin
 
 interface CityCardProps {
   city: City;
+  showDistance?: boolean;
 }
 
-const CityCard: React.FC<CityCardProps> = ({ city }) => {
+const CityCard: React.FC<CityCardProps> = ({ city, showDistance = false }) => {
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden">
       <div className="p-6">
@@ -219,11 +258,18 @@ const CityCard: React.FC<CityCardProps> = ({ city }) => {
           <h3 className="text-lg font-semibold text-gray-900">
             {city.name}
           </h3>
+          <div className="flex flex-col items-end gap-1">
           {city.popular && (
             <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
               Popular
             </span>
           )}
+            {showDistance && city.distance !== undefined && (
+              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                {city.distance} mi away
+              </span>
+            )}
+          </div>
         </div>
         
         <div className="text-sm text-gray-600 mb-4">
@@ -233,6 +279,11 @@ const CityCard: React.FC<CityCardProps> = ({ city }) => {
           <div className="mb-2">
             <span className="font-medium">Population:</span> {city.population}
           </div>
+          {!showDistance && city.distance !== undefined && (
+            <div className="mb-2">
+              <span className="font-medium">Distance:</span> {city.distance} miles
+            </div>
+          )}
         </div>
         
         <div className="mb-4">

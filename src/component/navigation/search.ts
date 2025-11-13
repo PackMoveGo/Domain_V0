@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { SearchResult, searchContent } from '../../util/search';
+import { SearchResult } from '../../util/search';
+import { searchContent } from '../../util/searchParser';
 
 interface UseSearchProps {
   onSearchComplete?: (results: SearchResult[]) => void;
@@ -10,6 +11,7 @@ interface UseSearchReturn {
   query: string;
   results: SearchResult[];
   isOpen: boolean;
+  isLoading: boolean;
   setQuery: (query: string) => void;
   setIsOpen: (isOpen: boolean) => void;
   handleSearch: (e: React.FormEvent) => void;
@@ -21,13 +23,24 @@ export function useSearch({ onSearchComplete, onSearchClear }: UseSearchProps = 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const performSearch = useCallback((searchQuery: string) => {
-    if (searchQuery) {
-      const searchResults = searchContent(searchQuery);
+  const performSearch = useCallback(async (searchQuery: string) => {
+    if (searchQuery && searchQuery.trim().length > 0) {
+      setIsLoading(true);
+      try {
+        // Use API-based search
+        const searchResults = await searchContent(searchQuery.trim(), undefined, 10);
       setResults(searchResults);
       setIsOpen(true);
       onSearchComplete?.(searchResults);
+      } catch (error) {
+        console.error('❌ Search error:', error);
+        setResults([]);
+        setIsOpen(false);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       setResults([]);
       setIsOpen(false);
@@ -59,6 +72,7 @@ export function useSearch({ onSearchComplete, onSearchClear }: UseSearchProps = 
     query,
     results,
     isOpen,
+    isLoading,
     setQuery,
     setIsOpen,
     handleSearch,

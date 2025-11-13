@@ -1,4 +1,4 @@
-
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { logger } from '../util/debug';
 

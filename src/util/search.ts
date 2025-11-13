@@ -1,42 +1,51 @@
+import { api } from '../services/service.apiSW';
+
 export interface SearchResult {
   title: string;
   path: string;
   description: string;
+  type?: string;
+  category?: string;
 }
 
-interface SearchableContent {
-  title: string;
-  path: string;
-  description: string;
-  content?: string;
-  tags?: string[];
-}
-
-// Dynamic search content - will be populated from API
-let searchableContent: SearchableContent[] = [];
-
-// Function to update searchable content from API data
-export function updateSearchableContent(content: SearchableContent[]): void {
-  searchableContent = content;
-}
-
-export function searchContent(query: string): SearchResult[] {
-  const normalizedQuery = query.toLowerCase().trim();
+/**
+ * Search content using the backend API
+ * @param query - Search query string
+ * @param type - Optional type filter (service, location, review, blog, supply, all)
+ * @param limit - Maximum number of results to return
+ * @returns Promise of search results
+ */
+export async function searchContent(
+  query: string, 
+  type?: string, 
+  limit: number = 10
+): Promise<SearchResult[]> {
+  const normalizedQuery = query.trim();
   
-  if (!normalizedQuery || searchableContent.length === 0) return [];
+  if (!normalizedQuery) return [];
 
-  return searchableContent
-    .filter(item => {
-      const matchTitle = item.title.toLowerCase().includes(normalizedQuery);
-      const matchDescription = item.description.toLowerCase().includes(normalizedQuery);
-      const matchContent = item.content?.toLowerCase().includes(normalizedQuery) ?? false;
-      const matchTags = item.tags?.some(tag => tag.toLowerCase().includes(normalizedQuery)) ?? false;
-
-      return matchTitle || matchDescription || matchContent || matchTags;
-    })
-    .map(({ title, path, description }) => ({
-      title,
-      path,
-      description
-    }));
+  try {
+    console.log('🔍 Searching for:', { query: normalizedQuery, type, limit });
+    
+    // Call the API search endpoint
+    const response = await api.search(normalizedQuery, type, limit);
+    
+    if (response && response.results && Array.isArray(response.results)) {
+      // Transform API results to SearchResult format
+      return response.results.map((result: any) => ({
+        title: result.title || 'Untitled',
+        path: result.url || result.path || '#',
+        description: result.description || '',
+        type: result.type,
+        category: result.category
+      }));
+    }
+    
+    console.warn('⚠️ Search returned no results or invalid format');
+    return [];
+  } catch (error) {
+    console.error('❌ Search error:', error);
+    // Return empty array on error rather than throwing
+    return [];
+  }
 } 

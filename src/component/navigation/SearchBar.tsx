@@ -44,6 +44,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const {
     results,
     isOpen,
+    isLoading,
     setIsOpen,
     handleSearch,
     handleQueryChange,
@@ -53,15 +54,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
     onSearchClear
   });
 
-  // Debounced search handler
+  // Debounced search handler - now uses API directly through useSearch hook
   const debouncedSearch = useMemo(
     () => debounce((searchQuery: string) => {
-      if (onSearch) {
+      // The useSearch hook handles API calls, just trigger the search
         const mockEvent = { target: { value: searchQuery } } as React.ChangeEvent<HTMLInputElement>;
-        handleSearch(mockEvent);
-      }
+      handleQueryChange(mockEvent);
     }, 300),
-    [onSearch, handleSearch]
+    [handleQueryChange]
   );
 
   useEffect(() => {
@@ -85,17 +85,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const handleSearchSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!onSearch) return;
-
-    try {
-      const results = await Promise.resolve(onSearch(query));
-      if (onSearchComplete) {
-        onSearchComplete(results);
-      }
-    } catch (error) {
-      console.error('Search error:', error);
+    if (query.trim().length > 0) {
+      // Trigger search through useSearch hook
+      const mockEvent = { target: { value: query } } as React.ChangeEvent<HTMLInputElement>;
+      handleQueryChange(mockEvent);
     }
-  }, [query, onSearch, onSearchComplete]);
+  }, [query, handleQueryChange]);
 
   const handleSignIn = useCallback(() => {
     navigate('/signin');
@@ -183,10 +178,16 @@ const SearchBar: React.FC<SearchBarProps> = ({
         </div>
 
         {/* Search Results Dropdown */}
-        {isOpen && results.length > 0 && (
+        {isOpen && (
           <div className={navigationStyles.search.results.wrapper}>
             <div className={navigationStyles.search.results.container}>
-              {results.map((result, index) => (
+              {isLoading ? (
+                <div className="p-4 text-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Searching...</p>
+                </div>
+              ) : results.length > 0 ? (
+                results.map((result, index) => (
                 <button
                   key={index}
                   className={navigationStyles.search.results.item}
@@ -205,7 +206,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
                     }}
                   />
                 </button>
-              ))}
+                ))
+              ) : query.trim().length > 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-sm text-gray-600">No results found</p>
+                </div>
+              ) : null}
             </div>
           </div>
         )}

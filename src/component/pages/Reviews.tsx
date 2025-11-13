@@ -27,7 +27,20 @@ const Reviews: React.FC<ReviewsProps> = ({ reviews, stats, services, isLoading, 
   // Safety checks for undefined arrays
   const safeReviews = reviews && Array.isArray(reviews) ? reviews : [];
   const safeServices = services && Array.isArray(services) ? services : [];
-  const safeStats = stats || {
+  
+  // Ensure stats reflect actual review count
+  const safeStats: ReviewStats = stats ? {
+    ...stats,
+    totalReviews: safeReviews.length > 0 ? (stats.totalReviews || safeReviews.length) : 0,
+    averageRating: safeReviews.length > 0 ? (stats.averageRating || 0) : 0,
+    verifiedReviews: safeReviews.length > 0 ? (stats.verifiedReviews || 0) : 0,
+    totalHelpful: safeReviews.length > 0 ? (stats.totalHelpful || 0) : 0,
+    fiveStarReviews: safeReviews.length > 0 ? (stats.fiveStarReviews || 0) : 0,
+    fourStarReviews: safeReviews.length > 0 ? (stats.fourStarReviews || 0) : 0,
+    threeStarReviews: safeReviews.length > 0 ? (stats.threeStarReviews || 0) : 0,
+    twoStarReviews: safeReviews.length > 0 ? (stats.twoStarReviews || 0) : 0,
+    oneStarReviews: safeReviews.length > 0 ? (stats.oneStarReviews || 0) : 0
+  } : {
     averageRating: 0,
     totalReviews: 0,
     fiveStarReviews: 0,
@@ -38,6 +51,29 @@ const Reviews: React.FC<ReviewsProps> = ({ reviews, stats, services, isLoading, 
     verifiedReviews: 0,
     totalHelpful: 0
   };
+  
+  // If we have reviews but stats show 0, recalculate from reviews
+  if (safeReviews.length > 0 && safeStats.totalReviews === 0) {
+    const totalRating = safeReviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+    const avgRating = totalRating / safeReviews.length;
+    const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    safeReviews.forEach(review => {
+      const rating = review.rating || 0;
+      if (rating >= 1 && rating <= 5) {
+        ratingCounts[rating as keyof typeof ratingCounts]++;
+      }
+    });
+    
+    safeStats.averageRating = Math.round(avgRating * 10) / 10;
+    safeStats.totalReviews = safeReviews.length;
+    safeStats.fiveStarReviews = ratingCounts[5];
+    safeStats.fourStarReviews = ratingCounts[4];
+    safeStats.threeStarReviews = ratingCounts[3];
+    safeStats.twoStarReviews = ratingCounts[2];
+    safeStats.oneStarReviews = ratingCounts[1];
+    safeStats.verifiedReviews = safeReviews.filter(r => r.verified).length;
+    safeStats.totalHelpful = safeReviews.reduce((sum, r) => sum + (r.helpful || 0), 0);
+  }
 
   if (isLoading) {
     return (
@@ -112,9 +148,13 @@ const Reviews: React.FC<ReviewsProps> = ({ reviews, stats, services, isLoading, 
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
           See what our customers are saying about Pack Move Go's professional moving and packing services
         </p>
-        {/* Debug info */}
+        {/* Review count info */}
         <div className="text-sm text-gray-500 mt-2">
-          Found {safeReviews.length} reviews with {safeServices.length} service types
+          {safeStats.totalReviews === 0 ? (
+            <span>No reviews yet - Be the first to review our service!</span>
+          ) : (
+            <span>Found {safeStats.totalReviews} review{safeStats.totalReviews !== 1 ? 's' : ''} with {safeServices.length} service type{safeServices.length !== 1 ? 's' : ''}</span>
+          )}
         </div>
       </div>
 
@@ -122,26 +162,31 @@ const Reviews: React.FC<ReviewsProps> = ({ reviews, stats, services, isLoading, 
       <div className="bg-white rounded-lg shadow-md p-8 mb-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
           <div>
-            <div className="text-4xl font-bold text-blue-600 mb-2">{safeStats.averageRating.toFixed(1)}</div>
-            <div className="text-yellow-400 text-2xl mb-2">{renderStars(safeStats.averageRating)}</div>
+            <div className="text-4xl font-bold text-blue-600 mb-2">
+              {safeStats.totalReviews > 0 ? safeStats.averageRating.toFixed(1) : '0.0'}
+            </div>
+            <div className="text-yellow-400 text-2xl mb-2">
+              {safeStats.totalReviews > 0 ? renderStars(safeStats.averageRating) : '☆☆☆☆☆'}
+            </div>
             <div className="text-gray-600">Average Rating</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-blue-600 mb-2">{stats.totalReviews}</div>
+            <div className="text-4xl font-bold text-blue-600 mb-2">{safeStats.totalReviews}</div>
             <div className="text-gray-600">Total Reviews</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-blue-600 mb-2">{stats.verifiedReviews}</div>
+            <div className="text-4xl font-bold text-blue-600 mb-2">{safeStats.verifiedReviews}</div>
             <div className="text-gray-600">Verified Reviews</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-blue-600 mb-2">{stats.totalHelpful}</div>
+            <div className="text-4xl font-bold text-blue-600 mb-2">{safeStats.totalHelpful}</div>
             <div className="text-gray-600">Helpful Votes</div>
           </div>
         </div>
       </div>
 
       {/* Top Reviews Section */}
+      {topReviews.length > 0 && (
       <div className="mb-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Featured Reviews</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -150,16 +195,19 @@ const Reviews: React.FC<ReviewsProps> = ({ reviews, stats, services, isLoading, 
           ))}
         </div>
       </div>
+      )}
 
       {/* Service Ratings */}
+      {safeServices.length > 0 && (
       <div className="mb-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Service Ratings</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {services.map((service) => (
+            {safeServices.map((service) => (
             <ServiceRatingCard key={service.id} service={service} />
           ))}
         </div>
       </div>
+      )}
 
       {/* Search and Filters */}
       <div className="mb-8">
@@ -228,9 +276,22 @@ const Reviews: React.FC<ReviewsProps> = ({ reviews, stats, services, isLoading, 
         
         {filteredReviews.length === 0 ? (
           <div className="text-center py-12">
+            {safeStats.totalReviews === 0 ? (
+              <>
+                <div className="text-gray-400 text-6xl mb-4">⭐</div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">No Reviews Yet</h3>
+                <p className="text-gray-600 mb-4">Be the first to share your experience with Pack Move Go!</p>
+                <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                  Write a Review
+                </button>
+              </>
+            ) : (
+              <>
             <div className="text-gray-400 text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No reviews found</h3>
             <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

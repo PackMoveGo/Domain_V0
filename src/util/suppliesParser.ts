@@ -29,9 +29,11 @@ export async function fetchSuppliesData(): Promise<SuppliesData> {
   try {
     console.log('🚀 Fetching supplies data from API...');
     
-    // Use the new axiosApi method
+    // Use the API method
     const response = await api.getSupplies();
     console.log('📡 Supplies API response:', response);
+    console.log('📡 Response type:', typeof response);
+    console.log('📡 Response keys:', response ? Object.keys(response) : 'null/undefined');
     
     // Handle different response formats
     let suppliesData: SupplyCategory[] = [];
@@ -44,7 +46,7 @@ export async function fetchSuppliesData(): Promise<SuppliesData> {
       // Check if the data is already in category format
       if (response.supplies.length > 0) {
         const firstItem = response.supplies[0];
-        if (firstItem && firstItem.category && firstItem.items) {
+        if (firstItem && firstItem.category && firstItem.items && Array.isArray(firstItem.items)) {
           // Data is already in category format
           console.log('✅ Data is already in category format');
           suppliesData = response.supplies;
@@ -56,19 +58,47 @@ export async function fetchSuppliesData(): Promise<SuppliesData> {
       }
     } else if (response && response.success && response.data && response.data.supplies) {
       console.log('✅ Supplies data loaded from wrapped response');
-      suppliesData = response.data.supplies;
+      suppliesData = Array.isArray(response.data.supplies) ? response.data.supplies : [];
+    } else if (response && Array.isArray(response)) {
+      // Handle case where response is directly an array
+      console.log('✅ Supplies data is direct array format');
+      const firstItem = response[0];
+      if (firstItem && firstItem.category && firstItem.items) {
+        suppliesData = response;
+      } else {
+        suppliesData = transformSuppliesToCategories(response);
+      }
     } else {
       console.warn('⚠️ Unexpected supplies data format:', response);
+      console.warn('⚠️ Expected structure: { supplies: [...] } or array of categories');
       throw new Error('Invalid supplies data format');
     }
+    
+    // Validate and clean the data
+    suppliesData = suppliesData.filter(category => 
+      category && 
+      category.category && 
+      category.items && 
+      Array.isArray(category.items) && 
+      category.items.length > 0
+    );
     
     console.log('✅ Final supplies data:', suppliesData);
     console.log('📊 Categories count:', suppliesData.length);
     console.log('📊 Total items across all categories:', suppliesData.reduce((total, cat) => total + (cat.items?.length || 0), 0));
     
+    if (suppliesData.length === 0) {
+      console.warn('⚠️ No supplies data found after processing');
+      throw new Error('No supplies data available');
+    }
+    
     return { supplies: suppliesData };
   } catch (error) {
     console.error('❌ Error loading supplies data:', error);
+    // Check if this is a 503 error
+    if (error instanceof Error && (error as any).is503Error) {
+      throw new Error('503 Service Unavailable');
+    }
     throw new Error('Failed to load supplies data');
   }
 }

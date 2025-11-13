@@ -75,7 +75,17 @@ export default function WhyChooseUs({
     if (error) {
       return "503+"; // Show 503+ when API is unavailable
     }
-    return `${totalMovesCount}+`;
+    // Ensure totalMovesCount is a number, but allow 0 as a valid value
+    let movesCount: number;
+    if (typeof totalMovesCount === 'number') {
+      movesCount = totalMovesCount;
+    } else if (typeof totalMovesCount === 'object' && totalMovesCount !== null) {
+      movesCount = 500;
+    } else {
+      const parsed = parseInt(String(totalMovesCount), 10);
+      movesCount = isNaN(parsed) ? 500 : parsed;
+    }
+    return `${movesCount}+`;
   };
 
   return (
@@ -91,7 +101,7 @@ export default function WhyChooseUs({
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="bg-white bg-opacity-20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-red-300">
+                <span className="text-2xl font-bold text-white">
                   {getTotalMovesDisplay()}
                 </span>
               </div>

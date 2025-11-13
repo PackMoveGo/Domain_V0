@@ -33,6 +33,8 @@ export interface AboutPageServiceData {
   about: any;
   totalMovesCount: number;
   lastUpdated: string;
+  hasErrors?: boolean;
+  failedEndpoints?: string[];
 }
 
 // =============================================================================
@@ -81,68 +83,56 @@ export const getAboutPageData = async (): Promise<AboutPageServiceData> => {
   try {
     console.log('🚀 Loading about page data...');
     
-    // Start tracking API calls for about page (this resets previous tracking)
-    api.startPageTracking('about-page');
+    // Don't track API calls or show modals at the page level
+    // Let individual API calls handle their own tracking
     
-    // Define all routes that will be called for this page
-    const aboutPageRoutes = ['/v0/nav', '/v0/about', '/v0/recentMoves/total'];
-    
-    // First check health status - if it fails, all routes are considered 503
-    try {
-      await api.checkHealth();
-    } catch (_healthError) { // Reserved for future use
-      // Track all routes as failed since health check failed
-      aboutPageRoutes.forEach(route => {
-        api.trackApiCall(route);
-      });
-      
-      // Show modal with all routes as failed
-      api.showApiFailureModal(aboutPageRoutes, true);
-      
-      // Return empty data with 503 status
-      return {
-        nav: null,
-        about: null,
-        totalMovesCount: 500,
-        lastUpdated: new Date().toISOString()
-      };
-    }
-    
-    // Health check passed - proceed with individual route calls
-    const [navData, aboutData, totalMovesData] = await Promise.allSettled([
-      api.getNav(),
-      api.getAbout(),
-      api.makeRequest('/v0/recentMoves/total')
+    // Proceed with individual route calls - use Promise.all for better performance
+    const [navData, aboutData, totalMovesData] = await Promise.all([
+      api.getNav().catch(err => {
+        console.warn('⚠️ Nav failed, using fallback:', err);
+        return null;
+      }),
+      api.getAbout().catch(err => {
+        console.warn('⚠️ About failed, using fallback:', err);
+        return null;
+      }),
+      api.makeRequest('/v0/recentMoves/total').catch(err => {
+        console.warn('⚠️ Total moves failed, using fallback:', err);
+        return { totalCount: 0 };
+      })
     ]);
     
-    // Collect failed endpoints for this page only
-    const failedEndpoints: string[] = [];
-    let has503Error = false;
+    // Parse totalMovesCount from API response (handle both number and object responses)
+    let totalMovesCount = 0; // Default for new business
+    const value = totalMovesData;
+    if (typeof value === 'number') {
+      totalMovesCount = value; // Allow 0 as a valid value
+    } else if (value && typeof value === 'object') {
+      // Handle object responses like { totalCount: 0 } or { total_count: 0 } or { count: 0 }
+      // Check each property and use the first one that's not undefined/null (but allow 0)
+      const obj = value as any;
+      if (obj.totalCount !== undefined && obj.totalCount !== null) {
+        totalMovesCount = obj.totalCount;
+      } else if (obj.total_count !== undefined && obj.total_count !== null) {
+        totalMovesCount = obj.total_count;
+      } else if (obj.count !== undefined && obj.count !== null) {
+        totalMovesCount = obj.count;
+      }
+      // If none found, keep default 0
+    } else if (value !== null && value !== undefined) {
+      // Try to parse as number
+      const parsed = typeof value === 'string' ? parseInt(value, 10) : Number(value);
+      totalMovesCount = isNaN(parsed) ? 0 : parsed;
+    }
     
-    // Check each endpoint result
-    if (navData.status === 'rejected') {
-      failedEndpoints.push('/v0/nav');
-      if (navData.reason?.message?.includes('503')) has503Error = true;
-    }
-    if (aboutData.status === 'rejected') {
-      failedEndpoints.push('/v0/about');
-      if (aboutData.reason?.message?.includes('503')) has503Error = true;
-    }
-    if (totalMovesData.status === 'rejected') {
-      failedEndpoints.push('/v0/recentMoves/total');
-      if (totalMovesData.reason?.message?.includes('503')) has503Error = true;
-    }
-    
-    // Show modal only for this page's failed endpoints
-    if (failedEndpoints.length > 0) {
-      api.showApiFailureModal(failedEndpoints, has503Error);
-    }
-    
+    // Return data - no error tracking, let components handle null gracefully
     const result: AboutPageServiceData = {
-      nav: navData.status === 'fulfilled' ? navData.value : null,
-      about: aboutData.status === 'fulfilled' ? aboutData.value : null,
-      totalMovesCount: totalMovesData.status === 'fulfilled' ? (totalMovesData.value as number) : 500,
-      lastUpdated: new Date().toISOString()
+      nav: navData,
+      about: aboutData,
+      totalMovesCount: totalMovesCount,
+      lastUpdated: new Date().toISOString(),
+      hasErrors: false,
+      failedEndpoints: []
     };
     
     console.log('✅ About page data loaded successfully:', {

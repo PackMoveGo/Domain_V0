@@ -24,12 +24,25 @@ const CookieOptOut: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const scrollPositionRef = useRef<number>(0);
+  const returnPathRef = useRef<string | null>(null);
   
   // Essential pages that should be accessible without cookie consent
   const _essentialPages = ['/cookie-opt-out', '/privacy', '/terms']; // Reserved for future use
   
   // Check if this is being used as a full page (on /cookie-opt-out route) or as a modal
   const isFullPage = location.pathname === '/cookie-opt-out';
+  
+  // Store the return path when modal appears (for non-full-page mode)
+  useEffect(() => {
+    if (!isSSR && !isFullPage && location.pathname !== '/cookie-opt-out') {
+      // Store the current pathname to return to after consent
+      const currentPath = location.pathname + location.search + location.hash;
+      returnPathRef.current = currentPath;
+      // Also store in sessionStorage as backup
+      sessionStorage.setItem('packmovego-return-path', currentPath);
+      console.log('🍪 CookieOptOut: Stored return path:', currentPath);
+    }
+  }, [isFullPage, location.pathname, location.search, location.hash]);
   
   // Animation states for options
   const [showOptions, setShowOptions] = useState(false);
@@ -221,25 +234,23 @@ const CookieOptOut: React.FC = () => {
       }
       
       if (isFullPage) {
-        // For full page mode, just navigate after a short delay
+        // For full page mode, navigate to home or stored return path
         setTimeout(() => {
-          console.log('🍪 CookieOptOut: Navigating to home page after opt-in (full page mode)');
-          navigate('/');
+          const returnPath = sessionStorage.getItem('packmovego-return-path') || '/';
+          sessionStorage.removeItem('packmovego-return-path');
+          console.log('🍪 CookieOptOut: Navigating to return path after opt-in (full page mode):', returnPath);
+          navigate(returnPath);
         }, 500);
       } else {
-        // For modal mode, use fade out animation
+        // For modal mode, use fade out animation and stay on current page
         setIsFadingOut(true);
         setTimeout(() => {
           setIsVisible(false);
           setIsFadingOut(false);
           setIsTransitioning(false);
           
-          // Wait a bit longer for API state to fully update before navigation
-          console.log('🍪 CookieOptOut: Waiting for API state to update before navigation...');
-          setTimeout(() => {
-            console.log('🍪 CookieOptOut: Navigating to home page after opt-in');
-            navigate('/');
-          }, 200); // Additional delay for API state
+          // Don't navigate - user stays on the page they were on
+          console.log('🍪 CookieOptOut: User opted in, staying on current page:', location.pathname);
         }, 300);
       }
     } else {

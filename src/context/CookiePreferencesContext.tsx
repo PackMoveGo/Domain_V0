@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { getCurrentTimestamp } from '../util/ssrUtils';
 import { checkPendingApiErrors } from '../util/apiErrorHandler';

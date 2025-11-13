@@ -19,19 +19,17 @@ const ReferPageComponent = () => {
         />
         
         <div {...getSectionProps('hero')}>
-          {referralData && (
             <ReferPage
-              referralProgram={referralData.referralProgram}
-              howItWorks={referralData.howItWorks}
-              referralTerms={referralData.referralTerms}
-              referralStats={referralData.referralStats}
-              socialSharing={referralData.socialSharing}
-              referralForm={referralData.referralForm}
-              successStories={referralData.successStories}
+            referralProgram={referralData?.referralProgram}
+            howItWorks={referralData?.howItWorks}
+            referralTerms={referralData?.referralTerms}
+            referralStats={referralData?.referralStats}
+            socialSharing={referralData?.socialSharing}
+            referralForm={referralData?.referralForm}
+            successStories={referralData?.successStories}
               isLoading={isLoading}
               error={error}
             />
-          )}
         </div>
     </ErrorBoundary>
   );

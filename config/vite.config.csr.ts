@@ -6,14 +6,12 @@ import fs from 'fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-// Get project root (parent of config directory)
-const projectRoot = resolve(__dirname, '..')
 
 export default defineConfig(({ mode, _command }): UserConfig => { // Reserved for future use
   // Load environment variables using Vite's built-in loadEnv
-  // IMPORTANT: Load from project root, not config directory
-  // Vite automatically exposes VITE_ prefixed vars from .env files in project root to import.meta.env
-  const env = loadEnv(mode, projectRoot, '');
+  // Load from config directory where .env files are now located
+  // Vite automatically exposes VITE_ prefixed vars from .env files to import.meta.env
+  const env = loadEnv(mode, __dirname, '');
   
   // Get port from env or use default
   const port = parseInt(env.VITE_PORT || process.env.PORT || (mode === 'production' ? '5000' : '5001'), 10);
@@ -54,6 +52,9 @@ export default defineConfig(({ mode, _command }): UserConfig => { // Reserved fo
   }
   
   return {
+    // Tell Vite to load .env files from config directory
+    envDir: __dirname,
+    
     // Vite automatically exposes VITE_ prefixed variables to import.meta.env
     // No need to manually define them here
     define: {
@@ -72,6 +73,7 @@ export default defineConfig(({ mode, _command }): UserConfig => { // Reserved fo
     resolve: {
       alias: {
         '@': resolve(__dirname, '../src'),
+        '@config': resolve(__dirname, '.'),
       },
     },
     css: {

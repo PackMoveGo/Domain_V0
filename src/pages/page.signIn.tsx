@@ -1,18 +1,62 @@
-import React, { FC, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { FC, useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { logger } from '../util/debug';
 import { useOfflineStatus } from '../hook/useOfflineStatus';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../services/service.apiSW';
 
 const SignInPage: FC = () => {
   const { isOnline } = useOfflineStatus();
+  const { login, isLoading, error } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [is503Error, setIs503Error] = useState(false);
+
+  // Check API health on mount
+  useEffect(() => {
+    const checkApiHealth = async () => {
+      try {
+        await api.checkHealth();
+        setIs503Error(false);
+      } catch (err) {
+        if (err instanceof Error && (err.message.includes('503') || err.message.includes('Service Unavailable'))) {
+          setIs503Error(true);
+        }
+      }
+    };
+    
+    checkApiHealth();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLocalError(null);
+    
+    // Prevent login if API is unavailable
+    if (is503Error || !isOnline) {
+      setLocalError('Service temporarily unavailable. Please try again later.');
+      return;
+    }
+    
+    try {
     logger.info('Sign in attempt:', { email });
-    // TODO: Implement sign in logic
-    console.log('Sign in:', { email, password });
+      await login(email, password);
+      logger.info('Sign in successful');
+      // Redirect to home page after successful login
+      navigate('/');
+    } catch (err) {
+      // Check if it's a 503 error
+      if (err instanceof Error && (err.message.includes('503') || err.message.includes('Service Unavailable'))) {
+        setIs503Error(true);
+        setLocalError('Service temporarily unavailable. Please try again later.');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
+        setLocalError(errorMessage);
+      }
+      logger.error('Sign in failed:', err);
+    }
   };
 
   return (
@@ -29,12 +73,19 @@ const SignInPage: FC = () => {
               </Link>
             </p>
           </div>
-          {!isOnline ? (
+          {(!isOnline || is503Error) ? (
             <div className="text-center py-12">
               <div className="text-6xl font-bold text-red-600 mb-4">503</div>
-              <p className="text-lg text-gray-600">Service temporarily unavailable. Please try again later.</p>
+              <p className="text-lg text-gray-600 mb-4">Service temporarily unavailable. Please try again later.</p>
+              <p className="text-sm text-gray-500">The authentication service is currently offline. Please check back in a few minutes.</p>
             </div>
           ) : (
+            <>
+              {(error || localError) && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  {error || localError}
+                </div>
+              )}
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
               <div className="rounded-md shadow-sm -space-y-px">
                 <div>
@@ -94,12 +145,14 @@ const SignInPage: FC = () => {
               <div>
                 <button
                   type="submit"
-                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  disabled={isLoading}
+                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Sign in
+                  {isLoading ? 'Signing in...' : 'Sign in'}
                 </button>
               </div>
             </form>
+            </>
           )}
         </div>
       </div>

@@ -80,24 +80,21 @@ export const getAllTestimonials = async (): Promise<Testimonial[]> => {
   } catch (error) {
     console.error('❌ Failed to fetch testimonials:', error);
     
-    // Check if it's a 503 error and handle it appropriately
-    if (error instanceof Error && (error.message.includes('503') || error.message.includes('Service Unavailable'))) {
+    // Check if it's a 503 error
+    const is503Error = error instanceof Error && (
+      error.message.includes('503') || 
+      error.message.includes('Service Unavailable') ||
+      (error as any).is503Error
+    );
+    
+    if (is503Error) {
       console.warn('⚠️ Testimonials API returned 503 - Service Unavailable');
-      handleApiError(error, '/v0/testimonials', {
-        context: 'Testimonials API',
-        showModal: false, // Let page controllers handle modal display
-        logError: true
-      });
-      throw new Error('Testimonials temporarily unavailable (503)');
+      // Don't throw, return empty array so page can still render
+      return [];
     }
     
-    // Handle other errors with modal
-    handleApiError(error, '/v0/testimonials', {
-      context: 'Testimonials API',
-      showModal: false, // Let page controllers handle modal display
-      logError: true
-    });
-    
+    // For other errors, also return empty array instead of throwing
+    console.warn('⚠️ Testimonials API error, returning empty array');
     return [];
   }
 };

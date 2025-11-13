@@ -36,13 +36,11 @@ const BlogPage = () => {
       setCategories(blogData.categories);
       setTags(blogData.tags);
     } catch (err) {
-      // Check if this is a 503 error
-      if (err instanceof Error && (err as any).is503Error) {
-        setError('503 Service Unavailable');
-      } else {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load blog posts';
-        setError(errorMessage);
-      }
+      // fetchBlogData now returns empty data instead of throwing, so this should rarely be hit
+      // But handle it gracefully if it does
+      console.warn('⚠️ Blog data loading error:', err);
+      // Don't set error - let the component render with empty data
+      setError(null);
     } finally {
       setIsLoading(false);
     }

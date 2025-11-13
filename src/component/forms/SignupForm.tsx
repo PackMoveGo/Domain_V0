@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useOfflineStatus } from '../../hook/useOfflineStatus';
+import { useAuth } from '../../context/AuthContext';
 
 
 
@@ -15,6 +17,8 @@ interface FormData {
 
 export const SignupForm: React.FC = () => {
   const { isOnline } = useOfflineStatus();
+  const { signup, isLoading, error: authError } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -24,7 +28,6 @@ export const SignupForm: React.FC = () => {
     phone: '',
     agreeToTerms: false
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -71,18 +74,29 @@ export const SignupForm: React.FC = () => {
         return;
       }
 
-      // For now, just log the data since signup API doesn't exist
-      console.log('Signup data:', formData);
+      if (!formData.agreeToTerms) {
+        setError('Please agree to the Terms of Service and Privacy Policy');
+        return;
+      }
+
+      // Call signup API
+      await signup({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone || undefined
+      });
       
-      // TODO: Implement actual signup API call when available
-      // await api.signup(data);
-      
-      setSuccess('Account created successfully! Please check your email for verification.');
+      setSuccess('Account created successfully! Redirecting...');
       reset();
+      
+      // Redirect to home page after successful signup
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create account');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -97,9 +111,9 @@ export const SignupForm: React.FC = () => {
         </div>
       ) : (
         <>
-          {error && (
+          {(error || authError) && (
             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {error}
+              {error || authError}
             </div>
           )}
           
@@ -215,10 +229,10 @@ export const SignupForm: React.FC = () => {
 
           <button
             type="submit"
-            disabled={isSubmitting || !formData.agreeToTerms}
+            disabled={isLoading || !formData.agreeToTerms}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            {isLoading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
         </>

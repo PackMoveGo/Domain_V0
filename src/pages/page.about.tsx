@@ -62,10 +62,14 @@ export default function AboutPage() {
       
       setAboutPageData(data);
       
-      // Check if there are any errors and set appropriate states
-      const hasErrors = !data.nav || !data.about || !data.totalMovesCount;
+      // Check if there are any errors but don't block rendering
+      const hasErrors = data.hasErrors || (!data.nav && !data.about);
       if (hasErrors) {
-        setDataError('503 Service Unavailable');
+        // Log error but don't prevent page from rendering
+        console.warn('⚠️ Some about page data failed to load, using fallback data');
+        setDataError('Some data unavailable - using fallback');
+      } else {
+        setDataError(null);
       }
       
       console.log('✅ About page data loaded successfully:', {
@@ -235,7 +239,7 @@ export default function AboutPage() {
             </div>
           }>
             <WhyChooseUs 
-              totalMovesCount={aboutPageData?.totalMovesCount || 500}
+              totalMovesCount={aboutPageData?.totalMovesCount !== undefined ? aboutPageData.totalMovesCount : 500}
               isLoading={isLoadingData}
               error={dataError}
             />
@@ -252,41 +256,7 @@ export default function AboutPage() {
               </div>
             </div>
           }>
-            {dataError ? (
-              <div className="bg-white py-16">
-                <div className="container mx-auto px-4">
-                  <div className="max-w-2xl mx-auto text-center">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">Get Your Free Quote</h2>
-                    <p className="text-lg text-gray-600 mb-8">Fill out the form and a team member will follow up with you</p>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-8">
-                      <div className="flex items-center justify-center mb-4">
-                        <div className="text-yellow-600 text-4xl mr-3">⚠️</div>
-                        <h3 className="text-lg font-semibold text-yellow-800">Form Temporarily Unavailable</h3>
-                      </div>
-                      <p className="text-yellow-700 mb-4">
-                        Our contact form is currently experiencing technical difficulties. Please use one of the alternative contact methods below.
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <a
-                          href="tel:(949) 414-5282"
-                          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                        >
-                          Call Us: (949) 414-5282
-                        </a>
-                        <a
-                          href="mailto:info@packmovego.com"
-                          className="border border-blue-600 text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
-                        >
-                          Email Us: info@packmovego.com
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <QuoteForm />
-            )}
+            <QuoteForm />
           </Suspense>
         </section>
         

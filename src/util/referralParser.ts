@@ -89,23 +89,37 @@ export async function fetchReferralData(): Promise<ReferralData> {
   try {
     console.log('🚀 Fetching referral data from API...');
     
-    // Use the new axiosApi method
+    // Use the API method
     const response = await api.getReferral();
     console.log('📡 Referral API response:', response);
+    console.log('📡 Response type:', typeof response);
+    console.log('📡 Response keys:', response ? Object.keys(response) : 'null/undefined');
     
     // Handle different response formats
     if (response && response.referralProgram && response.howItWorks && response.referralStats) {
       console.log('✅ Referral data loaded successfully');
+      console.log('📊 Referral program:', !!response.referralProgram);
+      console.log('📊 How it works steps:', response.howItWorks?.length || 0);
+      console.log('📊 Stats:', !!response.referralStats);
       return response as ReferralData;
     } else if (response && response.success && response.data && response.data.referralProgram) {
       console.log('✅ Referral data loaded from wrapped response');
       return response.data as ReferralData;
+    } else if (response && typeof response === 'object') {
+      // Try to extract data directly if it's the referral object
+      console.log('✅ Referral data loaded - using response directly');
+      return response as ReferralData;
     } else {
       console.warn('⚠️ Unexpected referral data format:', response);
+      console.warn('⚠️ Expected structure: { referralProgram: {...}, howItWorks: [...], referralStats: {...}, ... }');
       throw new Error('Invalid referral data format');
     }
   } catch (error) {
     console.error('❌ Error loading referral data:', error);
+    // Check if this is a 503 error
+    if (error instanceof Error && (error as any).is503Error) {
+      throw new Error('503 Service Unavailable');
+    }
     throw new Error('Failed to load referral data');
   }
 }

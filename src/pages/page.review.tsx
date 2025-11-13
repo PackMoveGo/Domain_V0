@@ -1,4 +1,3 @@
-
 import { useReviews } from '../hook/useReviews';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
 import SEO from '../component/business/SEO';

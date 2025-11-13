@@ -468,7 +468,8 @@ export const API_ENDPOINTS = {
     LOCATIONS: '/public/locations',
     SUPPLIES: '/public/supplies',
     TESTIMONIALS: '/public/testimonials',
-    SERVICE_AREAS: '/v0/serviceAreas'
+    SERVICE_AREAS: '/v0/serviceAreas',
+    SEARCH: '/v0/search'
   },
   
   // Private content endpoints (require authentication)
@@ -1628,14 +1629,33 @@ export class APIsw {
         body: JSON.stringify({ email, password })
       });
 
-      if (response && response.success && response.token) {
+      // Handle different response formats
+      let token = null;
+      let user = null;
+      
+      if (response && response.success) {
+        if (response.data && response.data.token) {
+          token = response.data.token;
+          user = response.data.user;
+        } else if (response.token) {
+          token = response.token;
+          user = response.user;
+        }
+      }
+
+      if (token) {
         // Store JWT token with expiration
-        const expiresAt = Date.now() + (response.expiresIn || 3600000); // Default 1 hour
+        const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours default
         this.jwtAuth.setToken({
-          token: response.token,
+          token: token,
           expiresAt,
-          user: response.user
+          user: user
         });
+
+        // Also store in localStorage for JWT_AUTH compatibility
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('jwt_token', token);
+        }
 
         if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
           console.log('🔐 Login successful, JWT token stored');
@@ -1646,6 +1666,72 @@ export class APIsw {
     } catch (error) {
       if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
         console.error('🔐 Login failed:', error);
+      }
+      throw error;
+    }
+  }
+
+  async signup(userData: {
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    email: string;
+    password: string;
+    phone?: string;
+  }): Promise<any> {
+    try {
+      // Try /v1/auth/sign-up first (MongoDB endpoint)
+      let response;
+      try {
+        response = await this.makeRequest<any>('/v1/auth/sign-up', {
+          method: 'POST',
+          body: JSON.stringify(userData)
+        });
+      } catch (error) {
+        // Fallback to /signup endpoint
+        response = await this.makeRequest<any>('/signup', {
+          method: 'POST',
+          body: JSON.stringify(userData)
+        });
+      }
+
+      // Handle different response formats
+      let token = null;
+      let user = null;
+      
+      if (response && response.success) {
+        if (response.data && response.data.token) {
+          token = response.data.token;
+          user = response.data.user;
+        } else if (response.token) {
+          token = response.token;
+          user = response.user;
+        }
+      }
+
+      if (token) {
+        // Store JWT token with expiration
+        const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours default
+        this.jwtAuth.setToken({
+          token: token,
+          expiresAt,
+          user: user
+        });
+
+        // Also store in localStorage for JWT_AUTH compatibility
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('jwt_token', token);
+        }
+
+        if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+          console.log('🔐 Signup successful, JWT token stored');
+        }
+      }
+
+      return response;
+    } catch (error) {
+      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+        console.error('🔐 Signup failed:', error);
       }
       throw error;
     }
@@ -1892,6 +1978,32 @@ export class APIsw {
     return result;
   }
 
+  async search(query: string, type?: string, limit?: number): Promise<any> {
+    try {
+      const params = new URLSearchParams();
+      params.append('q', query);
+      if (type) params.append('type', type);
+      if (limit) params.append('limit', limit.toString());
+      
+      const endpoint = `${API_ENDPOINTS.PUBLIC.SEARCH}?${params.toString()}`;
+      const result = await this.makeRequest(endpoint);
+      
+      return result;
+    } catch (error) {
+      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+        console.error('🔍 Search failed:', error);
+      }
+      // Return empty results instead of throwing
+      return {
+        success: false,
+        query,
+        count: 0,
+        total: 0,
+        results: []
+      };
+    }
+  }
+
 
   async getServiceAreas(): Promise<any> {
     return await this.makePublicRequest(API_ENDPOINTS.PUBLIC.SERVICE_AREAS);
@@ -1905,6 +2017,65 @@ export class APIsw {
 
   async getContact(): Promise<any> {
     return await this.makeRequest(API_ENDPOINTS.PUBLIC.CONTACT);
+  }
+
+  /**
+   * Submit contact form
+   * POST /v0/contact/submit
+   */
+  async submitContactForm(data: {
+    name: string;
+    email: string;
+    phone?: string;
+    subject?: string;
+    message: string;
+    preferredContact?: 'email' | 'phone' | 'any';
+  }): Promise<any> {
+    console.log('📨 Submitting contact form:', { name: data.name, email: data.email });
+    return await this.makeRequest('/v0/contact/submit', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  /**
+   * Submit referral form
+   * POST /v0/referral/submit
+   */
+  async submitReferralForm(data: {
+    name: string;
+    email: string;
+    phone?: string;
+    refereeName?: string;
+    refereeEmail?: string;
+    refereePhone?: string;
+  }): Promise<any> {
+    console.log('📨 Submitting referral form:', { name: data.name, email: data.email });
+    return await this.makeRequest('/v0/referral/submit', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  /**
+   * Submit quote request form
+   * POST /v0/quotes/submit
+   */
+  async submitQuote(data: {
+    fromZip: string;
+    toZip: string;
+    moveDate: string;
+    rooms: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email?: string;
+  }): Promise<any> {
+    console.log('📨 Submitting quote request:', { firstName: data.firstName, lastName: data.lastName });
+    return await this.makeRequest('/v0/quotes/submit', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
   }
 
   // =================================================================

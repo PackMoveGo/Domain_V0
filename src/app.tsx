@@ -6,6 +6,7 @@ import { UserTrackingProvider } from './component/business/UserTrackingProvider'
 import { CookiePreferencesProvider } from './context/CookiePreferencesContext';
 import { SectionDataProvider } from './context/SectionDataContext';
 import { SectionVerificationProvider } from './context/SectionVerificationContext';
+import { AuthProvider } from './context/AuthContext';
 // import { SSRProviders } from './context/SSRSafeProviders'; // Reserved for future use
 import AppCSR from './appCSR';
 // import AppSSR from './appSSR'; // Reserved for future use
@@ -66,6 +67,7 @@ function App() {
   // AppSSR is only used during server-side rendering, not for client-side navigation
   return (
     <ErrorDebugger>
+      <AuthProvider>
       <UserTrackingProvider serverUrl={ENV_CONFIG.API_URL}>
         <CookiePreferencesProvider>
           <SectionDataProvider>
@@ -77,6 +79,7 @@ function App() {
           </SectionDataProvider>
         </CookiePreferencesProvider>
       </UserTrackingProvider>
+      </AuthProvider>
     </ErrorDebugger>
   );
 }

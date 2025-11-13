@@ -662,96 +662,62 @@ export const getTotalMovesController = async (_req: any, _res: any, _next: any) 
 
 export const getHomePageData = async (): Promise<HomePageServiceData> => {
   // getHomePageDataCallCount++; // Reserved for future use
-  // Start tracking API calls for home page (this resets previous tracking)
-  api.startPageTracking('home-page');
+  // Don't track API calls or show modals at the page level
+  // Let individual API calls handle their own tracking
+  homePageStatusCode = 200;
   
-  // Define all routes that will be called for this page
-  const homePageRoutes = ['/v0/nav', '/v0/services', '/v0/auth/status', '/v0/testimonials', '/v0/recentMoves', '/v0/recentMoves/total'];
-  
-  // First check health status - if it fails, all routes are considered 503
-  try {
-    await api.checkHealth();
-    homePageStatusCode = 200;
-  } catch (_healthError) { // Reserved for future use
-    homePageStatusCode = 503;
-    
-    // Track all routes as failed since health check failed
-    homePageRoutes.forEach(route => {
-      api.trackApiCall(route);
-    });
-    
-    // Show modal with all routes as failed
-    api.showApiFailureModal(homePageRoutes, true);
-    
-    // Return empty data with 503 status
-    return {
-      nav: null,
-      services: null,
-      authStatus: null,
-      testimonials: null,
-      recentMoves: null,
-      totalMoves: 500,
-      lastUpdated: new Date().toISOString()
-    };
-  }
-  
-  // Health check passed - proceed with individual route calls
-  const [navData, servicesData, authStatus, testimonialsData, recentMovesData, totalMovesData] = await Promise.allSettled([
-    api.getNav(),
-    api.getServices(),
-    api.checkAuthStatus(),
-    api.makeRequest('/v0/testimonials'),
-    api.makeRequest('/v0/recentMoves'),
-    api.makeRequest('/v0/recentMoves/total')
+  // Proceed with individual route calls - use Promise.all with fallbacks
+  const [navData, servicesData, authStatus, testimonialsData, recentMovesData, totalMovesData] = await Promise.all([
+    api.getNav().catch(err => {
+      console.warn('⚠️ Nav failed, using fallback:', err);
+      return null;
+    }),
+    api.getServices().catch(err => {
+      console.warn('⚠️ Services failed, using fallback:', err);
+      return null;
+    }),
+    api.checkAuthStatus().catch(err => {
+      console.warn('⚠️ Auth status failed, using fallback:', err);
+      return null;
+    }),
+    api.makeRequest('/v0/testimonials').catch(err => {
+      console.warn('⚠️ Testimonials failed, using fallback:', err);
+      return { testimonials: [] };
+    }),
+    api.makeRequest('/v0/recentMoves').catch(err => {
+      console.warn('⚠️ Recent moves failed, using fallback:', err);
+      return { moves: [] };
+    }),
+    api.makeRequest('/v0/recentMoves/total').catch(err => {
+      console.warn('⚠️ Total moves failed, using fallback:', err);
+      return { totalCount: 0 };
+    })
   ]);
   
-  // Collect failed endpoints for this page only
-  const failedEndpoints: string[] = [];
-  let has503Error = false;
-  
-  // Check each endpoint result
-  if (navData.status === 'rejected') {
-    failedEndpoints.push('/v0/nav');
-    if (navData.reason?.message?.includes('503')) has503Error = true;
-  }
-  if (servicesData.status === 'rejected') {
-    failedEndpoints.push('/v0/services');
-    if (servicesData.reason?.message?.includes('503')) has503Error = true;
-  }
-  if (authStatus.status === 'rejected') {
-    failedEndpoints.push('/v0/auth/status');
-    if (authStatus.reason?.message?.includes('503')) has503Error = true;
-  }
-  if (testimonialsData.status === 'rejected') {
-    failedEndpoints.push('/v0/testimonials');
-    if (testimonialsData.reason?.message?.includes('503')) has503Error = true;
-  }
-  if (recentMovesData.status === 'rejected') {
-    failedEndpoints.push('/v0/recentMoves');
-    if (recentMovesData.reason?.message?.includes('503')) has503Error = true;
-  }
-  if (totalMovesData.status === 'rejected') {
-    failedEndpoints.push('/v0/recentMoves/total');
-    if (totalMovesData.reason?.message?.includes('503')) has503Error = true;
+  // Parse totalMoves value
+  let totalMoves = 0;
+  const totalMovesValue = totalMovesData;
+  if (typeof totalMovesValue === 'number') {
+    totalMoves = totalMovesValue;
+  } else if (totalMovesValue && typeof totalMovesValue === 'object') {
+    const obj = totalMovesValue as any;
+    if (obj.totalCount !== undefined && obj.totalCount !== null) {
+      totalMoves = obj.totalCount;
+    } else if (obj.total_count !== undefined && obj.total_count !== null) {
+      totalMoves = obj.total_count;
+    } else if (obj.count !== undefined && obj.count !== null) {
+      totalMoves = obj.count;
+    }
   }
   
-  // Update status code
-  if (has503Error) {
-    homePageStatusCode = 503;
-  }
-  
-  // Show modal only for this page's failed endpoints
-  if (failedEndpoints.length > 0) {
-    api.showApiFailureModal(failedEndpoints, has503Error);
-  }
-  
+  // Return data - no error tracking, let components handle null gracefully
   const result: HomePageServiceData = {
-    nav: navData.status === 'fulfilled' ? navData.value : null,
-    services: servicesData.status === 'fulfilled' ? servicesData.value : null,
-    authStatus: authStatus.status === 'fulfilled' ? authStatus.value : null,
-    testimonials: testimonialsData.status === 'fulfilled' ? testimonialsData.value : null,
-    recentMoves: recentMovesData.status === 'fulfilled' ? recentMovesData.value : null,
-    totalMoves: totalMovesData.status === 'fulfilled' ? (totalMovesData.value as number) : 500,
+    nav: navData,
+    services: servicesData,
+    authStatus: authStatus,
+    testimonials: testimonialsData,
+    recentMoves: recentMovesData,
+    totalMoves: totalMoves,
     lastUpdated: new Date().toISOString()
   };
   

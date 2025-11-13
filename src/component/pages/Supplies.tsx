@@ -10,7 +10,7 @@ interface SuppliesProps {
 const Supplies: React.FC<SuppliesProps> = ({ supplies, isLoading, error }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [showOnlyInStock, setShowOnlyInStock] = useState(false);
   const [showOnlyPopular, setShowOnlyPopular] = useState(false);
 
@@ -134,7 +134,7 @@ const Supplies: React.FC<SuppliesProps> = ({ supplies, isLoading, error }) => {
   ];
 
   const allItems = supplies.flatMap(cat => cat.items || []);
-  const maxPrice = allItems.length > 0 ? Math.max(...allItems.map(item => item.price)) : 0;
+  const maxPrice = allItems.length > 0 ? Math.max(...allItems.map(item => item.price)) : 100;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -335,12 +335,18 @@ const Supplies: React.FC<SuppliesProps> = ({ supplies, isLoading, error }) => {
               Our moving experts can help you determine exactly what supplies you need for your specific move.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+              <a 
+                href="/contact" 
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center"
+              >
                 Get Free Consultation
-              </button>
-              <button className="border border-blue-600 text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
+              </a>
+              <a 
+                href="/blog" 
+                className="border border-blue-600 text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors text-center"
+              >
                 View Moving Tips
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -392,16 +398,21 @@ const SupplyCard: React.FC<SupplyCardProps> = ({ item }) => {
           </div>
         </div>
         
-        <button 
-          className={`w-full mt-4 py-2 px-4 rounded-lg font-medium transition-colors ${
+        <a 
+          href={item.inStock ? `/contact?subject=Quote for ${encodeURIComponent(item.name)}` : '#'}
+          className={`w-full mt-4 py-2 px-4 rounded-lg font-medium transition-colors text-center block ${
             item.inStock 
               ? 'bg-blue-600 text-white hover:bg-blue-700' 
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'
           }`}
-          disabled={!item.inStock}
+          onClick={(e) => {
+            if (!item.inStock) {
+              e.preventDefault();
+            }
+          }}
         >
-          {item.inStock ? 'Add to Cart' : 'Out of Stock'}
-        </button>
+          {item.inStock ? 'Request Quote' : 'Out of Stock'}
+        </a>
       </div>
     </div>
   );

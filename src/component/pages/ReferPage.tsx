@@ -13,15 +13,16 @@ import {
   validateReferralForm
 } from '../../util/referralParser';
 import { getCurrentTimestamp } from '../../util/ssrUtils';
+import { api } from '../../services/service.apiSW';
 
 interface ReferProps {
-  referralProgram: ReferralProgram;
-  howItWorks: HowItWorksStep[];
-  referralTerms: string[];
-  referralStats: ReferralStats;
-  socialSharing: { title: string; description: string; platforms: SocialPlatform[] };
-  referralForm: ReferralForm;
-  successStories: SuccessStory[];
+  referralProgram?: ReferralProgram;
+  howItWorks?: HowItWorksStep[];
+  referralTerms?: string[];
+  referralStats?: ReferralStats;
+  socialSharing?: { title: string; description: string; platforms: SocialPlatform[] };
+  referralForm?: ReferralForm;
+  successStories?: SuccessStory[];
   isLoading: boolean;
   error: string | null;
 }
@@ -126,14 +127,33 @@ const Refer: React.FC<ReferProps> = ({
 
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const userId = `user_${getCurrentTimestamp()}`;
-      const link = generateReferralLink(userId);
-      setReferralLink(link);
+    try {
+      // Submit to MongoDB-backed API
+      const response = await api.submitReferralForm({
+        name: formData.name || '',
+        email: formData.email || '',
+        phone: formData.phone,
+        refereeName: formData.friendName,
+        refereeEmail: formData.friendEmail,
+        refereePhone: formData.friendPhone
+      });
+      
+      if (response.success && response.data) {
+        // Use the referral link from the API response
+        setReferralLink(response.data.referralLink);
       setShowReferralLink(true);
+        console.log('✅ Referral submitted successfully:', response);
+      } else {
+        setFormErrors({ general: response.message || 'Failed to submit referral' });
+      }
+    } catch (error) {
+      console.error('❌ Referral submission error:', error);
+      setFormErrors({ 
+        general: error instanceof Error ? error.message : 'Failed to submit referral. Please try again.' 
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -239,6 +259,11 @@ const Refer: React.FC<ReferProps> = ({
 
         {!showReferralLink ? (
           <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
+            {formErrors.general && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">{formErrors.general}</p>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {safeReferralForm.fields.map((field) => (
                 <div key={field.name} className={field.name === 'email' || field.name === 'phone' ? 'md:col-span-2' : ''}>

@@ -658,67 +658,33 @@ export const getComprehensiveContactPageData = async () => {
   console.log('🚀 Loading comprehensive contact page data...');
   
   try {
-    // Start tracking API calls for contact page (this resets previous tracking)
-    api.startPageTracking('contact-page');
+    // Don't track API calls or show modals at the page level
+    // Let individual API calls handle their own tracking
     
-    // Define all routes that will be called for this page
-    const contactPageRoutes = ['/v0/nav', '/v0/contact'];
-    
-    // First check health status - if it fails, all routes are considered 503
-    try {
-      await api.checkHealth();
-    } catch (_healthError) { // Reserved for future use
-      // Track all routes as failed since health check failed
-      contactPageRoutes.forEach(route => {
-        api.trackApiCall(route);
-      });
-      
-      // Show modal with all routes as failed
-      api.showApiFailureModal(contactPageRoutes, true);
-      
-      // Return empty data with 503 status
-      return {
-        nav: null,
-        contact: null,
-        lastUpdated: new Date().toISOString()
-      };
-    }
-    
-    // Health check passed - proceed with individual route calls
-    const [navData, contactData] = await Promise.allSettled([
-      api.getNav(),
-      api.getContact()
+    // Proceed with individual route calls - use Promise.all with fallbacks
+    const [navData, contactData] = await Promise.all([
+      api.getNav().catch(err => {
+        console.warn('⚠️ Nav failed, using fallback:', err);
+        return null;
+      }),
+      api.getContact().catch(err => {
+        console.warn('⚠️ Contact failed, using fallback:', err);
+        return null;
+      })
     ]);
     
-    // Collect failed endpoints for this page only
-    const failedEndpoints: string[] = [];
-    let has503Error = false;
-    
-    // Check each endpoint result
-    if (navData.status === 'rejected') {
-      failedEndpoints.push('/v0/nav');
-      if (navData.reason?.message?.includes('503')) has503Error = true;
-    }
-    if (contactData.status === 'rejected') {
-      failedEndpoints.push('/v0/contact');
-      if (contactData.reason?.message?.includes('503')) has503Error = true;
-    }
-    
-    // Show modal only for this page's failed endpoints
-    if (failedEndpoints.length > 0) {
-      api.showApiFailureModal(failedEndpoints, has503Error);
-    }
-    
+    // Return data - no error tracking, let components handle null gracefully
     const result = {
-      nav: navData.status === 'fulfilled' ? navData.value : null,
-      contact: contactData.status === 'fulfilled' ? contactData.value : null,
-      lastUpdated: new Date().toISOString()
+      nav: navData,
+      contact: contactData,
+      lastUpdated: new Date().toISOString(),
+      hasErrors: false,
+      failedEndpoints: []
     };
     
-    console.log('✅ Comprehensive contact page data loaded successfully:', {
+    console.log('✅ Comprehensive contact page data loaded:', {
       nav: !!result.nav,
-      contact: !!result.contact,
-      failedEndpoints: failedEndpoints
+      contact: !!result.contact
     });
     
     return result;

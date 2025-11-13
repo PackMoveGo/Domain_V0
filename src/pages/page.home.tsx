@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react'; // Added missing import
 import { useGiveSectionId } from '../hook/useGiveSectionId';
 import { getHomePageData, /* getHomePageStatusCode, getHomePageFailedEndpoints */ HomePageServiceData } from '../services/public/service.homePageAPI'; // Reserved for future use
 import { useCookiePreferences } from '../context/CookiePreferencesContext';
+import { useTestimonials } from '../hook/useTestimonials';
 // Modal state is handled by Layout component
 // import SEO from '../component/business/SEO'; // SEO complation
 // const { getSectionProps, isTampered, SectionWarning } = useGiveSectionId(contactPageSections); Hash validation example implmintation
@@ -172,6 +173,9 @@ export default function HomePage(){
   
   // Transform services data for components (SSR-safe with fallbacks)
   // Handle different response structures: { services: [...] } or [...] directly
+  // Use testimonials hook for API-based testimonials
+  const { testimonials: apiTestimonials, isLoading: testimonialsLoading, error: testimonialsError } = useTestimonials();
+  
   const servicesData = isSSR ? [] : (
     homePageData?.services 
       ? (Array.isArray(homePageData.services) 
@@ -180,9 +184,33 @@ export default function HomePage(){
       : []
   );
   const recentMovesData = isSSR ? [] : (homePageData?.recentMoves?.recentMoves || homePageData?.recentMoves?.moves || []);
-  const testimonialsData = isSSR ? [] : (homePageData?.testimonials?.testimonials || []);
+  // Use API testimonials if available, otherwise fall back to homePageData
+  const testimonialsData = isSSR ? [] : (apiTestimonials.length > 0 ? apiTestimonials : (homePageData?.testimonials?.testimonials || []));
   const totalMoves = isSSR ? 0 : (recentMovesData.length || 0);
-  const totalMovesCount = isSSR ? 500 : (homePageData?.totalMoves || 500);
+  // Ensure totalMovesCount is a number, allowing 0 as a valid value
+  const totalMovesCount = isSSR ? 0 : (() => {
+    const totalMovesValue = homePageData?.totalMoves;
+    
+    if (typeof totalMovesValue === 'number') {
+      return totalMovesValue; // Allow 0 as valid
+    }
+    
+    if (totalMovesValue && typeof totalMovesValue === 'object') {
+      // Handle object responses like { totalCount: 0 }
+      const count = (totalMovesValue as any).totalCount || (totalMovesValue as any).total_count || (totalMovesValue as any).count;
+      if (count !== undefined && count !== null) {
+        return count; // Allow 0 as valid
+      }
+      return 0; // Default for object without valid count
+    }
+    
+    if (totalMovesValue !== undefined && totalMovesValue !== null) {
+      const parsed = parseInt(String(totalMovesValue), 10);
+      return isNaN(parsed) ? 0 : parsed; // Allow 0 as valid, default to 0 if NaN
+    }
+    
+    return 0; // Default to 0 for new businesses
+  })();
 
   // Always render content - no loading state that blocks navigation
 
@@ -250,8 +278,8 @@ export default function HomePage(){
         <section {...getSectionProps('testimonials')}>
           <Testimonials 
             testimonials={testimonialsData}
-            isLoading={isLoadingData && !isSSR}
-            error={dataError}
+            isLoading={testimonialsLoading || (isLoadingData && !isSSR)}
+            error={testimonialsError || dataError}
           />
         </section>
 

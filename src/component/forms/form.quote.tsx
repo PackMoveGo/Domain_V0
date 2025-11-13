@@ -2,6 +2,7 @@
 import React, { useState /* , useEffect */ } from 'react'; // useEffect reserved for future use
 import { useNavigate } from 'react-router-dom';
 import { useApiStatus } from '../../hook/useApiStatus';
+import { api } from '../../services/service.apiSW';
 
 export interface FormData {
   fromZip: string;
@@ -11,6 +12,7 @@ export interface FormData {
   firstName: string;
   lastName: string;
   phone: string;
+  email?: string;
 }
 
 interface QuoteFormProps {
@@ -27,8 +29,12 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
     rooms: '',
     firstName: '',
     lastName: '',
-    phone: ''
+    phone: '',
+    email: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -38,17 +44,48 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    setSubmitError(null);
     
     // Call the onSubmit prop if provided
     if (onSubmit) {
       onSubmit(formData);
     }
     
-    // Navigate to booking page
-    navigate('/booking');
+    setIsSubmitting(true);
+    
+    try {
+      // Submit to MongoDB-backed API
+      const response = await api.submitQuote(formData);
+      
+      if (response.success) {
+        setSubmitSuccess(true);
+        setFormData({
+          fromZip: '',
+          toZip: '',
+          moveDate: '',
+          rooms: '',
+          firstName: '',
+          lastName: '',
+          phone: '',
+          email: ''
+        });
+        console.log('✅ Quote submitted successfully:', response);
+        
+        // Show success message for 3 seconds, then navigate
+        setTimeout(() => {
+          navigate('/booking');
+        }, 3000);
+      } else {
+        setSubmitError(response.message || 'Failed to submit quote request');
+      }
+    } catch (error) {
+      console.error('❌ Quote submission error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to submit quote. Please try again or call us directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -58,13 +95,25 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
           <h2 className="text-3xl font-bold mb-6 text-center">Get Your Free Quote</h2>
           <p className="text-center text-gray-600 mb-8">Fill out the form and a team member will follow up with you</p>
           
-          {!isOnline ? (
+          {submitSuccess ? (
+            <div className="text-center py-12">
+              <div className="text-green-500 text-6xl mb-4">✓</div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Quote Request Submitted!</h3>
+              <p className="text-lg text-gray-600 mb-4">Thank you! We'll contact you soon with your free quote.</p>
+              <p className="text-sm text-gray-500">Redirecting to booking page...</p>
+            </div>
+          ) : !isOnline ? (
             <div className="text-center py-12">
               <div className="text-6xl font-bold text-red-600 mb-4">503</div>
               <p className="text-lg text-gray-600">Service temporarily unavailable. Please try again later.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
+              {submitError && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm">{submitError}</p>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="fromZip" className="block text-sm font-medium text-gray-700 mb-1">Moving From Zip Code</label>
@@ -150,17 +199,29 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 transition duration-300"
+                disabled={isSubmitting}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Submit
+                {isSubmitting ? 'Submitting...' : 'Submit Quote Request'}
               </button>
             </form>
           )}
           
-          {isOnline && (
+          {!submitSuccess && isOnline && (
             <p className="text-center text-gray-600 mt-4">Someone from our team will be reaching out soon!</p>
           )}
         </div>

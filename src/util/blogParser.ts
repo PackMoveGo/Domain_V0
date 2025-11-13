@@ -32,12 +32,75 @@ export interface BlogData {
 
 export async function fetchBlogData(): Promise<BlogData> {
   try {
-    // Use the correct API method
-    const data = await api.getBlog() as BlogData;
-    return data;
+    console.log('🚀 Fetching blog data from API...');
+    
+    // Use the API method
+    const response = await api.getBlog();
+    console.log('📡 Blog API response:', response);
+    console.log('📡 Response type:', typeof response);
+    console.log('📡 Response keys:', response ? Object.keys(response) : 'null/undefined');
+    
+    // Handle different response formats
+    let blogPosts: BlogPost[] = [];
+    let categories: BlogCategory[] = [];
+    let tags: string[] = [];
+    
+    if (response && response.blogPosts && response.categories && response.tags) {
+      blogPosts = Array.isArray(response.blogPosts) ? response.blogPosts : [];
+      categories = Array.isArray(response.categories) ? response.categories : [];
+      tags = Array.isArray(response.tags) ? response.tags : [];
+      console.log('✅ Blog data loaded successfully');
+    } else if (response && response.success && response.data) {
+      blogPosts = Array.isArray(response.data.blogPosts) ? response.data.blogPosts : [];
+      categories = Array.isArray(response.data.categories) ? response.data.categories : [];
+      tags = Array.isArray(response.data.tags) ? response.data.tags : [];
+      console.log('✅ Blog data loaded from wrapped response');
+    } else if (response && response.posts) {
+      // Handle alternative format
+      blogPosts = Array.isArray(response.posts) ? response.posts : [];
+      categories = Array.isArray(response.categories) ? response.categories : [];
+      tags = Array.isArray(response.tags) ? response.tags : [];
+      console.log('✅ Blog data loaded from alternative format');
+    } else {
+      // Return empty data structure instead of throwing error
+      console.warn('⚠️ No blog data found, returning empty structure');
+      return {
+        blogPosts: [],
+        categories: [],
+        tags: []
+      };
+    }
+    
+    console.log('📊 Final blog data:', {
+      blogPostsCount: blogPosts.length,
+      categoriesCount: categories.length,
+      tagsCount: tags.length
+    });
+    
+    return {
+      blogPosts,
+      categories,
+      tags
+    };
   } catch (error) {
-    console.error('Error loading blog data:', error);
-    throw new Error('Failed to load blog data');
+    console.error('❌ Error loading blog data:', error);
+    // Check if this is a 503 error
+    if (error instanceof Error && (error as any).is503Error) {
+      // Return empty data instead of throwing
+      console.warn('⚠️ 503 error detected, returning empty blog data');
+      return {
+        blogPosts: [],
+        categories: [],
+        tags: []
+      };
+    }
+    // Return empty data for other errors too
+    console.warn('⚠️ Blog API error, returning empty data');
+    return {
+      blogPosts: [],
+      categories: [],
+      tags: []
+    };
   }
 }
 

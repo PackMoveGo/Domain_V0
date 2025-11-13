@@ -12,6 +12,7 @@ import {
   generateGoogleMapsUrl,
   generateDirectionsUrl
 } from '../../util/contactParser';
+import { api } from '../../services/service.apiSW';
 
 interface ContactPageProps {
   contactInfo: ContactInfo;
@@ -97,12 +98,32 @@ const ContactPage: React.FC<ContactPageProps> = ({
 
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Submit to MongoDB-backed API
+      const response = await api.submitContactForm({
+        name: formData.name || '',
+        email: formData.email || '',
+        phone: formData.phone,
+        subject: formData.subject,
+        message: formData.message || '',
+        preferredContact: (formData.preferredContact as 'email' | 'phone' | 'any') || 'any'
+      });
+      
+      if (response.success) {
       setSubmitSuccess(true);
+        setFormData({});
+        console.log('✅ Contact form submitted successfully:', response);
+      } else {
+        setFormErrors({ general: response.message || 'Failed to submit form' });
+      }
+    } catch (error) {
+      console.error('❌ Contact form submission error:', error);
+      setFormErrors({ 
+        general: error instanceof Error ? error.message : 'Failed to submit form. Please try again.' 
+      });
+    } finally {
       setIsSubmitting(false);
-      setFormData({});
-    }, 2000);
+    }
   };
 
   const toggleFAQ = (index: number) => {
@@ -259,6 +280,11 @@ const ContactPage: React.FC<ContactPageProps> = ({
 
         {!submitSuccess ? (
           <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+            {formErrors.general && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">{formErrors.general}</p>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {(contactForm.fields || []).map((field) => (
                 <div key={field.name} className={field.name === 'message' ? 'md:col-span-2' : ''}>

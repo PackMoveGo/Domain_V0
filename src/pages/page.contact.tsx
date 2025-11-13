@@ -59,16 +59,21 @@ export default function ContactPage() {
       // Check if the data contains 503 error information
       if (data && (data as any).error && (data as any).is503Error) {
         setDataError('503 Service Unavailable');
-        setContactPageData(null);
+        // Still set data so page can render with fallback
+        setContactPageData(data);
         return;
       }
       
       setContactPageData(data);
       
-      // Check if there are any errors and set appropriate states
-      const hasErrors = !data.nav || !data.contact;
+      // Check if there are any errors but don't block rendering
+      const hasErrors = data.hasErrors || (!data.nav && !data.contact);
       if (hasErrors) {
-        setDataError('503 Service Unavailable');
+        // Log error but don't prevent page from rendering
+        console.warn('⚠️ Some contact page data failed to load, using fallback data');
+        setDataError('Some data unavailable - using fallback');
+      } else {
+        setDataError(null);
       }
       
       console.log('✅ Contact page data loaded successfully:', {
