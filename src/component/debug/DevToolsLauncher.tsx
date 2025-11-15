@@ -10,7 +10,7 @@ interface DevToolsLauncherProps{
 // Safety check: Only allow dev tools in development mode
 const isDevMode=()=>{
   const env=(import.meta as any).env||{};
-  const isDev=env.MODE==='development'||env.VITE_DEV_MODE==='development';
+  const isDev=env.MODE==='development';
   return isDev&&ENABLE_DEV_TOOLS;
 };
 
@@ -34,7 +34,7 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
     setApiStatus({status:'checking'});
     try{
       const env=(import.meta as any).env||{};
-      const apiUrl=env.VITE_API_URL||'http://localhost:3000';
+      const apiUrl=env.API_URL||'http://localhost:3000';
       const response=await fetch(`${apiUrl}/health`,{
         method:'GET',
         headers:{'Content-Type':'application/json'}

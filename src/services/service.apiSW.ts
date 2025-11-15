@@ -1,3 +1,4 @@
+/* global URLSearchParams */
 /**
  * Unified API Service for PackMoveGo Application
  * 
@@ -29,19 +30,20 @@ import { isConnectionError, is503Error, normalizeTo503Error, /* log503Error, */ 
 // API configuration functions (moved from config/api)
 const getApiKey = (): string => {
   // Get API key from Vite's import.meta.env
-  // Try multiple ways to access the env variable
-  const env = (import.meta as any).env || import.meta.env || {};
-  const apiKey = env.VITE_API_KEY_FRONTEND || (import.meta as any).env?.VITE_API_KEY_FRONTEND || '';
+  // Support both new (API_KEY_FRONTEND) and legacy (VITE_API_KEY_FRONTEND) names
+  const env=(import.meta as any).env || import.meta.env || {};
+  const apiKey=env.API_KEY_FRONTEND || env.VITE_API_KEY_FRONTEND || '';
   
   // Debug in development
-  if (import.meta.env.MODE === 'development') {
+  if(import.meta.env.MODE==='development'){
     console.log('🔑 [API-KEY-DEBUG] getApiKey check:', {
       hasImportMeta: !!import.meta,
       hasEnv: !!(import.meta as any).env,
       hasViteEnv: !!import.meta.env,
       apiKeyFound: !!apiKey,
       apiKeyLength: apiKey?.length || 0,
-      rawValue: env.VITE_API_KEY_FRONTEND ? 'present' : 'missing'
+      rawValueNew: env.API_KEY_FRONTEND ? 'present' : 'missing',
+      rawValueLegacy: env.VITE_API_KEY_FRONTEND ? 'present' : 'missing'
     });
   }
   
@@ -238,79 +240,78 @@ const shouldThrottleRequest = (endpoint: string): boolean => {
 
 const getEnvironmentConfig = () => {
   // Get environment variables from Vite's import.meta.env
-  // Vite automatically loads .env files and exposes VITE_ prefixed variables
+  // Vite automatically loads .env files; we expose non-VITE vars via define in vite.config
   // Try both import.meta.env and (import.meta as any).env for compatibility
-  const env = import.meta.env || (import.meta as any).env || {};
+  const env=import.meta.env || (import.meta as any).env || {};
   
   // Debug environment access in development
-  if (import.meta.env.MODE === 'development') {
+  if(import.meta.env.MODE==='development'){
     console.log('🔧 [ENV-DEBUG] Environment access check:', {
       hasImportMeta: !!import.meta,
       hasImportMetaEnv: !!import.meta.env,
       hasAnyEnv: !!(import.meta as any).env,
-      sampleKeys: Object.keys(env).filter(k => k.startsWith('VITE_')).slice(0, 5),
-      hasViteApiUrl: !!env.VITE_API_URL,
-      hasViteApiKey: !!env.VITE_API_KEY_FRONTEND
+      sampleKeys: Object.keys(env).slice(0, 5),
+      hasApiUrl: !!env.API_URL,
+      hasApiKey: !!env.API_KEY_FRONTEND
     });
   }
   
   // Helper to get env var with fallback
   const getEnvVar = (key: string, fallback: string = ''): string => {
-    const value = env[key] || '';
+    const value=env[key] || '';
     // Debug in development for critical vars
-    if (import.meta.env.MODE === 'development' && (key === 'VITE_API_URL' || key === 'VITE_API_KEY_FRONTEND')) {
-      console.log(`🔧 [ENV-VAR] ${key}:`, value ? `"${value.substring(0, 20)}${value.length > 20 ? '...' : ''}"` : 'NOT_FOUND');
+    if(import.meta.env.MODE==='development' && (key==='API_URL' || key==='API_KEY_FRONTEND')){
+      console.log(`🔧 [ENV-VAR] ${key}:`, value ? `"${value.substring(0, 20)}${value.length>20 ? '...' : ''}"` : 'NOT_FOUND');
     }
     return value || fallback;
   };
 
   // Get boolean environment variable
   const getBoolEnvVar = (key: string): boolean => {
-    const value = getEnvVar(key);
-    if (value === '') return false;
-    return value === 'true' || value === '1';
+    const value=getEnvVar(key);
+    if(value==='') return false;
+    return value==='true' || value==='1';
   };
 
   // Get number environment variable
   const getNumberEnvVar = (key: string): number => {
-    const value = getEnvVar(key);
-    if (value === '') return 0;
-    const parsed = parseInt(value, 10);
+    const value=getEnvVar(key);
+    if(value==='') return 0;
+    const parsed=parseInt(value, 10);
     return isNaN(parsed) ? 0 : parsed;
   };
 
   // Build configuration object using environment variables
   // IMPORTANT: Use /api as default for development to use Vite proxy
-  const config = {
-    API_URL: getEnvVar('VITE_API_URL', '/api'), // Default to /api for proxy
-    SKIP_BACKEND_CHECK: getBoolEnvVar('VITE_SKIP_BACKEND_CHECK'),
-    DEV_MODE: getEnvVar('VITE_DEV_MODE', import.meta.env.MODE || 'development'),
-    APP_NAME: getEnvVar('VITE_APP_NAME', 'PackMoveGo'),
-    APP_VERSION: getEnvVar('VITE_APP_VERSION', '0.1.0'),
-    DEV_HTTPS: getBoolEnvVar('VITE_DEV_HTTPS'),
-    IS_SSR: getBoolEnvVar('VITE_IS_SSR'),
-    MODE: getEnvVar('VITE_MODE', import.meta.env.MODE || 'development'),
-    ENABLE_DEV_TOOLS: getBoolEnvVar('VITE_ENABLE_DEV_TOOLS'),
-    REDUCE_LOGGING: getBoolEnvVar('VITE_REDUCE_LOGGING'),
-    API_TIMEOUT: getNumberEnvVar('VITE_API_TIMEOUT'),
-    API_RETRY_ATTEMPTS: getNumberEnvVar('VITE_API_RETRY_ATTEMPTS'),
-    CACHE_ENABLED: getBoolEnvVar('VITE_CACHE_ENABLED'),
-    CACHE_TTL: getNumberEnvVar('VITE_CACHE_TTL'),
-    CACHE_MAX_SIZE: getNumberEnvVar('VITE_CACHE_MAX_SIZE'),
+  const config={
+    API_URL: getEnvVar('API_URL', '/api'), // Default to /api for proxy
+    SKIP_BACKEND_CHECK: getBoolEnvVar('SKIP_BACKEND_CHECK'),
+    DEV_MODE: getEnvVar('DEV_MODE', import.meta.env.MODE || 'development'),
+    APP_NAME: getEnvVar('APP_NAME', 'PackMoveGo'),
+    APP_VERSION: getEnvVar('APP_VERSION', '0.1.0'),
+    DEV_HTTPS: getBoolEnvVar('DEV_HTTPS'),
+    IS_SSR: getBoolEnvVar('IS_SSR'),
+    ENABLE_DEV_TOOLS: getBoolEnvVar('ENABLE_DEV_TOOLS'),
+    REDUCE_LOGGING: getBoolEnvVar('REDUCE_LOGGING'),
+    API_TIMEOUT: getNumberEnvVar('API_TIMEOUT'),
+    API_RETRY_ATTEMPTS: getNumberEnvVar('API_RETRY_ATTEMPTS'),
+    CACHE_ENABLED: getBoolEnvVar('CACHE_ENABLED'),
+    CACHE_TTL: getNumberEnvVar('CACHE_TTL'),
+    CACHE_MAX_SIZE: getNumberEnvVar('CACHE_MAX_SIZE'),
     API_KEY_FRONTEND: getApiKey()
   };
 
   // Ensure API URL has protocol (unless it's a relative path like /api)
   // Relative paths are used with Vite proxy to avoid SSL certificate issues
   // IMPORTANT: Preserve relative paths starting with / (like /api)
-  if (config.API_URL && !config.API_URL.startsWith('/') && !/^https?:\/\//i.test(config.API_URL)) {
-    config.API_URL = `http://${config.API_URL}`;
+  if(config.API_URL && !config.API_URL.startsWith('/') && !/^https?:\/\//i.test(config.API_URL)){
+    config.API_URL=`http://${config.API_URL}`;
   }
   
   // Debug API URL in development
-  if (config.DEV_MODE === 'development' && !config.REDUCE_LOGGING) {
+  if(config.DEV_MODE==='development' && !config.REDUCE_LOGGING){
     console.log('🔧 [API-URL-DEBUG] API URL configuration:', {
-      rawEnvVar: getEnvVar('VITE_API_URL', 'NOT_FOUND'),
+      rawEnvVar: getEnvVar('API_URL', 'NOT_FOUND'),
       finalApiUrl: config.API_URL,
       isRelative: config.API_URL.startsWith('/'),
       isAbsolute: /^https?:\/\//i.test(config.API_URL)
@@ -318,7 +319,7 @@ const getEnvironmentConfig = () => {
   }
 
   // Debug environment loading in development
-  if (config.DEV_MODE === 'development' && !config.REDUCE_LOGGING) {
+  if(config.DEV_MODE==='development' && !config.REDUCE_LOGGING){
     console.log('🔧 [API-CONFIG] Environment Configuration Loaded:');
     console.log('   • API_URL:', config.API_URL);
     console.log('   • SKIP_BACKEND_CHECK:', config.SKIP_BACKEND_CHECK);
@@ -1622,11 +1623,11 @@ export class APIsw {
   // AUTHENTICATION METHODS
   // =================================================================
 
-  async login(email: string, password: string): Promise<any> {
+  async login(email: string, password: string, location?: any): Promise<any> {
     try {
-      const response = await this.makeRequest<any>(API_ENDPOINTS.AUTH.LOGIN, {
+      const response=await this.makeRequest<any>(API_ENDPOINTS.AUTH.LOGIN, {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, location })
       });
 
       // Handle different response formats
@@ -1678,16 +1679,17 @@ export class APIsw {
     email: string;
     password: string;
     phone?: string;
+    location?: any;
   }): Promise<any> {
     try {
       // Try /v1/auth/sign-up first (MongoDB endpoint)
       let response;
       try {
-        response = await this.makeRequest<any>('/v1/auth/sign-up', {
+        response=await this.makeRequest<any>('/v1/auth/sign-up', {
           method: 'POST',
           body: JSON.stringify(userData)
         });
-      } catch (error) {
+      } catch (_error) {
         // Fallback to /signup endpoint
         response = await this.makeRequest<any>('/signup', {
           method: 'POST',
@@ -1980,7 +1982,7 @@ export class APIsw {
 
   async search(query: string, type?: string, limit?: number): Promise<any> {
     try {
-      const params = new URLSearchParams();
+      const params=new URLSearchParams();
       params.append('q', query);
       if (type) params.append('type', type);
       if (limit) params.append('limit', limit.toString());

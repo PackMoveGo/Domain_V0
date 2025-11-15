@@ -1,3 +1,4 @@
+/* global AbortController */
 import { useState, useEffect, useCallback } from 'react';
 
 interface GeolocationState {
@@ -34,7 +35,43 @@ export function useGeolocation() {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Try multiple IP geolocation services for reliability
+      // Try backend proxy first (avoids CORS, rate limits, DNS issues)
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('/api/v0/geolocation', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.success && data.latitude && data.longitude) {
+            setState({
+              latitude: parseFloat(data.latitude),
+              longitude: parseFloat(data.longitude),
+              error: null,
+              isLoading: false,
+              city: data.city,
+              state: data.region,
+              country: data.country
+            });
+            console.log('✅ [GEOLOCATION] Retrieved from backend proxy');
+            return;
+          }
+        }
+      } catch (backendError) {
+        console.warn('⚠️  [GEOLOCATION] Backend proxy failed, falling back to direct API calls:', backendError);
+      }
+
+      // Fallback: Try multiple IP geolocation services directly
       const services = [
         'https://ipapi.co/json/',
         'https://ip-api.com/json/?fields=status,message,lat,lon,city,region,country',

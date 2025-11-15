@@ -225,8 +225,8 @@ const Navbar: React.FC<NavbarProps> = ({ /* hasConsent, isWaitingForConsent */ i
 
   // Log navigation errors in development only
   useEffect(() => {
-    const isDevMode = (import.meta as any).env.VITE_DEV_MODE === 'development';
-    if (_error && isDevMode) {
+    const isDevMode=(import.meta as any).env.MODE==='development';
+    if(_error && isDevMode){
       console.error('Navigation error:', _error);
     }
   }, [_error]);

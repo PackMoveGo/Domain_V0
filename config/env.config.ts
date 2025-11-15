@@ -1,12 +1,8 @@
 /**
  * Environment Configuration
  * 
- * This module provides a clean interface to access environment variables
- * without needing to use the VITE_ prefix throughout the codebase.
- * 
- * Note: Vite requires the VITE_ prefix for security reasons (to prevent
- * accidentally exposing server-side secrets to the browser). This file
- * abstracts that requirement away from the rest of the application.
+ * This module provides a clean interface to access environment variables.
+ * Variables are loaded from .env files without VITE_ prefix.
  */
 
 interface AppConfig {
@@ -22,7 +18,6 @@ interface AppConfig {
   // App Information
   appName: string;
   appVersion: string;
-  mode: string;
   devMode: string;
   
   // Development Settings
@@ -34,6 +29,17 @@ interface AppConfig {
   cacheEnabled: boolean;
   cacheTtl: number;
   cacheMaxSize: number;
+  
+  // Security (Frontend exposed - server-only values should not be exposed)
+  jwtSecret: string;
+  jwtExpiresIn: string;
+  
+  // Stripe (Frontend exposed publishable key only)
+  stripePublishableKey: string;
+  
+  // Twilio (Frontend should not expose these - use backend API)
+  twilioAccountSid: string;
+  twilioAuthToken: string;
   
   // SSR
   isSSR: boolean;
@@ -72,11 +78,11 @@ function getNumberEnv(key: string, fallback: number = 0): number {
  * Get API key with security checks
  */
 function getApiKey(): string {
-  const key = getEnv('VITE_API_KEY_FRONTEND');
+  const key=getEnv('API_KEY_FRONTEND');
   
   // Security check: Ensure key is not accidentally logged
-  if (key && import.meta.env.MODE === 'development') {
-    console.log('🔑 [ENV-CONFIG] API key loaded (length:', key.length + ')');
+  if(key && import.meta.env.MODE==='development'){
+    console.log('🔑 [ENV-CONFIG] API key loaded (length:', key.length+')');
   }
   
   return key;
@@ -84,40 +90,48 @@ function getApiKey(): string {
 
 /**
  * Load and export application configuration
- * 
- * This provides a clean interface without VITE_ prefixes
  */
-export const config: AppConfig = {
+export const config: AppConfig={
   // API Configuration
-  apiUrl: getEnv('VITE_API_URL', '/api'),
-  apiTimeout: getNumberEnv('VITE_API_TIMEOUT', 10000),
-  apiRetryAttempts: getNumberEnv('VITE_API_RETRY_ATTEMPTS', 3),
-  apiRetryDelay: getNumberEnv('VITE_API_RETRY_DELAY', 1000),
-  skipBackendCheck: getBoolEnv('VITE_SKIP_BACKEND_CHECK', false),
+  apiUrl: getEnv('API_URL', '/api'),
+  apiTimeout: getNumberEnv('API_TIMEOUT', 10000),
+  apiRetryAttempts: getNumberEnv('API_RETRY_ATTEMPTS', 3),
+  apiRetryDelay: getNumberEnv('API_RETRY_DELAY', 1000),
+  skipBackendCheck: getBoolEnv('SKIP_BACKEND_CHECK', false),
   apiKeyFrontend: getApiKey(),
-  apiKeyEnabled: getBoolEnv('VITE_API_KEY_ENABLED', false),
+  apiKeyEnabled: getBoolEnv('API_KEY_ENABLED', false),
 
   // App Information
-  appName: getEnv('VITE_APP_NAME', 'PackMoveGo'),
-  appVersion: getEnv('VITE_APP_VERSION', '0.1.0'),
-  mode: getEnv('VITE_MODE', import.meta.env.MODE || 'development'),
-  devMode: getEnv('VITE_DEV_MODE', import.meta.env.MODE || 'development'),
+  appName: getEnv('APP_NAME', 'PackMoveGo'),
+  appVersion: getEnv('APP_VERSION', '0.1.0'),
+  devMode: getEnv('DEV_MODE', import.meta.env.MODE || 'development'),
   
   // Development Settings
-  devHttps: getBoolEnv('VITE_DEV_HTTPS', false),
-  enableDevTools: getBoolEnv('VITE_ENABLE_DEV_TOOLS', false),
-  reduceLogging: getBoolEnv('VITE_REDUCE_LOGGING', false),
+  devHttps: getBoolEnv('DEV_HTTPS', false),
+  enableDevTools: getBoolEnv('ENABLE_DEV_TOOLS', false),
+  reduceLogging: getBoolEnv('REDUCE_LOGGING', false),
   
   // Cache Configuration
-  cacheEnabled: getBoolEnv('VITE_CACHE_ENABLED', true),
-  cacheTtl: getNumberEnv('VITE_CACHE_TTL', 3600),
-  cacheMaxSize: getNumberEnv('VITE_CACHE_MAX_SIZE', 100),
+  cacheEnabled: getBoolEnv('CACHE_ENABLED', true),
+  cacheTtl: getNumberEnv('CACHE_TTL', 3600),
+  cacheMaxSize: getNumberEnv('CACHE_MAX_SIZE', 100),
+  
+  // Security (Frontend should NOT expose JWT_SECRET - kept for backward compatibility)
+  jwtSecret: getEnv('JWT_SECRET', ''),
+  jwtExpiresIn: getEnv('JWT_EXPIRES_IN', '24h'),
+  
+  // Stripe (Only publishable key should be exposed to frontend)
+  stripePublishableKey: getEnv('STRIPE_PUBLISHABLE_KEY', ''),
+  
+  // Twilio (Should NOT be exposed to frontend - use backend API instead)
+  twilioAccountSid: getEnv('TWILIO_ACCOUNT_SID', ''),
+  twilioAuthToken: getEnv('TWILIO_AUTH_TOKEN', ''),
   
   // SSR
-  isSSR: getBoolEnv('VITE_IS_SSR', false),
+  isSSR: getBoolEnv('IS_SSR', false),
   
   // Port
-  port: getNumberEnv('VITE_PORT', 5001),
+  port: getNumberEnv('PORT', 5050),
 };
 
 /**
@@ -130,12 +144,13 @@ if (config.apiUrl && !config.apiUrl.startsWith('/') && !/^https?:\/\//i.test(con
 /**
  * Log configuration in development
  */
-if (config.mode === 'development' && !config.reduceLogging) {
+if(config.devMode==='development' && !config.reduceLogging){
   console.log('🔧 [ENV-CONFIG] Application Configuration Loaded:');
   console.log('   • API URL:', config.apiUrl);
-  console.log('   • Mode:', config.mode);
+  console.log('   • Dev Mode:', config.devMode);
   console.log('   • HTTPS:', config.devHttps);
   console.log('   • Backend Check:', config.skipBackendCheck ? 'disabled' : 'enabled');
+  console.log('   • Port:', config.port);
 }
 
 /**
@@ -151,7 +166,6 @@ export const {
   apiKeyEnabled,
   appName,
   appVersion,
-  mode,
   devMode,
   devHttps,
   enableDevTools,
@@ -159,9 +173,14 @@ export const {
   cacheEnabled,
   cacheTtl,
   cacheMaxSize,
+  jwtSecret,
+  jwtExpiresIn,
+  stripePublishableKey,
+  twilioAccountSid,
+  twilioAuthToken,
   isSSR,
   port,
-} = config;
+}=config;
 
 export default config;
 

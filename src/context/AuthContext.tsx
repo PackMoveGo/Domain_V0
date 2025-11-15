@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from '../services/service.apiSW';
 import { JWT_AUTH } from '../util/jwtAuth';
+import { useGeolocation } from '../hook/useGeolocation';
 
 interface User {
   id: string;
@@ -40,6 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { latitude, longitude, city, state, country } = useGeolocation();
 
   // Check authentication status on mount
   const checkAuthStatus = useCallback(async () => {
@@ -92,10 +94,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       setError(null);
 
-      const response = await api.login(email, password);
+      // Include location data in login request
+      const locationData={
+        latitude: latitude || undefined,
+        longitude: longitude || undefined,
+        city: city || undefined,
+        state: state || undefined,
+        country: country || undefined
+      };
 
-      if (response && response.success) {
-        const userData = response.data?.user || response.user || {};
+      const response=await api.login(email, password, locationData);
+
+      if(response && response.success){
+        const userData=response.data?.user || response.user || {};
         setUser({
           id: userData._id || userData.id || '',
           email: userData.email || email,
@@ -105,17 +116,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: userData.phone,
           role: userData.role
         });
-      } else {
+      }else{
         throw new Error(response?.message || 'Login failed');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+    }catch(err){
+      const errorMessage=err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
       throw err;
-    } finally {
+    }finally{
       setIsLoading(false);
     }
-  }, []);
+  }, [latitude, longitude, city, state, country]);
 
   // Signup function
   const signup = useCallback(async (userData: {
@@ -131,26 +142,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
 
       // Prepare data for API (handle both name and firstName/lastName)
-      const signupData: any = {
+      const signupData: any={
         email: userData.email,
         password: userData.password
       };
 
-      if (userData.name) {
-        signupData.name = userData.name;
-      } else if (userData.firstName || userData.lastName) {
-        signupData.firstName = userData.firstName;
-        signupData.lastName = userData.lastName;
+      if(userData.name){
+        signupData.name=userData.name;
+      }else if(userData.firstName || userData.lastName){
+        signupData.firstName=userData.firstName;
+        signupData.lastName=userData.lastName;
       }
 
-      if (userData.phone) {
-        signupData.phone = userData.phone;
+      if(userData.phone){
+        signupData.phone=userData.phone;
       }
 
-      const response = await api.signup(signupData);
+      // Include location data in signup request
+      signupData.location={
+        latitude: latitude || undefined,
+        longitude: longitude || undefined,
+        city: city || undefined,
+        state: state || undefined,
+        country: country || undefined
+      };
 
-      if (response && response.success) {
-        const userData = response.data?.user || response.user || {};
+      const response=await api.signup(signupData);
+
+      if(response && response.success){
+        const userData=response.data?.user || response.user || {};
         setUser({
           id: userData._id || userData.id || '',
           email: userData.email || signupData.email,
@@ -160,17 +180,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: userData.phone,
           role: userData.role
         });
-      } else {
+      }else{
         throw new Error(response?.message || 'Signup failed');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Signup failed';
+    }catch(err){
+      const errorMessage=err instanceof Error ? err.message : 'Signup failed';
       setError(errorMessage);
       throw err;
-    } finally {
+    }finally{
       setIsLoading(false);
     }
-  }, []);
+  }, [latitude, longitude, city, state, country]);
 
   // Logout function
   const logout = useCallback(async () => {
@@ -220,6 +240,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {

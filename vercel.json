@@ -1,4 +1,7 @@
 {
+  "buildCommand": "npm run build:csr",
+  "outputDirectory": "dist",
+  "installCommand": "npm ci --include=dev",
   "rewrites": [
     {
       "source": "/(.*)",

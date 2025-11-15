@@ -7,7 +7,7 @@ import { ENABLE_DEV_TOOLS } from './env';
 // Check if dev tools are enabled
 const isDevMode=()=>{
   const env=(import.meta as any).env||{};
-  const isDev=env.MODE==='development'||env.VITE_DEV_MODE==='development';
+  const isDev=env.MODE==='development';
   return isDev&&ENABLE_DEV_TOOLS;
 };
 

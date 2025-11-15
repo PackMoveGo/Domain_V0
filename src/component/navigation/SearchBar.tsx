@@ -32,7 +32,7 @@ interface SearchBarProps {
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ 
-  onSearch,
+  onSearch: _onSearch,
   onSearchComplete,
   onSearchClear,
   className = '' 
@@ -46,7 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     isOpen,
     isLoading,
     setIsOpen,
-    handleSearch,
+    handleSearch: _handleSearch,
     handleQueryChange,
     clearSearch
   } = useSearch({

@@ -1,13 +1,9 @@
 // Environment variables utility
-// Uses Vite's import.meta.env for frontend variables
-// For SSR/Node.js, use process.env.NODE_ENV directly
+// Uses config module for clean access to environment variables
 
-export const NODE_ENV = (import.meta as any).env?.MODE || process.env.NODE_ENV || 'development';
+import { devMode, enableDevTools } from '@config/env.config';
 
-// Get ENABLE_DEV_TOOLS from Vite env (VITE_ENABLE_DEV_TOOLS)
-export const ENABLE_DEV_TOOLS = (() => {
-  const env = (import.meta as any).env || {};
-  const value = env.VITE_ENABLE_DEV_TOOLS;
-  if (value === '') return false;
-  return value === 'true' || value === '1';
-})();
+export const NODE_ENV=devMode || process.env.NODE_ENV || 'development';
+
+// Get ENABLE_DEV_TOOLS from config
+export const ENABLE_DEV_TOOLS=enableDevTools;

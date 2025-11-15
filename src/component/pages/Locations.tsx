@@ -13,7 +13,7 @@ const Locations: React.FC<LocationsProps> = ({ locations, serviceTypes, isLoadin
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedService, setSelectedService] = useState<string>('all');
-  const { latitude, longitude, error: geoError, isLoading: geoLoading } = useGeolocation();
+  const { latitude, longitude, error: _geoError, isLoading: _geoLoading } = useGeolocation();
 
   // Debug logging with better error handling
   console.log('🔧 Locations component received:', { 
@@ -25,13 +25,18 @@ const Locations: React.FC<LocationsProps> = ({ locations, serviceTypes, isLoadin
     serviceTypesType: typeof serviceTypes
   });
 
-  // Safety checks for undefined arrays
-  const safeLocations = locations && Array.isArray(locations) ? locations : [];
-  const safeServiceTypes = serviceTypes && Array.isArray(serviceTypes) ? serviceTypes : [];
+  // Safety checks for undefined arrays - wrapped in useMemo to fix dependency warning
+  const safeLocations = useMemo(() => 
+    locations && Array.isArray(locations) ? locations : []
+  , [locations]);
+  
+  const safeServiceTypes = useMemo(() => 
+    serviceTypes && Array.isArray(serviceTypes) ? serviceTypes : []
+  , [serviceTypes]);
 
   // Get nearby cities if user location is available - MUST be before early returns
   const nearbyCities = useMemo(() => {
-    if (latitude !== null && longitude !== null && safeLocations.length > 0) {
+    if(latitude !== null && longitude !== null && safeLocations.length > 0){
       return getCitiesNearby(safeLocations, latitude, longitude, 6);
     }
     return [];

@@ -7,12 +7,12 @@ import {
   ReferralForm, 
   SuccessStory,
   formatCurrency,
-  generateReferralLink,
+  generateReferralLink as _generateReferralLink,
   copyToClipboard,
   shareOnSocialMedia,
   validateReferralForm
 } from '../../util/referralParser';
-import { getCurrentTimestamp } from '../../util/ssrUtils';
+import { getCurrentTimestamp as _getCurrentTimestamp } from '../../util/ssrUtils';
 import { api } from '../../services/service.apiSW';
 
 interface ReferProps {

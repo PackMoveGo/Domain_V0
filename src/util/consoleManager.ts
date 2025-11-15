@@ -29,11 +29,11 @@ class ConsoleManager {
   private startupMessages: string[] = [];
 
   private constructor() {
-    const env = (import.meta as any).env || {};
-    const isDevMode = env.MODE === 'development' || env.VITE_DEV_MODE === 'development';
-    const devToolsEnabled = isClient ? ENABLE_DEV_TOOLS : false;
+    const env=(import.meta as any).env || {};
+    const isDevMode=env.MODE==='development';
+    const devToolsEnabled=isClient ? ENABLE_DEV_TOOLS : false;
     
-    this.isDevelopment = isDevMode && devToolsEnabled;
+    this.isDevelopment=isDevMode && devToolsEnabled;
     this.sessionId = getRandomString(13);
     
     // Only initialize once per session and reduce startup noise
@@ -41,7 +41,7 @@ class ConsoleManager {
       // Collect startup messages instead of logging immediately
       this.startupMessages.push('🔧 Console Manager Initialized');
       this.startupMessages.push(`Session ID: ${this.sessionId}`);
-      this.startupMessages.push(`Environment: ${env.MODE || env.VITE_DEV_MODE || 'development'}`);
+      this.startupMessages.push(`Environment: ${env.MODE || 'development'}`);
       
       // Log startup messages in a single group after a delay
       setTimeout(() => {
@@ -509,8 +509,8 @@ const consoleCommands = {
       hardwareConcurrency: navigator.hardwareConcurrency,
       deviceMemory: (navigator as any).deviceMemory,
       connection: (navigator as any).connection,
-      environment: (import.meta as any).env?.MODE || (import.meta as any).env?.VITE_DEV_MODE || 'development',
-      devMode: (import.meta as any).env?.MODE || (import.meta as any).env?.VITE_DEV_MODE || 'development'
+      environment: (import.meta as any).env?.MODE || 'development',
+      devMode: (import.meta as any).env?.MODE || 'development'
     });
   },
 
@@ -597,22 +597,22 @@ const consoleCommands = {
 
   // Check API key configuration
   checkApiKey: () => {
-    if (typeof window !== 'undefined') {
-      const env = (import.meta as any).env || {};
-      const apiKey = env.VITE_API_KEY_FRONTEND;
-      const isEnabled = env.VITE_API_KEY_ENABLED === 'true';
+    if(typeof window!=='undefined'){
+      const env=(import.meta as any).env || {};
+      const apiKey=env.API_KEY_FRONTEND;
+      const isEnabled=env.API_KEY_ENABLED==='true';
       console.log('🔑 API Key Status:', {
         isEnabled: isEnabled,
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
-        apiKeyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : 'none',
-        apiUrl: env.VITE_API_URL
+        apiKeyPrefix: apiKey ? apiKey.substring(0, 10)+'...' : 'none',
+        apiUrl: env.API_URL
       });
       return {
         isEnabled,
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
-        apiUrl: env.VITE_API_URL
+        apiUrl: env.API_URL
       };
     }
     return 'Not available in server environment';
@@ -622,14 +622,14 @@ const consoleCommands = {
   checkApiConfig: async () => {
     if (typeof window !== 'undefined') {
       try {
-        const { api: _api } = await import('../services/service.apiSW');
-        const env = (import.meta as any).env || {};
+        const { api: _api }=await import('../services/service.apiSW');
+        const env=(import.meta as any).env || {};
         console.log('🔧 API Configuration:', {
-          apiUrl: env.VITE_API_URL,
-          apiBaseUrl: env.VITE_API_BASE_URL,
-          skipBackendCheck: env.VITE_SKIP_BACKEND_CHECK,
-          devMode: env.MODE || env.VITE_DEV_MODE,
-          devHttps: env.VITE_DEV_HTTPS,
+          apiUrl: env.API_URL,
+          apiBaseUrl: env.API_BASE_URL,
+          skipBackendCheck: env.SKIP_BACKEND_CHECK,
+          devMode: env.MODE,
+          devHttps: env.DEV_HTTPS,
         });
         return 'API configuration logged to console';
       } catch (error) {
@@ -642,11 +642,11 @@ const consoleCommands = {
 
   // Test API connection
   testApiConnection: async () => {
-    if (typeof window !== 'undefined') {
+    if(typeof window!=='undefined'){
       try {
-        const env = (import.meta as any).env || {};
-        const apiUrl = env.VITE_API_URL || 'http://localhost:3000';
-        const apiKey = env.VITE_API_KEY_FRONTEND || '';
+        const env=(import.meta as any).env || {};
+        const apiUrl=env.API_URL || 'http://localhost:3000';
+        const apiKey=env.API_KEY_FRONTEND || '';
         console.log('🔧 Testing API connection to:', apiUrl);
         console.log('🔑 API Key being sent:', {
           hasKey: !!apiKey,
@@ -701,14 +701,14 @@ const consoleCommands = {
 
   // Manually test API key
   testApiKey: async () => {
-    if (typeof window !== 'undefined') {
+    if(typeof window!=='undefined'){
       try {
-        const env = (import.meta as any).env || {};
-        const apiKey = env.VITE_API_KEY_FRONTEND || '';
-        const apiUrl = env.VITE_API_URL || 'http://localhost:3000';
+        const env=(import.meta as any).env || {};
+        const apiKey=env.API_KEY_FRONTEND || '';
+        const apiUrl=env.API_URL || 'http://localhost:3000';
         
-        if (!apiKey) {
-          console.warn('⚠️ No API key configured. Set VITE_API_KEY_FRONTEND in your .env file.');
+        if(!apiKey){
+          console.warn('⚠️ No API key configured. Set API_KEY_FRONTEND in your .env file.');
           return 'No API key configured';
         }
         
@@ -811,11 +811,11 @@ Utility Commands:
 
 // Add commands to global window object in development - SSR SAFE
 // Only load dev tools when NODE_ENV is development AND ENABLE_DEV_TOOLS is true
-const env = (import.meta as any).env || {};
-const isDevMode = env.MODE === 'development' || env.VITE_DEV_MODE === 'development';
-const devToolsEnabled = ENABLE_DEV_TOOLS;
+const env=(import.meta as any).env || {};
+const isDevMode=env.MODE==='development';
+const devToolsEnabled=ENABLE_DEV_TOOLS;
 
-if (isDevMode && devToolsEnabled && typeof window !== 'undefined') {
+if(isDevMode && devToolsEnabled && typeof window!=='undefined'){
   Object.entries(consoleCommands).forEach(([name, fn]) => {
     (window as any)[name] = fn;
   });

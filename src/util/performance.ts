@@ -286,11 +286,11 @@ class PerformanceMonitor {
 
 // Initialize performance monitoring
 export function initPerformanceMonitoring(): void {
-  if (typeof window === 'undefined') return;
+  if(typeof window==='undefined') return;
 
-  const isDevMode = (import.meta as any).env.VITE_DEV_MODE === 'development';
+  const isDevMode=(import.meta as any).env.MODE==='development';
   // Only log initialization once per session to reduce noise
-  if (isDevMode && !sessionStorage.getItem('performance-monitoring-logged')) {
+  if(isDevMode && !sessionStorage.getItem('performance-monitoring-logged')){
     console.log('🔧 Performance monitoring initialized');
     sessionStorage.setItem('performance-monitoring-logged', 'true');
   }
