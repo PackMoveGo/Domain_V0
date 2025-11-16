@@ -276,7 +276,7 @@ export default function ContactPage() {
           <section {...getSectionProps('office-locations')}>
             <Suspense fallback={
               <div className="mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">Our Offices</h2>
+                <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">pending</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {[...Array(3)].map((_, index) => (
                     <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">

@@ -27,14 +27,14 @@ const CookieOptOut: React.FC = () => {
   const returnPathRef = useRef<string | null>(null);
   
   // Essential pages that should be accessible without cookie consent
-  const _essentialPages = ['/cookie-opt-out', '/privacy', '/terms']; // Reserved for future use
+  const _essentialPages = ['/opt-in', '/privacy', '/terms']; // Reserved for future use
   
-  // Check if this is being used as a full page (on /cookie-opt-out route) or as a modal
-  const isFullPage = location.pathname === '/cookie-opt-out';
+  // Check if this is being used as a full page (on /opt-in route) or as a modal
+  const isFullPage = location.pathname === '/opt-in';
   
   // Store the return path when modal appears (for non-full-page mode)
   useEffect(() => {
-    if (!isSSR && !isFullPage && location.pathname !== '/cookie-opt-out') {
+    if (!isSSR && !isFullPage && location.pathname !== '/opt-in') {
       // Store the current pathname to return to after consent
       const currentPath = location.pathname + location.search + location.hash;
       returnPathRef.current = currentPath;
@@ -281,7 +281,7 @@ const CookieOptOut: React.FC = () => {
     if (clearBannerCache) clearBannerCache();
     
     if (!isFullPage) {
-      navigate('/cookie-opt-out');
+      navigate('/opt-in');
     }
     // If already on full page, do nothing (user is already managing preferences)
   };

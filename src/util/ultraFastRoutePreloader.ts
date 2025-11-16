@@ -155,7 +155,7 @@ export class UltraFastRoutePreloader {
       '/signup': 'SignUpPage',
       '/privacy': 'PrivacyPage',
       '/terms': 'TermsPage',
-      '/cookie-opt-out': 'CookieOptOutPage',
+      '/opt-in': 'CookieOptOutPage',
       '/cookie-test': 'CookieTestPage',
       '/sitemap': 'SitemapPage'
     };

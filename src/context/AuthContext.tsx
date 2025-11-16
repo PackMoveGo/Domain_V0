@@ -5,12 +5,14 @@ import { useGeolocation } from '../hook/useGeolocation';
 
 interface User {
   id: string;
-  email: string;
+  email?: string;
+  username?: string;
   name?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;
   role?: string;
+  phoneVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -18,7 +20,11 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  verificationStep: 'phone' | 'code' | 'complete';
+  pendingPhone: string | null;
   login: (email: string, password: string) => Promise<void>;
+  requestSmsSignin: (phone: string, username?: string) => Promise<void>;
+  verifySmsCode: (phone: string, code: string) => Promise<void>;
   signup: (userData: {
     name?: string;
     firstName?: string;
@@ -41,6 +47,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [verificationStep, setVerificationStep] = useState<'phone' | 'code' | 'complete'>('phone');
+  const [pendingPhone, setPendingPhone] = useState<string | null>(null);
   const { latitude, longitude, city, state, country } = useGeolocation();
 
   // Check authentication status on mount
@@ -63,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userInfo = JWT_AUTH.getUserInfo();
       if (userInfo) {
         setUser({
-          id: userInfo.id || userInfo.sub || '',
+          id: userInfo.id || '',
           email: userInfo.email || '',
           name: userInfo.name
         });
@@ -192,6 +200,69 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [latitude, longitude, city, state, country]);
 
+  // SMS Signin - Request verification code
+  const requestSmsSignin = useCallback(async (phone: string, username?: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response=await api.requestSmsSignin(phone, username);
+
+      if(response && response.success){
+        setPendingPhone(phone);
+        setVerificationStep('code');
+        console.log('✅ Verification code sent to:', phone);
+        if(response.data?.devCode){
+          console.log('🔧 [DEV] Verification code:', response.data.devCode);
+        }
+      }else{
+        throw new Error(response?.message || 'Failed to send verification code');
+      }
+    }catch(err){
+      const errorMessage=err instanceof Error ? err.message : 'Failed to send verification code';
+      setError(errorMessage);
+      throw err;
+    }finally{
+      setIsLoading(false);
+    }
+  }, []);
+
+  // SMS Signin - Verify code and login
+  const verifySmsCode = useCallback(async (phone: string, code: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response=await api.verifySmsCode(phone, code);
+
+      if(response && response.success){
+        const userData=response.data?.user || response.user || {};
+        setUser({
+          id: userData._id || userData.id || '',
+          email: userData.email,
+          username: userData.username,
+          phone: userData.phone || phone,
+          name: userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          role: userData.role,
+          phoneVerified: true
+        });
+        setVerificationStep('complete');
+        setPendingPhone(null);
+        console.log('✅ SMS verification successful');
+      }else{
+        throw new Error(response?.message || 'Invalid verification code');
+      }
+    }catch(err){
+      const errorMessage=err instanceof Error ? err.message : 'Verification failed';
+      setError(errorMessage);
+      throw err;
+    }finally{
+      setIsLoading(false);
+    }
+  }, []);
+
   // Logout function
   const logout = useCallback(async () => {
     try {
@@ -202,6 +273,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setUser(null);
       setError(null);
+      setVerificationStep('phone');
+      setPendingPhone(null);
       setIsLoading(false);
     }
   }, []);
@@ -231,7 +304,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!user,
     isLoading,
     error,
+    verificationStep,
+    pendingPhone,
     login,
+    requestSmsSignin,
+    verifySmsCode,
     signup,
     logout,
     refreshAuth

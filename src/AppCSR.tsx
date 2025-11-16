@@ -54,6 +54,7 @@ const SuppliesPage = createLazyComponent(() => import('./pages/page.supplies'));
 const TipsPage = createLazyComponent(() => import('./pages/page.tipsPage'));
 const SignInPage = createLazyComponent(() => import('./pages/page.signIn'));
 const SignUpPage = createLazyComponent(() => import('./pages/page.signUp'));
+const SignOutPage = createLazyComponent(() => import('./pages/page.signOut'));
 const PrivacyPage = createLazyComponent(() => import('./pages/page.privacy'));
 const TermsPage = createLazyComponent(() => import('./pages/page.terms'));
 const CookieOptOutPage = createLazyComponent(() => import('./pages/page.cookieOptOut'));
@@ -94,14 +95,16 @@ const AppContent: React.FC = () => {
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/booking" element={<BookingPage />} />
             <Route path="/review" element={<ReviewPage />} />
+            <Route path="/reviews" element={<ReviewPage />} />
             <Route path="/refer" element={<ReferPage />} />
             <Route path="/supplies" element={<SuppliesPage />} />
             <Route path="/tips" element={<TipsPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/signout" element={<SignOutPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
-            <Route path="/cookie-opt-out" element={<CookieOptOutPage />} />
+            <Route path="/opt-in" element={<CookieOptOutPage />} />
             <Route path="/cookie-test" element={<NotFoundPage />} />
             {/* <Route path="/services-test" element={<ServicesTest />} /> */}
             <Route path="/error-handling-example" element={<ApiErrorHandlingExample />} />

@@ -108,7 +108,7 @@ export const config: AppConfig={
   
   // Development Settings
   devHttps: getBoolEnv('DEV_HTTPS', false),
-  enableDevTools: getBoolEnv('ENABLE_DEV_TOOLS', false),
+  enableDevTools: getBoolEnv('ENABLE_DEV_TOOLS', (import.meta.env.MODE || 'development') === 'development'),
   reduceLogging: getBoolEnv('REDUCE_LOGGING', false),
   
   // Cache Configuration

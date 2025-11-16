@@ -14,7 +14,7 @@ export default defineConfig(({ mode, _command }): UserConfig => { // Reserved fo
   const env=loadEnv(mode, __dirname, '');
   
   // Get port from env or use default
-  const port=parseInt(env.PORT || process.env.PORT || (mode==='production' ? '5000' : '5050'), 10);
+  const port=parseInt(env.PORT || process.env.PORT || (mode==='production' ? '5000' : '5001'), 10);
   
   const isProduction=mode==='production';
   

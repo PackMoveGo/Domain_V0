@@ -24,7 +24,7 @@ const OptOutButton: React.FC<OptOutButtonProps> = ({
 
   const handleClick = () => {
     if (hasOptedOut) {
-      navigate('/cookie-opt-out');
+      navigate('/opt-in');
     } else {
       // If user hasn't opted out yet, show a confirmation dialog
       if (window.confirm('Are you sure you want to opt out of cookies? This will limit website functionality.')) {

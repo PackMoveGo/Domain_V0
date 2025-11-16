@@ -84,7 +84,7 @@ const Layout: FC<LayoutProps> = ({
   const isApiBlockedForSSR = false;
   
   // Static pages that don't need API failure modal or search bar
-  const staticPages = ['/cookie-opt-out', '/privacy', '/terms'];
+  const staticPages = ['/opt-in', '/privacy', '/terms'];
   const isStaticPage = staticPages.includes(location.pathname);
   
   // Search bar visibility state

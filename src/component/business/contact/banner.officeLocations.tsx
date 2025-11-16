@@ -42,7 +42,7 @@ const OfficeLocations: React.FC<OfficeLocationsProps> = ({
   if (isLoading) {
     return (
       <div className="mb-12">
-        <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">Our Offices</h2>
+        <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">pending</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {[...Array(3)].map((_, index) => (
             <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
@@ -70,7 +70,7 @@ const OfficeLocations: React.FC<OfficeLocationsProps> = ({
   if (error) {
     return (
       <div className="mb-12">
-        <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">Our Offices</h2>
+        <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">pending</h2>
         <div className="text-center py-8">
           <div className="text-red-500 text-4xl mb-4">⚠️</div>
           <p className="text-gray-600">Unable to load office locations</p>
@@ -81,7 +81,7 @@ const OfficeLocations: React.FC<OfficeLocationsProps> = ({
 
   return (
     <div className="mb-12">
-      <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">Our Offices</h2>
+      <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">pending</h2>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {(officeLocations || []).map((location) => (
           <div key={location.id} className="bg-white rounded-lg shadow-md overflow-hidden">

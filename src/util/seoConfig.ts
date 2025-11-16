@@ -198,13 +198,13 @@ export const PAGE_SEO_CONFIGS: Record<string, PageSEOConfig> = {
     type: 'website'
   },
 
-  // Cookie Opt Out Page
-  '/cookie-opt-out': {
+  // Cookie Opt In Page
+  '/opt-in': {
     title: 'Cookie Preferences - PackMoveGO',
     description: 'Manage your cookie preferences and opt out of tracking. PackMoveGO respects your privacy choices.',
     keywords: 'cookie preferences, opt out, privacy settings, tracking preferences',
     image: '/images/cookie.webp',
-    url: `${BASE_URL}/cookie-opt-out`,
+    url: `${BASE_URL}/opt-in`,
     type: 'website'
   },
 
@@ -337,7 +337,7 @@ export function getStructuredData(config: PageSEOConfig) {
     ],
     "contactPoint": {
       "@type": "ContactPoint",
-      "telephone": "+1-800-PACKMOVE",
+      "telephone": "+1-949-414-5282",
       "contactType": "customer service",
       "availableLanguage": "English"
     },

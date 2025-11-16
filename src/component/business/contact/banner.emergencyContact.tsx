@@ -34,10 +34,10 @@ export default function EmergencyContact() {
           
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
             <a 
-              href="tel:+1-800-PACK-MOVE"
+              href="tel:+19494145282"
               className="bg-white text-red-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors flex items-center"
             >
-              📞 Call Now: (800) PACK-MOVE
+              📞 Call Now: (949) 414-5282
             </a>
             <button className={`${styles.button.secondary} border-white text-white hover:bg-white hover:text-red-600`}>
               Emergency Quote

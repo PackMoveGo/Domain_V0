@@ -1,5 +1,5 @@
 /* global AbortController */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface GeolocationState {
   latitude: number | null;
@@ -9,6 +9,19 @@ interface GeolocationState {
   city?: string;
   state?: string;
   country?: string;
+}
+
+const CACHE_KEY = 'geolocation_cache';
+const CACHE_TTL = 3600000; // 1 hour in milliseconds
+const DEBOUNCE_DELAY = 500; // 500ms debounce
+
+interface CachedLocation {
+  latitude: number;
+  longitude: number;
+  city?: string;
+  state?: string;
+  country?: string;
+  timestamp: number;
 }
 
 export function useGeolocation() {
@@ -21,6 +34,48 @@ export function useGeolocation() {
     state: undefined,
     country: undefined
   });
+  
+  const isLoadingRef = useRef(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load from cache if available
+  const loadFromCache = useCallback((): CachedLocation | null => {
+    if (typeof window === 'undefined') return null;
+    
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      if (!cached) return null;
+      
+      const data: CachedLocation = JSON.parse(cached);
+      const now = Date.now();
+      
+      // Check if cache is still valid
+      if (now - data.timestamp < CACHE_TTL) {
+        return data;
+      }
+      
+      // Cache expired, remove it
+      sessionStorage.removeItem(CACHE_KEY);
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Save to cache
+  const saveToCache = useCallback((location: Omit<CachedLocation, 'timestamp'>) => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const cached: CachedLocation = {
+        ...location,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(cached));
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
 
   const getLocationFromIP = useCallback(async () => {
     if (typeof window === 'undefined') {
@@ -32,6 +87,28 @@ export function useGeolocation() {
       return;
     }
 
+    // Prevent duplicate calls
+    if (isLoadingRef.current) {
+      return;
+    }
+
+    // Check cache first
+    const cached = loadFromCache();
+    if (cached) {
+      setState({
+        latitude: cached.latitude,
+        longitude: cached.longitude,
+        error: null,
+        isLoading: false,
+        city: cached.city,
+        state: cached.state,
+        country: cached.country
+      });
+      console.log('✅ [GEOLOCATION] Retrieved from cache');
+      return;
+    }
+
+    isLoadingRef.current = true;
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -54,16 +131,21 @@ export function useGeolocation() {
           const data = await response.json();
           
           if (data.success && data.latitude && data.longitude) {
-            setState({
+            const locationData = {
               latitude: parseFloat(data.latitude),
               longitude: parseFloat(data.longitude),
-              error: null,
-              isLoading: false,
               city: data.city,
               state: data.region,
               country: data.country
+            };
+            setState({
+              ...locationData,
+              error: null,
+              isLoading: false
             });
+            saveToCache(locationData);
             console.log('✅ [GEOLOCATION] Retrieved from backend proxy');
+            isLoadingRef.current = false;
             return;
           }
         }
@@ -71,11 +153,10 @@ export function useGeolocation() {
         console.warn('⚠️  [GEOLOCATION] Backend proxy failed, falling back to direct API calls:', backendError);
       }
 
-      // Fallback: Try multiple IP geolocation services directly
+      // Fallback: Try only the most reliable IP geolocation service (reduced from 3 to 1)
+      // ipapi.co is generally the most reliable and has good rate limits
       const services = [
-        'https://ipapi.co/json/',
-        'https://ip-api.com/json/?fields=status,message,lat,lon,city,region,country',
-        'https://freeipapi.com/api/json/'
+        'https://ipapi.co/json/'
       ];
 
       let locationData = null;
@@ -154,6 +235,13 @@ export function useGeolocation() {
           state: locationData.state,
           country: locationData.country
         });
+        saveToCache({
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          city: locationData.city,
+          state: locationData.state,
+          country: locationData.country
+        });
       } else {
         throw lastError || new Error('All IP geolocation services failed');
       }
@@ -168,11 +256,26 @@ export function useGeolocation() {
         state: undefined,
         country: undefined
       });
+    } finally {
+      isLoadingRef.current = false;
     }
-  }, []);
+  }, [loadFromCache, saveToCache]);
 
   useEffect(() => {
+    // Debounce the geolocation call to prevent rapid successive calls
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
     getLocationFromIP();
+    }, DEBOUNCE_DELAY);
+    
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [getLocationFromIP]);
 
   return {

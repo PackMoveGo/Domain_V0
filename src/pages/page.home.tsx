@@ -19,6 +19,7 @@ const ProcessSteps = lazy(() => import('../component/business/marketing/banner.p
 const RecentMoves = lazy(() => import('../component/business/marketing/banner.recentMoves'));
 const EmergencyContact = lazy(() => import('../component/business/contact/banner.emergencyContact'));
 const FAQ = lazy(() => import('../component/pages/banner.FAQ'));
+const QuoteForm = lazy(() => import('../component/forms/form.quote'));
 const FinalCTA = lazy(() => import('../component/business/marketing/banner.finalCTA'));
 
 // Add displayName to lazy components
@@ -33,6 +34,7 @@ const FinalCTA = lazy(() => import('../component/business/marketing/banner.final
 (RecentMoves as any).displayName='RecentMoves';
 (EmergencyContact as any).displayName='EmergencyContact';
 (FAQ as any).displayName='FAQ';
+(QuoteForm as any).displayName='QuoteForm';
 (FinalCTA as any).displayName='FinalCTA';
 
 export default function HomePage(){
@@ -49,7 +51,13 @@ export default function HomePage(){
   const [dataError, setDataError] = React.useState<string | null>(null);
   const [_statusCode, setStatusCode] = React.useState<number>(200); // Reserved for future use
   
+  // Ref to prevent duplicate calls in React Strict Mode
+  const isLoadingRef = React.useRef(false);
+  const hasLoadedRef = React.useRef(false);
+  
   // Modal state is handled by Layout component
+  
+  // Page tracking is now handled by RouteTracker in app.tsx
   
   // Load home page data using service pattern
   const loadHomePageData = React.useCallback(async () => {
@@ -58,6 +66,15 @@ export default function HomePage(){
       return;
     }
     
+    // Prevent duplicate calls (React Strict Mode protection)
+    if (isLoadingRef.current) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 [HOME-PAGE] Skipping duplicate loadHomePageData call');
+      }
+      return;
+    }
+    
+    isLoadingRef.current = true;
     setIsLoadingData(true);
     setDataError(null);
     setStatusCode(200);
@@ -101,24 +118,24 @@ export default function HomePage(){
       
       // Modal will be handled by middleware automatically
     } finally {
+      isLoadingRef.current = false;
+      hasLoadedRef.current = true;
       setIsLoadingData(false);
     }
   }, [isSSR]);
 
-  // Check initial consent state and load data if already granted - ALWAYS load if consent exists
+  // Consolidated effect: Check initial consent state and load data once
   React.useEffect(() => {
-    if (!isSSR && hasConsent) {
+    if (isSSR) return;
+    
+    // Only load once on mount, or when consent changes from false to true
+    if (hasConsent && !hasLoadedRef.current) {
       console.log('🍪 [HOME-PAGE] Consent already granted on mount - loading data');
       // Increased delay to ensure API is fully unblocked
       setTimeout(() => {
         loadHomePageData();
       }, 200);
-    }
-  }, [isSSR, hasConsent, loadHomePageData]);
-
-  // Call load data on component mount (client-side only) - only if no consent yet
-  React.useEffect(() => {
-    if (!isSSR && !hasConsent) {
+    } else if (!hasConsent && !hasLoadedRef.current) {
       // Try to load anyway - will be blocked by consent but sets up the state
       loadHomePageData();
     }
@@ -126,24 +143,34 @@ export default function HomePage(){
 
   // Listen for consent granted events - ALWAYS reload when consent is granted
   React.useEffect(() => {
-    if (!isSSR) {
-      const removeListener = addConsentListener((hasConsent) => {
-        // When consent is granted, reload page data
-        if (hasConsent) {
+    if (isSSR) return;
+    
+    let previousConsent = hasConsent;
+    const removeListener = addConsentListener((newHasConsent) => {
+      // When consent is granted, reload page data (only if it changed from false to true)
+      if (newHasConsent && !previousConsent) {
           console.log('🍪 [HOME-PAGE] Consent granted - reloading page data');
+        hasLoadedRef.current = false; // Reset to allow reload
+        previousConsent = newHasConsent;
           // Increased delay and force reload regardless of existing data
           setTimeout(() => {
             loadHomePageData();
           }, 200);
+      } else {
+        previousConsent = newHasConsent;
         }
       });
       
       // Listen for all consent-related window events
       const handleConsentGranted = () => {
+      if (!previousConsent) {
         console.log('🍪 [HOME-PAGE] Window event: consent granted - reloading data');
+        hasLoadedRef.current = false; // Reset to allow reload
+        previousConsent = true;
         setTimeout(() => {
           loadHomePageData();
         }, 200);
+      }
       };
       
       window.addEventListener('cookie-opt-in', handleConsentGranted);
@@ -157,7 +184,6 @@ export default function HomePage(){
         window.removeEventListener('api-consent-granted', handleConsentGranted);
         window.removeEventListener('cookie-consent-change', handleConsentGranted);
       };
-    }
   }, [isSSR, addConsentListener, loadHomePageData]);
 
   // Modal state is handled by Layout component
@@ -316,6 +342,20 @@ export default function HomePage(){
         {/* Download Apps Section */}
         <section {...getSectionProps('download-apps')}>
           <DownloadApps />
+        </section>
+
+        {/* Quote Form Section - Connects to MongoDB */}
+        <section {...getSectionProps('quote-form')}>
+          <Suspense fallback={
+            <div className="py-16 bg-gray-50 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading Quote Form...</p>
+              </div>
+            </div>
+          }>
+            <QuoteForm />
+          </Suspense>
         </section>
 
         {/* Final CTA Section */}

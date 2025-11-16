@@ -1,16 +1,49 @@
 import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
-import { ENV_CONFIG } from './services/service.apiSW';
+import { ENV_CONFIG, resetApiCallTracking, startPageTracking } from './services/service.apiSW';
 import { UserTrackingProvider } from './component/business/UserTrackingProvider';
 import { CookiePreferencesProvider } from './context/CookiePreferencesContext';
 import { SectionDataProvider } from './context/SectionDataContext';
 import { SectionVerificationProvider } from './context/SectionVerificationContext';
 import { AuthProvider } from './context/AuthContext';
 // import { SSRProviders } from './context/SSRSafeProviders'; // Reserved for future use
-import AppCSR from './appCSR';
-// import AppSSR from './appSSR'; // Reserved for future use
+import appCSR from './appCSR';
+const AppCSR=appCSR;
+// import appSSR from './appSSR'; // Reserved for future use
 import ErrorDebugger from './component/debug/ErrorDebugger';
+
+// Route tracking component
+function RouteTracker() {
+  const location=useLocation();
+  
+  useEffect(() => {
+    // Reset API tracking on route change
+    resetApiCallTracking();
+    
+    // Extract page name from pathname
+    const pathname=location.pathname;
+    let pageName='Home';
+    
+    if(pathname==='/') pageName='Home';
+    else if(pathname==='/about') pageName='About';
+    else if(pathname==='/services') pageName='Services';
+    else if(pathname==='/contact') pageName='Contact';
+    else if(pathname==='/signin') pageName='SignIn';
+    else if(pathname==='/signup') pageName='SignUp';
+    else pageName=pathname.replace(/^\//, '').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    
+    // Start tracking for new page
+    startPageTracking(pageName);
+    
+    if(process.env.NODE_ENV==='development'){
+      console.log(`📍 [ROUTE-TRACKING] Changed to page: ${pageName} (${pathname})`);
+    }
+  }, [location.pathname]);
+  
+  return null;
+}
 
 // SSR-safe environment detection
 const isSSR = typeof window === 'undefined';
@@ -63,8 +96,8 @@ function App() {
   console.log('🚀 App Environment:', { isDevelopment, isProduction, isSSR, NODE_ENV: process.env.NODE_ENV });
   console.log('🚀 App rendering with providers...');
 
-  // Use AppCSR for client-side rendering to ensure proper routing
-  // AppSSR is only used during server-side rendering, not for client-side navigation
+  // Use appCSR for client-side rendering to ensure proper routing
+  // appSSR is only used during server-side rendering, not for client-side navigation
   return (
     <ErrorDebugger>
       <AuthProvider>
@@ -72,6 +105,7 @@ function App() {
         <CookiePreferencesProvider>
           <SectionDataProvider>
             <SectionVerificationProvider>
+              <RouteTracker />
               <AppCSR />
               <Analytics />
               <SpeedInsights />

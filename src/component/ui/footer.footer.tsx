@@ -265,10 +265,19 @@ const Footer=()=>{
                 // Fallback quick links when API data is not available
                 <>
                   <li>
-                    <a href="/" className="hover:text-white">Home</a>
+                    <a href="/about" className="hover:text-white">About Us</a>
                   </li>
                   <li>
-                    <a href="/about" className="hover:text-white">About</a>
+                    <a href="/services" className="hover:text-white">Services</a>
+                  </li>
+                  <li>
+                    <a href="/supplies" className="hover:text-white">Supplies</a>
+                  </li>
+                  <li>
+                    <a href="/blog" className="hover:text-white">Blog</a>
+                  </li>
+                  <li>
+                    <a href="/refer" className="hover:text-white">Refer Friends</a>
                   </li>
                   <li>
                     <a href="/contact" className="hover:text-white">Contact</a>

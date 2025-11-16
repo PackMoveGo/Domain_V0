@@ -9,7 +9,7 @@ import { usePageSEO } from '../hook/useSEO';
  * Cookie Opt-Out Page Component
  * 
  * This component renders a comprehensive cookie settings page.
- * It's used for the /cookie-opt-out route in both CSR and SSR.
+ * It's used for the /opt-in route in both CSR and SSR.
  */
 const CookieOptOutPage: React.FC = () => {
   const navigate = useNavigate();
@@ -50,7 +50,7 @@ const CookieOptOutPage: React.FC = () => {
     "Manage your cookie preferences and privacy settings with Pack Move Go. Control how we use cookies to improve your experience and protect your privacy.",
     "cookie preferences, privacy settings, data protection, cookie management, privacy control, GDPR compliance",
     "/images/moving-truck.webp",
-    "https://packmovego.com/cookie-opt-out"
+    "https://packmovego.com/opt-in"
   );
 
   const handleToggleCategory = (category: 'thirdPartyAds' | 'analytics' | 'functional') => {

@@ -72,18 +72,18 @@ export default function Privacy() {
    * @returns Search results array
    */
   // const handleSearch = useCallback((query: string) => { // Reserved for future use
-  const _handleSearch = useCallback((query: string) => {
+  const _handleSearch = useCallback(async (query: string): Promise<SearchResultWithExcerpt[]> => {
     if (isDevMode) {
       console.log('🔍 Privacy: Search triggered with query:', query);
     }
     
-    const results = searchContent(query) as SearchResultWithExcerpt[];
+    const results = await searchContent(query);
     
     if (isDevMode) {
       console.log('🔍 Privacy: Search results found:', results.length);
     }
     
-    return results;
+    return results as SearchResultWithExcerpt[];
   }, [isDevMode]);
 
   /**

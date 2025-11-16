@@ -53,7 +53,7 @@ export default function FAQ() {
   };
 
   return (
-    <div className={`${styles.section.default} bg-white`}>
+    <div className={`${styles.section.default} bg-white`} style={{minHeight:'600px'}}>
       <div className={styles.container}>
         <div className="text-center mb-16">
           <h2 className={styles.heading.h2}>Frequently Asked Questions</h2>
@@ -77,11 +77,16 @@ export default function FAQ() {
                     ▼
                   </span>
                 </button>
-                {openItems.includes(item.id) && (
+                <div 
+                  className={`transition-all duration-300 overflow-hidden ${
+                    openItems.includes(item.id) ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                  }`}
+                  style={{willChange:'max-height'}}
+                >
                   <div className="px-6 py-4 bg-white border-t border-gray-200">
                     <p className="text-gray-700 leading-relaxed">{item.answer}</p>
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </div>

@@ -2,10 +2,10 @@ import React from 'react';
 
 const DownloadApps: React.FC = () => {
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 py-16">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 py-16" style={{minHeight:'500px'}}>
       <div className="container mx-auto px-6">
         <div className="text-center mb-12">
-          <div className="text-6xl mb-6">📱</div>
+          <div className="text-6xl mb-6" style={{height:'72px',lineHeight:'72px'}}>📱</div>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Get Our Mobile App
           </h2>

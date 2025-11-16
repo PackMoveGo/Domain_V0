@@ -38,7 +38,7 @@ export default function FinalCTA() {
               <span className="text-blue-600">Get Free Quote Now</span>
             </button>
             <button className={`${styles.button.secondary} border-white text-white hover:bg-white hover:text-blue-600`}>
-              Call (800) PACK-MOVE
+              Call (949) 414-5282
             </button>
           </div>
           

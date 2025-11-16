@@ -458,17 +458,17 @@ export const API_ENDPOINTS = {
   
   // Public content endpoints (no authentication required)
   PUBLIC: {
-    NAV: '/public/nav',
-    SERVICES: '/public/services',
-    HEALTH: '/public/health',
-    ABOUT: '/public/about',
-    CONTACT: '/public/contact',
-    REFERRAL: '/public/referral',
-    BLOG: '/public/blog',
-    REVIEWS: '/public/reviews',
-    LOCATIONS: '/public/locations',
-    SUPPLIES: '/public/supplies',
-    TESTIMONIALS: '/public/testimonials',
+    NAV: '/v0/nav',
+    SERVICES: '/v0/services',
+    HEALTH: '/v0/health',
+    ABOUT: '/v0/about',
+    CONTACT: '/v0/contact',
+    REFERRAL: '/v0/referral',
+    BLOG: '/v0/blog',
+    REVIEWS: '/v0/reviews',
+    LOCATIONS: '/v0/locations',
+    SUPPLIES: '/v0/supplies',
+    TESTIMONIALS: '/v0/testimonials',
     SERVICE_AREAS: '/v0/serviceAreas',
     SEARCH: '/v0/search'
   },
@@ -501,11 +501,13 @@ export class APIsw {
     isVisible: boolean;
     failedEndpoints: string[];
     is503Error: boolean;
+    errorType?: '403' | '503';
     onClose: (() => void) | null;
   } = {
     isVisible: false,
     failedEndpoints: [],
     is503Error: false,
+    errorType: undefined,
     onClose: null
   };
   private modalStateListeners: Set<() => void> = new Set();
@@ -568,7 +570,6 @@ export class APIsw {
         DEV_MODE: ENV_CONFIG.DEV_MODE,
         // PORT: ENV_CONFIG.PORT, // Reserved for future use
         IS_SSR: ENV_CONFIG.IS_SSR,
-        MODE: ENV_CONFIG.MODE,
         ENABLE_DEV_TOOLS: ENV_CONFIG.ENABLE_DEV_TOOLS,
         API_TIMEOUT: ENV_CONFIG.API_TIMEOUT,
         CACHE_ENABLED: ENV_CONFIG.CACHE_ENABLED
@@ -743,8 +744,19 @@ export class APIsw {
       this.apiIsDown = false;
     }
 
-    // If health check is already in progress, wait for it
+    // If health check is already in progress, wait for it to complete
+    // But if we have a recent successful health check (within last 5 seconds), trust it
+    const recentSuccessTime = 5000; // 5 seconds
     if (this.healthCheckInProgress) {
+      // If we recently had a successful health check, allow requests through
+      if (!this.apiIsDown && this.lastHealthCheckTime > 0 && (now - this.lastHealthCheckTime) < recentSuccessTime) {
+        return true;
+      }
+      // Otherwise wait a bit for the in-progress check to complete
+      // But don't block - return true optimistically if we don't know API is down
+      if (!this.apiIsDown) {
+        return true; // Optimistically allow if we don't know it's down
+      }
       return false;
     }
 
@@ -762,7 +774,13 @@ export class APIsw {
         return false;
       }
       
+      // Health check succeeded - reset both local and global status
       this.apiIsDown = false;
+      setGlobal503Status(false);
+      // Clear global request block when health check succeeds
+      this.globalRequestBlocked = false;
+      this.globalBlockTime = 0;
+      this.globalBlockClearedTime = Date.now(); // Track when we cleared it for grace period
       return true;
     } catch {
       // Only mark API as down if not blocked by consent
@@ -792,6 +810,9 @@ export class APIsw {
     this.globalRequestBlocked = false;
     this.globalBlockTime = 0;
     this.globalBlockClearedTime = Date.now(); // Track when we cleared it for grace period
+    
+    // Reset global 503 status when resetting health gate
+    setGlobal503Status(false);
     
     // Clear all pending requests
     this.pendingRequests.clear();
@@ -936,13 +957,16 @@ export class APIsw {
     this.trackApiCall(endpoint);
     
     // Check global 503 status first - if API is globally down, return 503 immediately
-    if (isApiGlobally503()) {
+    // EXCEPT for health check endpoint, which needs to run to reset the status
+    if (endpoint !== '/v0/health' && isApiGlobally503()) {
       const error = new Error(`503 Service Unavailable: API is globally unavailable`);
       (error as any).statusCode = 503;
       (error as any).is503Error = true;
+      (error as any).isBackendDown = true;
       
       // Show API failure modal for global 503 status
-      this.showApiFailureModal([endpoint], true);
+      // Backend is actually down - use '403' errorType for messaging, but status code remains 503
+      this.showApiFailureModal([endpoint], true, undefined, '403');
       
       throw error;
     }
@@ -1015,9 +1039,11 @@ export class APIsw {
       const error = new Error('503 Service Unavailable: API health check failed');
       (error as any).statusCode = 503;
       (error as any).is503Error = true;
+      (error as any).isBackendDown = true;
       
       // Show API failure modal for health check failures
-      this.showApiFailureModal([endpoint], true);
+      // Backend is actually down - use '403' errorType for messaging, but status code remains 503
+      this.showApiFailureModal([endpoint], true, undefined, '403');
       
       throw error;
     }
@@ -1146,9 +1172,11 @@ export class APIsw {
       const error = new Error(`503 Service Unavailable: API is globally unavailable`);
       (error as any).statusCode = 503;
       (error as any).is503Error = true;
+      (error as any).isBackendDown = true;
       
       // Show API failure modal for global 503 status
-      this.showApiFailureModal([endpoint], true);
+      // Backend is actually down - use '403' errorType for messaging, but status code remains 503
+      this.showApiFailureModal([endpoint], true, undefined, '403');
       
       throw error;
     }
@@ -1213,9 +1241,11 @@ export class APIsw {
       const error = new Error('503 Service Unavailable: API health check failed');
       (error as any).statusCode = 503;
       (error as any).is503Error = true;
+      (error as any).isBackendDown = true;
       
       // Show API failure modal for health check failures
-      this.showApiFailureModal([endpoint], true);
+      // Backend is actually down - use '403' errorType for messaging, but status code remains 503
+      this.showApiFailureModal([endpoint], true, undefined, '403');
       
       throw error;
     }
@@ -1755,6 +1785,130 @@ export class APIsw {
     }
   }
 
+  /**
+   * Request SMS signin - sends verification code to phone
+   */
+  async requestSmsSignin(phone: string, username?: string): Promise<any> {
+    try {
+      const response=await this.makeRequest('/auth/signin', {
+        method: 'POST',
+        body: JSON.stringify({ phone, username })
+      });
+
+      if(this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING){
+        console.log('📱 SMS signin requested for:', phone);
+      }
+
+      return response;
+    } catch(error){
+      if(this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING){
+        console.error('❌ SMS signin request failed:', error);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Verify SMS code and get JWT token
+   */
+  async verifySmsCode(phone: string, code: string): Promise<any> {
+    try {
+      const response = await this.makeRequest<{
+        success?: boolean;
+        data?: {
+          accessToken?: string;
+          refreshToken?: string;
+          user?: any;
+        };
+      }>('/auth/verify', {
+        method: 'POST',
+        body: JSON.stringify({ phone, code })
+      });
+
+      // Store JWT token if verification successful
+      if(response && response.success && response.data){
+        const {accessToken, refreshToken, user}=response.data;
+        
+        if(accessToken){
+          // Store access token
+          const expiresAt=Date.now()+(15*60*1000); // 15 minutes
+          this.jwtAuth.setToken({
+            token: accessToken,
+            expiresAt,
+            user: user
+          });
+
+          // Store in localStorage for JWT_AUTH compatibility
+          if(typeof window!=='undefined'){
+            localStorage.setItem('jwt_token', accessToken);
+            if(refreshToken){
+              localStorage.setItem('jwt_refresh_token', refreshToken);
+            }
+          }
+
+          if(this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING){
+            console.log('🔐 SMS verification successful, JWT token stored');
+          }
+        }
+      }
+
+      return response;
+    } catch(error){
+      if(this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING){
+        console.error('❌ SMS verification failed:', error);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh JWT access token
+   */
+  async refreshAccessToken(): Promise<any> {
+    try {
+      const refreshToken=typeof window!=='undefined'?localStorage.getItem('jwt_refresh_token'):null;
+      
+      if(!refreshToken){
+        throw new Error('No refresh token available');
+      }
+
+      const response = await this.makeRequest<{
+        success?: boolean;
+        data?: {
+          accessToken?: string;
+        };
+      }>('/auth/refresh', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken })
+      });
+
+      // Store new access token
+      if(response && response.success && response.data?.accessToken){
+        const expiresAt=Date.now()+(15*60*1000); // 15 minutes
+        this.jwtAuth.setToken({
+          token: response.data.accessToken,
+          expiresAt,
+          user: this.jwtAuth.getUser()
+        });
+
+        if(typeof window!=='undefined'){
+          localStorage.setItem('jwt_token', response.data.accessToken);
+        }
+
+        if(this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING){
+          console.log('🔄 Access token refreshed');
+        }
+      }
+
+      return response;
+    } catch(error){
+      if(this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING){
+        console.error('❌ Token refresh failed:', error);
+      }
+      throw error;
+    }
+  }
+
   async checkAuthStatus(): Promise<any> {
     // Check cache first
     const cached = apiCache.getCachedApiResponse<any>(API_ENDPOINTS.AUTH.STATUS);
@@ -2060,6 +2214,21 @@ export class APIsw {
   }
 
   /**
+   * Check if IP can submit a quote (rate limiting check)
+   * GET /v0/quotes/check-limit
+   */
+  async checkQuoteLimit(): Promise<any> {
+    try {
+      return await this.makeRequest('/v0/quotes/check-limit', {
+        method: 'GET'
+      });
+    } catch (error) {
+      console.warn('Failed to check quote limit:', error);
+      return { success: true, canSubmit: true };
+    }
+  }
+
+  /**
    * Submit quote request form
    * POST /v0/quotes/submit
    */
@@ -2294,20 +2463,16 @@ export class APIsw {
    * Shows 503 errors even when API is blocked by consent (appears behind cookie consent)
    * Never shows modal for non-503 consent-blocked errors
    */
-  showApiFailureModal(failedEndpoints: string[], is503Error: boolean = false, onClose?: () => void): void {
+  showApiFailureModal(failedEndpoints: string[], is503Error: boolean = false, onClose?: () => void, errorType?: '403' | '503'): void {
     const now = Date.now();
     
-    // Allow showing 503 errors even when API is blocked by consent
-    // Real 503 errors (API is down) should be visible behind cookie consent
-    // Only skip if it's NOT a real 503 error and API is blocked
-    if (this.isApiBlocked && !is503Error) {
-      console.log('🍪 [API-MODAL] Skipping modal display - API blocked by cookie consent (not a 503 error)');
+    // Don't show API failure modal if API is blocked due to cookie consent
+    // The cookie consent modal should be shown instead
+    if (this.isApiBlocked) {
+      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
+        console.log('🍪 [API-MODAL] Skipping 503 error modal - API is blocked due to cookie consent');
+      }
       return;
-    }
-    
-    // For 503 errors, show even when API is blocked (will appear behind cookie consent)
-    if (this.isApiBlocked && is503Error) {
-      console.log('🍪 [API-MODAL] Showing 503 error modal even though API is blocked - will appear behind cookie consent');
     }
     
     // Prevent showing modal if already visible to avoid infinite loops
@@ -2324,10 +2489,14 @@ export class APIsw {
     // This ensures the modal is relevant to the page the user is on
     const pageSpecificEndpoints = Array.from(new Set(failedEndpoints));
     
+    // Determine error type: if backend is actually down, use 403, otherwise use provided type or default to 503
+    const finalErrorType = errorType || (is503Error ? '503' : undefined);
+    
     this.modalState = {
       isVisible: true,
       failedEndpoints: pageSpecificEndpoints, // Show only page-specific failed endpoints
       is503Error,
+      errorType: finalErrorType,
       onClose: onClose || null
     };
     
@@ -2402,6 +2571,7 @@ export class APIsw {
       isVisible: false,
       failedEndpoints: [],
       is503Error: false,
+      errorType: undefined,
       onClose: null
     };
     
@@ -2434,7 +2604,8 @@ export class APIsw {
         }
       },
       failedEndpoints: this.modalState.failedEndpoints,
-      is503Error: this.modalState.is503Error
+      is503Error: this.modalState.is503Error,
+      errorType: this.modalState.errorType
     };
   }
 
@@ -2783,6 +2954,9 @@ export const api = APIsw.getInstance();
 export const login = (email: string, password: string) => api.login(email, password);
 export const logout = () => api.logout();
 export const checkAuthStatus = () => api.checkAuthStatus();
+export const requestSmsSignin = (phone: string, username?: string) => api.requestSmsSignin(phone, username);
+export const verifySmsCode = (phone: string, code: string) => api.verifySmsCode(phone, code);
+export const refreshAccessToken = () => api.refreshAccessToken();
 export const getNav = () => api.getNav();
 export const getServices = () => api.getServices();
 export const checkHealth = () => api.checkHealth();
@@ -2793,6 +2967,8 @@ export const getLocations = () => api.getLocations();
 export const getSupplies = () => api.getSupplies();
 export const getAbout = () => api.getAbout();
 export const getContact = () => api.getContact();
+export const checkQuoteLimit = () => api.checkQuoteLimit();
+export const submitQuote = (data: any) => api.submitQuote(data);
 export const testConnection = () => api.testConnection();
 export const getConfig = () => api.getConfig();
 export const isAuthenticated = () => api.isAuthenticated();

@@ -72,21 +72,26 @@ export default function WhyChooseUs({
     if (isLoading) {
       return "Loading...";
     }
-    if (error) {
-      return "503+"; // Show 503+ when API is unavailable
+    // Check if error indicates 503 (match Home page logic)
+    const has503Error = error && (error.includes('503') || error.includes('Service Unavailable'));
+    if (has503Error) {
+      return "503"; // Show 503 (no + sign) when API is unavailable
     }
     // Ensure totalMovesCount is a number, but allow 0 as a valid value
     let movesCount: number;
     if (typeof totalMovesCount === 'number') {
       movesCount = totalMovesCount;
     } else if (typeof totalMovesCount === 'object' && totalMovesCount !== null) {
-      movesCount = 500;
+      movesCount = 0; // Use 0 as fallback to match Home page
     } else {
       const parsed = parseInt(String(totalMovesCount), 10);
-      movesCount = isNaN(parsed) ? 500 : parsed;
+      movesCount = isNaN(parsed) ? 0 : parsed;
     }
-    return `${movesCount}+`;
+    return `${movesCount}`; // Remove + sign
   };
+
+  // Check if we should show error styling (503 error)
+  const has503Error = error && (error.includes('503') || error.includes('Service Unavailable'));
 
   return (
     <div className={`${styles.section.default} bg-blue-600 text-white ${className}`}>
@@ -101,13 +106,17 @@ export default function WhyChooseUs({
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="bg-white bg-opacity-20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-white">
+                <span className={`text-2xl font-bold ${
+                  has503Error 
+                    ? 'text-red-300' 
+                    : 'text-white'
+                }`}>
                   {getTotalMovesDisplay()}
                 </span>
               </div>
               <h3 className="text-lg font-semibold mb-2">Successful Moves</h3>
               <p className="text-sm opacity-90">
-                {error ? 
+                {has503Error ? 
                   "Service temporarily unavailable - API error 503" : 
                   "We've helped hundreds of families and businesses relocate successfully"
                 }

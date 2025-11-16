@@ -60,7 +60,7 @@ const AppSSR: React.FC<AppSSRProps> = ({ url }) => {
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
-          <Route path="/cookie-opt-out" element={<CookieOptOutPage />} />
+          <Route path="/opt-in" element={<CookieOptOutPage />} />
           <Route path="/cookie-test" element={<NotFoundPage />} />
           <Route path="/error-handling-example" element={<ApiErrorHandlingExample />} />
           <Route path="/modal-order-test" element={<ModalOrderTest />} />

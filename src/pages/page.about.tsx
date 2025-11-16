@@ -37,6 +37,8 @@ export default function AboutPage() {
   
   // Modal state is handled by Layout component
   
+  // Page tracking is now handled by RouteTracker in app.tsx
+  
   // Load about page data using comprehensive API service with modal middleware
   const loadAboutPageData = React.useCallback(async () => {
     // Skip API calls during SSR
@@ -239,9 +241,9 @@ export default function AboutPage() {
             </div>
           }>
             <WhyChooseUs 
-              totalMovesCount={aboutPageData?.totalMovesCount !== undefined ? aboutPageData.totalMovesCount : 500}
+              totalMovesCount={aboutPageData?.totalMovesCount !== undefined ? aboutPageData.totalMovesCount : 0}
               isLoading={isLoadingData}
-              error={dataError}
+              error={aboutPageData?.totalMovesError || dataError}
             />
           </Suspense>
         </section>

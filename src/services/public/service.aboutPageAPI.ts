@@ -35,6 +35,7 @@ export interface AboutPageServiceData {
   lastUpdated: string;
   hasErrors?: boolean;
   failedEndpoints?: string[];
+  totalMovesError?: string | null;
 }
 
 // =============================================================================
@@ -86,7 +87,7 @@ export const getAboutPageData = async (): Promise<AboutPageServiceData> => {
     // Don't track API calls or show modals at the page level
     // Let individual API calls handle their own tracking
     
-    // Proceed with individual route calls - use Promise.all for better performance
+    // About page needs: nav, about data, and totalMovesCount (same as Home page)
     const [navData, aboutData, totalMovesData] = await Promise.all([
       api.getNav().catch(err => {
         console.warn('⚠️ Nav failed, using fallback:', err);
@@ -98,31 +99,31 @@ export const getAboutPageData = async (): Promise<AboutPageServiceData> => {
       }),
       api.makeRequest('/v0/recentMoves/total').catch(err => {
         console.warn('⚠️ Total moves failed, using fallback:', err);
-        return { totalCount: 0 };
+        return null;
       })
     ]);
     
-    // Parse totalMovesCount from API response (handle both number and object responses)
-    let totalMovesCount = 0; // Default for new business
-    const value = totalMovesData;
-    if (typeof value === 'number') {
-      totalMovesCount = value; // Allow 0 as a valid value
-    } else if (value && typeof value === 'object') {
-      // Handle object responses like { totalCount: 0 } or { total_count: 0 } or { count: 0 }
-      // Check each property and use the first one that's not undefined/null (but allow 0)
-      const obj = value as any;
-      if (obj.totalCount !== undefined && obj.totalCount !== null) {
-        totalMovesCount = obj.totalCount;
-      } else if (obj.total_count !== undefined && obj.total_count !== null) {
-        totalMovesCount = obj.total_count;
-      } else if (obj.count !== undefined && obj.count !== null) {
-        totalMovesCount = obj.count;
+    // Parse totalMovesCount value (same logic as Home page)
+    let totalMovesCount = 0;
+    let totalMovesError: string | null = null;
+    
+    if (totalMovesData === null) {
+      // API call failed - set error flag
+      totalMovesError = '503 Service Unavailable';
+    } else {
+      const totalMovesValue = totalMovesData;
+      if (typeof totalMovesValue === 'number') {
+        totalMovesCount = totalMovesValue;
+      } else if (totalMovesValue && typeof totalMovesValue === 'object') {
+        const obj = totalMovesValue as any;
+        if (obj.totalCount !== undefined && obj.totalCount !== null) {
+          totalMovesCount = obj.totalCount;
+        } else if (obj.total_count !== undefined && obj.total_count !== null) {
+          totalMovesCount = obj.total_count;
+        } else if (obj.count !== undefined && obj.count !== null) {
+          totalMovesCount = obj.count;
+        }
       }
-      // If none found, keep default 0
-    } else if (value !== null && value !== undefined) {
-      // Try to parse as number
-      const parsed = typeof value === 'string' ? parseInt(value, 10) : Number(value);
-      totalMovesCount = isNaN(parsed) ? 0 : parsed;
     }
     
     // Return data - no error tracking, let components handle null gracefully
@@ -130,6 +131,7 @@ export const getAboutPageData = async (): Promise<AboutPageServiceData> => {
       nav: navData,
       about: aboutData,
       totalMovesCount: totalMovesCount,
+      totalMovesError: totalMovesError,
       lastUpdated: new Date().toISOString(),
       hasErrors: false,
       failedEndpoints: []
@@ -138,7 +140,8 @@ export const getAboutPageData = async (): Promise<AboutPageServiceData> => {
     console.log('✅ About page data loaded successfully:', {
       nav: !!result.nav,
       about: !!result.about,
-      totalMovesCount: result.totalMovesCount
+      totalMovesCount: result.totalMovesCount,
+      totalMovesError: result.totalMovesError
     });
     
     return result;
@@ -209,7 +212,7 @@ export const getCachedAboutPageData = (): Partial<AboutPageData> | null => {
   return {
     nav: aboutPageCache.get('nav') || null,
     about: aboutPageCache.get('about') || null,
-    totalMovesCount: aboutPageCache.get('totalMovesCount') || 500
+    totalMovesCount: aboutPageCache.get('totalMovesCount') || 0
   };
 };
 

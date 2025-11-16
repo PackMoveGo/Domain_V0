@@ -35,6 +35,29 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [canSubmit, setCanSubmit] = useState(true);
+  const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
+
+  // Check quote submission limit on mount
+  React.useEffect(() => {
+    const checkLimit = async () => {
+      try {
+        const response = await api.checkQuoteLimit();
+        if (response && response.success) {
+          setCanSubmit(response.canSubmit);
+          if (!response.canSubmit) {
+            setRateLimitMessage(response.message || 'You have already submitted a quote recently');
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to check quote limit:', error);
+        // Allow submission if check fails
+        setCanSubmit(true);
+      }
+    };
+    
+    checkLimit();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -47,6 +70,12 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
+    
+    // Check rate limit before submitting
+    if (!canSubmit) {
+      setSubmitError(rateLimitMessage || 'You can only submit a quote once every 3 days');
+      return;
+    }
     
     // Call the onSubmit prop if provided
     if (onSubmit) {
@@ -61,6 +90,8 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
       
       if (response.success) {
         setSubmitSuccess(true);
+        setCanSubmit(false); // Prevent resubmission
+        setRateLimitMessage('You can submit another quote in 3 days');
         setFormData({
           fromZip: '',
           toZip: '',
@@ -82,7 +113,15 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
       }
     } catch (error) {
       console.error('❌ Quote submission error:', error);
-      setSubmitError(error instanceof Error ? error.message : 'Failed to submit quote. Please try again or call us directly.');
+      const errorMsg = error instanceof Error ? error.message : 'Failed to submit quote. Please try again or call us directly.';
+      
+      // Check if it's a rate limit error (429)
+      if (errorMsg.includes('3 days') || errorMsg.includes('429')) {
+        setCanSubmit(false);
+        setRateLimitMessage(errorMsg);
+      }
+      
+      setSubmitError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }

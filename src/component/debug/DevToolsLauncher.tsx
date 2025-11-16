@@ -1,5 +1,5 @@
 import React,{useState,useRef,useEffect} from 'react';
-import {getGlobal503Status,setGlobal503Status} from '../../services/service.apiSW';
+import {getGlobal503Status,setGlobal503Status,getTrackedApiCalls,getCurrentPageName,resetApiCallTracking,getErrorLog,get503Errors} from '../../services/service.apiSW';
 import {apiCache} from '../../util/apiCache';
 import {ENABLE_DEV_TOOLS} from '../../util/env';
 
@@ -27,24 +27,40 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
   const [cacheStats,setCacheStats]=useState<any>(null);
   const [networkStatus,setNetworkStatus]=useState<any>(null);
   const [performanceMetrics,setPerformanceMetrics]=useState<any>(null);
+  const [trackedCalls,setTrackedCalls]=useState<string[]>([]);
+  const [currentPage,setCurrentPage]=useState<string>('');
+  const [apiErrors,setApiErrors]=useState<any[]>([]);
+  const [error503s,setError503s]=useState<any[]>([]);
   const containerRef=useRef<HTMLDivElement>(null);
 
   // Check API status
   const checkApiStatus=async()=>{
     setApiStatus({status:'checking'});
     try{
-      const env=(import.meta as any).env||{};
-      const apiUrl=env.API_URL||'http://localhost:3000';
-      const response=await fetch(`${apiUrl}/health`,{
-        method:'GET',
-        headers:{'Content-Type':'application/json'}
-      });
+      const {api}=await import('../../services/service.apiSW');
+      const response=await api.checkHealth();
       setApiStatus({
-        status:response.ok?'online':'offline',
+        status:response&&!response.error?'online':'offline',
         lastCheck:Date.now()
       });
     }catch{
       setApiStatus({status:'offline',lastCheck:Date.now()});
+    }
+  };
+
+  // Update API usage stats
+  const updateApiUsage=()=>{
+    try{
+      const calls=getTrackedApiCalls();
+      const page=getCurrentPageName();
+      const errors=getErrorLog();
+      const errors503=get503Errors();
+      setTrackedCalls(calls);
+      setCurrentPage(page||'Unknown');
+      setApiErrors(errors);
+      setError503s(errors503);
+    }catch(err){
+      console.error('Failed to update API usage:',err);
     }
   };
 
@@ -91,6 +107,7 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
     if(!isOpen)return;
     if(activeTab==='api'){
       checkApiStatus();
+      updateApiUsage();
     }else if(activeTab==='cache'){
       updateCacheStats();
     }else if(activeTab==='network'){
@@ -99,6 +116,15 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
       updatePerformanceMetrics();
     }
   },[activeTab,isOpen]);
+
+  // Auto-refresh API usage every 2 seconds when on API tab
+  useEffect(()=>{
+    if(!isOpen||activeTab!=='api')return;
+    const interval=setInterval(()=>{
+      updateApiUsage();
+    },2000);
+    return()=>clearInterval(interval);
+  },[isOpen,activeTab]);
 
   // Auto-refresh API status every 10 seconds when on API tab
   useEffect(()=>{
@@ -252,7 +278,7 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
                 {apiStatus.status==='online'&&<span className="text-xs text-green-600">● Online</span>}
                 {apiStatus.status==='offline'&&<span className="text-xs text-red-600">● Offline</span>}
                 <button
-                  onClick={checkApiStatus}
+                  onClick={()=>{checkApiStatus();updateApiUsage();}}
                   className="dev-tool-action-button px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded"
                 >
                   Refresh
@@ -275,15 +301,69 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
                 {is503?'ON':'OFF'}
               </button>
             </div>
+            <div className="p-2 bg-gray-50 rounded">
+              <div className="text-xs font-medium mb-1">Current Page:</div>
+              <div className="text-xs text-gray-600">{currentPage||'Unknown'}</div>
+            </div>
+            <div className="p-2 bg-gray-50 rounded">
+              <div className="text-xs font-medium mb-1">Tracked API Calls ({trackedCalls.length}):</div>
+              {trackedCalls.length>0?(
+                <div className="text-xs text-gray-600 space-y-1 max-h-32 overflow-y-auto">
+                  {trackedCalls.map((call,idx)=>(
+                    <div key={idx} className="font-mono">{call}</div>
+                  ))}
+                </div>
+              ):(
+                <div className="text-xs text-gray-400">No API calls tracked yet</div>
+              )}
+            </div>
+            {error503s.length>0&&(
+              <div className="p-2 bg-red-50 rounded border border-red-200">
+                <div className="text-xs font-medium text-red-800 mb-1">503 Errors ({error503s.length}):</div>
+                <div className="text-xs text-red-600 space-y-1 max-h-24 overflow-y-auto">
+                  {error503s.slice(-5).map((error,idx)=>(
+                    <div key={idx} className="font-mono truncate" title={error.error}>
+                      {error.endpoint}: {error.error}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {apiErrors.length>0&&error503s.length===0&&(
+              <div className="p-2 bg-yellow-50 rounded border border-yellow-200">
+                <div className="text-xs font-medium text-yellow-800 mb-1">Recent Errors ({apiErrors.length}):</div>
+                <div className="text-xs text-yellow-600 space-y-1 max-h-24 overflow-y-auto">
+                  {apiErrors.slice(-5).map((error,idx)=>(
+                    <div key={idx} className="font-mono truncate" title={error.error}>
+                      {error.endpoint}: {error.error}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={()=>{updateApiUsage();checkApiStatus();}}
+                className="dev-tool-action-button flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+              >
+                Refresh Stats
+              </button>
+              <button
+                onClick={()=>{resetApiCallTracking();updateApiUsage();}}
+                className="dev-tool-action-button flex-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm font-medium"
+              >
+                Reset Tracking
+              </button>
+            </div>
             <button
               onClick={()=>{(window as any).testApiConnection?.()}}
-              className="dev-tool-action-button w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+              className="dev-tool-action-button w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium"
             >
               Test API Connection
             </button>
             <button
               onClick={()=>{(window as any).checkApiKey?.()}}
-              className="dev-tool-action-button w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-medium"
+              className="dev-tool-action-button w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm font-medium"
             >
               Check API Key
             </button>

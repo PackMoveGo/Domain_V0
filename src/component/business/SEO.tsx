@@ -116,7 +116,7 @@ const SEO: React.FC<SEOProps> = ({
           ],
           "contactPoint": {
             "@type": "ContactPoint",
-            "telephone": "+1-800-PACKMOVE",
+            "telephone": "+1-949-414-5282",
             "contactType": "customer service"
           },
           "address": {

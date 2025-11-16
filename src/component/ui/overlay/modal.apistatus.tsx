@@ -11,15 +11,22 @@ interface ApiFailureModalProps {
   failureDetails?: { endpoint: string; error: string } | null;
   failedEndpoints?: string[];
   is503Error?: boolean;
+  errorType?: '403' | '503';
 }
 
-export default function ApiFailureModal({ isVisible, onClose, failureDetails, failedEndpoints = [], is503Error = false }: ApiFailureModalProps) {
+export default function ApiFailureModal({ isVisible, onClose, failureDetails, failedEndpoints = [], is503Error = false, errorType }: ApiFailureModalProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [allFailedEndpoints, setAllFailedEndpoints] = useState<string[]>([]);
   const [allTrackedCalls, setAllTrackedCalls] = useState<string[]>([]);
   const [currentPageName, setCurrentPageName] = useState<string>('');
   const [has503Error, setHas503Error] = useState(false);
   const [mightBeConsentIssue, setMightBeConsentIssue] = useState(false);
+  
+  // Determine if backend is down (for messaging purposes)
+  // Note: Status code is always 503, but we show different messaging when backend is down
+  const isBackendDown = errorType === '403';
+  const displayStatusCode = '503'; // Always show actual HTTP status code
+  const displayStatusText = 'Service Unavailable';
   
   // Check consent status safely (without using hook conditionally)
   const checkConsentStatus = () => {
@@ -129,7 +136,7 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
                     {has503Error ? 'Service Temporarily Unavailable' : 'Website Failed to Load'}
                   </h2>
                   <p className="text-red-100 text-xs sm:text-sm mt-1">
-                    Status: {has503Error ? '503 Service Unavailable' : '503 Service Unavailable'}
+                    Status: {displayStatusCode} {displayStatusText}
                   </p>
                   {process.env.NODE_ENV === 'development' && (
                     <div className="text-red-100 text-xs opacity-75 mt-1">
@@ -175,11 +182,15 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
             <div className="text-center mb-4 sm:mb-6">
               <div className="text-gray-600 mb-3 sm:mb-4">
                 <p className="text-base sm:text-lg font-medium text-gray-800 mb-2">
-                  {has503Error ? 'Our services are temporarily unavailable' : 'We\'re experiencing technical difficulties'}
+                  {has503Error 
+                    ? 'Our services are temporarily unavailable' 
+                    : 'We\'re experiencing technical difficulties'}
                 </p>
                 <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                   {mightBeConsentIssue
                     ? 'This might be related to cookie consent settings. Please check your cookie preferences to ensure API access is enabled.'
+                    : isBackendDown
+                    ? 'Our API services are currently unavailable. The backend server is down, which affects the dynamic content on our website. You can still browse our static content and contact us directly.'
                     : has503Error 
                     ? 'Our API services are currently down for maintenance. This affects the dynamic content on our website, but you can still browse our static content and contact us directly.'
                     : 'The website failed to load properly. This could be due to a temporary server issue, network problem, or browser compatibility issue.'
@@ -235,7 +246,7 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
                       </div>
                     ) : null}
                     <p className="text-xs text-red-600">
-                      HTTP Status Code: 503
+                      HTTP Status Code: {displayStatusCode}
                     </p>
                   </div>
                 )}
@@ -244,8 +255,8 @@ export default function ApiFailureModal({ isVisible, onClose, failureDetails, fa
               {/* Status Code Display */}
               <div className="bg-gray-50 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
                 <div className="text-xs text-gray-500 mb-1">HTTP Status Code</div>
-                <div className="text-xl sm:text-2xl font-bold text-red-600">503</div>
-                <div className="text-xs text-gray-600">Service Unavailable</div>
+                <div className="text-xl sm:text-2xl font-bold text-red-600">{displayStatusCode}</div>
+                <div className="text-xs text-gray-600">{displayStatusText}</div>
               </div>
             </div>
 

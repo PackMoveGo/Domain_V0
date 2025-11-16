@@ -167,7 +167,7 @@ const Refer: React.FC<ReferProps> = ({
   };
 
   const handleShare = (platform: string) => {
-    const shareText = socialSharing.platforms.find(p => p.name.toLowerCase() === platform)?.shareText || '';
+    const shareText = safeSocialSharing.platforms.find(p => p.name.toLowerCase() === platform)?.shareText || '';
     shareOnSocialMedia(platform, shareText, referralLink);
   };
 

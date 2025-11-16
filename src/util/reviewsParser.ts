@@ -195,7 +195,13 @@ export async function submitReview(reviewData: SubmitReviewData): Promise<Review
     console.log('🚀 Submitting review...', reviewData);
     
     // Submit review via API - use POST method with authentication
-    const response = await api.makeRequest('/v0/reviews', {
+    const response = await api.makeRequest<{
+      review?: Review;
+      success?: boolean;
+      data?: {
+        review?: Review;
+      };
+    } & Partial<Review>>('/v0/reviews', {
       method: 'POST',
       body: JSON.stringify(reviewData),
       headers: {
