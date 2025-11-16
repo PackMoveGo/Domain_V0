@@ -528,8 +528,8 @@ export default function Privacy() {
                     </p>
                     <div className="space-y-3 text-gray-700">
                       <p><strong>Email:</strong> privacy@packmovego.com</p>
-                      <p><strong>Phone:</strong> (555) 123-4567</p>
-                      <p><strong>Address:</strong> 123 Moving Way, Orange County, CA 92626</p>
+                      <p><strong>Phone:</strong> (949) 414-5282</p>
+                      <p><strong>Address:</strong> 1369 Adam's Ave, Costa Mesa, CA, 92626</p>
                     </div>
                   </div>
                   <div>
