@@ -230,9 +230,9 @@ export default function ContactPage() {
                     id: 'emergency',
                     title: 'Emergency Line',
                     description: 'For urgent moving needs and last-minute requests',
-                    primary: '(949) 313-0123',
-                    secondary: 'Available 24/7',
-                    hours: '24/7',
+                    primary: '(949) 414-5282',
+                    secondary: 'pending',
+                    hours: 'pending',
                     icon: '🚨',
                     color: 'bg-red-600'
                   },
@@ -306,11 +306,11 @@ export default function ContactPage() {
                     name: 'Main Office',
                     type: 'Headquarters',
                     address: {
-                      street: '123 Main Street',
-                      city: 'Irvine',
-                      state: 'CA',
-                      zip: '92618',
-                      fullAddress: '123 Main Street, Irvine, CA 92618'
+                      street: 'pending',
+                      city: 'pending',
+                      state: 'pending',
+                      zip: 'pending',
+                      fullAddress: 'pending'
                     },
                     phone: '(949) 414-5282',
                     email: 'info@packmovego.com',
@@ -330,11 +330,11 @@ export default function ContactPage() {
                     name: 'Newport Beach Branch',
                     type: 'Service Center',
                     address: {
-                      street: '456 Harbor Blvd',
-                      city: 'Newport Beach',
-                      state: 'CA',
-                      zip: '92660',
-                      fullAddress: '456 Harbor Blvd, Newport Beach, CA 92660'
+                      street: 'pending',
+                      city: 'pending',
+                      state: 'pending',
+                      zip: 'pending',
+                      fullAddress: 'pending'
                     },
                     phone: '(949) 555-0123',
                     email: 'newport@packmovego.com',
@@ -354,11 +354,11 @@ export default function ContactPage() {
                     name: 'Santa Ana Warehouse',
                     type: 'Storage Facility',
                     address: {
-                      street: '789 Industrial Way',
-                      city: 'Santa Ana',
-                      state: 'CA',
-                      zip: '92705',
-                      fullAddress: '789 Industrial Way, Santa Ana, CA 92705'
+                      street: 'pending',
+                      city: 'pending',
+                      state: 'pending',
+                      zip: 'pending',
+                      fullAddress: 'pending'
                     },
                     phone: '(714) 555-0456',
                     email: 'storage@packmovego.com',
@@ -462,10 +462,10 @@ export default function ContactPage() {
                     saturday: { open: '9:00 AM', close: '4:00 PM', status: 'open' },
                     sunday: { open: '10:00 AM', close: '3:00 PM', status: 'open' }
                   },
-                  emergency: 'For urgent matters, call our emergency line at (949) 313-0123'
+                  emergency: 'For urgent matters, call our emergency line at (949) 414-5282 (pending)'
                 }}
                 contactInfo={{
-                  emergencyPhone: '(949) 313-0123'
+                  emergencyPhone: '(949) 414-5282'
                 }}
                 isLoading={isLoadingData}
               />

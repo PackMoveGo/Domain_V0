@@ -175,7 +175,7 @@ export const getContactInfo = async (): Promise<ContactInfo> => {
       description: response.description || 'Get in touch with us for professional moving services',
       mainPhone: response.mainPhone || '(949) 414-5282',
       mainEmail: response.mainEmail || 'info@packmovego.com',
-      emergencyPhone: response.emergencyPhone || '(949) 313-0123',
+      emergencyPhone: response.emergencyPhone || '(949) 414-5282',
       website: response.website || 'https://packmovego.com'
     };
 
@@ -358,7 +358,7 @@ export const getBusinessHours = async (): Promise<BusinessHours> => {
         saturday: { open: '9:00 AM', close: '4:00 PM', status: 'open' },
         sunday: { open: '10:00 AM', close: '3:00 PM', status: 'open' }
       },
-      emergency: response.emergency || 'For urgent matters, call our emergency line at (949) 313-0123'
+      emergency: response.emergency || 'For urgent matters, call our emergency line at (949) 414-5282 (pending)'
     };
 
     contactPageCache.set(cacheKey, businessHours);
@@ -541,7 +541,7 @@ export const API_ContactPage = async (): Promise<ContactPageData> => {
         description: consolidatedData.contact?.description || 'Get in touch with us for professional moving services',
         mainPhone: consolidatedData.contact?.mainPhone || '(949) 414-5282',
         mainEmail: consolidatedData.contact?.mainEmail || 'info@packmovego.com',
-        emergencyPhone: consolidatedData.contact?.emergencyPhone || '(949) 313-0123',
+        emergencyPhone: consolidatedData.contact?.emergencyPhone || '(949) 414-5282',
         website: consolidatedData.contact?.website || 'https://packmovego.com'
       },
       officeLocations: consolidatedData.contact?.locations || consolidatedData.contact?.officeLocations || [],
@@ -582,7 +582,7 @@ export const API_ContactPage = async (): Promise<ContactPageData> => {
           saturday: { open: '9:00 AM', close: '4:00 PM', status: 'open' },
           sunday: { open: '10:00 AM', close: '3:00 PM', status: 'open' }
         },
-        emergency: consolidatedData.contact?.businessHours?.emergency || 'For urgent matters, call our emergency line at (949) 313-0123'
+        emergency: consolidatedData.contact?.businessHours?.emergency || 'For urgent matters, call our emergency line at (949) 414-5282 (pending)'
       },
       lastUpdated: new Date().toISOString()
     };

@@ -139,7 +139,7 @@ function getFallbackContactData(): ContactData {
       description: 'Get in touch with us for professional moving services in Orange County. We\'re here to help make your move smooth and stress-free.',
       mainPhone: '(949) 414-5282',
       mainEmail: 'info@packmovego.com',
-      emergencyPhone: '(949) 313-0123',
+      emergencyPhone: '(949) 414-5282',
       website: 'https://packmovego.com'
     },
     officeLocations: [
@@ -148,13 +148,13 @@ function getFallbackContactData(): ContactData {
         name: 'Main Office',
         type: 'Headquarters',
         address: {
-          street: '1369 Adams Ave',
-          city: 'Costa Mesa',
-          state: 'CA',
-          zip: '92626',
-          fullAddress: '1369 Adams Ave, Costa Mesa, CA 92626'
+          street: 'pending',
+          city: 'pending',
+          state: 'pending',
+          zip: 'pending',
+          fullAddress: 'pending'
         },
-        phone: '(949) 313-0123',
+        phone: '(949) 414-5282',
         email: 'info@packmovego.com',
         coordinates: {
           lat: 33.6846,
@@ -237,9 +237,9 @@ function getFallbackContactData(): ContactData {
         description: 'Urgent moving needs',
         icon: '🚨',
         color: 'bg-red-600',
-        primary: '(949) 313-0123',
-        secondary: '24/7 emergency line',
-        hours: 'Always available'
+        primary: '(949) 414-5282',
+        secondary: 'pending',
+        hours: 'pending'
       }
     ],
     contactForm: {
@@ -335,7 +335,7 @@ function getFallbackContactData(): ContactData {
         saturday: { open: '9:00 AM', close: '4:00 PM', status: 'open' },
         sunday: { open: '10:00 AM', close: '3:00 PM', status: 'open' }
       },
-      emergency: 'For urgent matters, call our emergency line at (949) 313-0123'
+      emergency: 'For urgent matters, call our emergency line at (949) 414-5282 (pending)'
     }
   };
 }
