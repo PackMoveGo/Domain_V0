@@ -152,6 +152,7 @@ export default defineConfig(({ mode, _command }): UserConfig => { // Reserved fo
     resolve: {
       alias: {
         '@': resolve(__dirname, '../src'),
+        '@config': resolve(__dirname, '.'),
       },
     },
     css: {
