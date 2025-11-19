@@ -1,11 +1,11 @@
 {
-  "buildCommand": "npm run build:csr",
+  "buildCommand": "npm run build:ssr",
   "outputDirectory": "dist",
   "installCommand": "npm ci --include=dev",
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/api/ssr"
     }
   ],
   "headers": [

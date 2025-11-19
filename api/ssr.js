@@ -76,10 +76,13 @@ export default async function handler(req, res) {
         const renderResult = await render(url);
         
         let appHtml;
+        let helmetContext;
+        
         if (typeof renderResult === 'string') {
           appHtml = renderResult;
         } else if (renderResult && typeof renderResult === 'object') {
           appHtml = renderResult.html || '';
+          helmetContext = renderResult.helmetContext;
         } else {
           appHtml = '';
         }
@@ -89,6 +92,25 @@ export default async function handler(req, res) {
         
         // Inject the app-rendered HTML into the template
         html = injectAppHtml(template, appHtml);
+        
+        // Inject Helmet meta tags if available
+        if (helmetContext && helmetContext.helmet) {
+          const { helmet } = helmetContext;
+          
+          // Replace the default meta tags with page-specific ones
+          if (helmet.title) {
+            html = html.replace(/<title>.*?<\/title>/, helmet.title.toString());
+          }
+          if (helmet.meta) {
+            // Inject meta tags after the existing ones
+            html = html.replace('</head>', `${helmet.meta.toString()}</head>`);
+          }
+          if (helmet.link) {
+            html = html.replace('</head>', `${helmet.link.toString()}</head>`);
+          }
+          
+          console.log('✅ Helmet meta tags injected');
+        }
         
         // Check if injection worked
         if (html.includes(appHtml.substring(0, 50))) {
