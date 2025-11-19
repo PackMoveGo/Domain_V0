@@ -43,6 +43,7 @@ const createLazyComponent = (importFunc: () => Promise<any>, _fallback?: React.R
 const HomePage = createLazyComponent(() => import('./pages/page.home'));
 const AboutPage = createLazyComponent(() => import('./pages/page.about'));
 const ServicesPage = createLazyComponent(() => import('./pages/page.services'));
+const ServiceDetailPage = createLazyComponent(() => import('./pages/page.serviceDetail'));
 const ContactPage = createLazyComponent(() => import('./pages/page.contact'));
 const BlogPage = createLazyComponent(() => import('./pages/page.blog'));
 const FAQPage = createLazyComponent(() => import('./pages/page.faq'));
@@ -51,6 +52,7 @@ const BookingPage = createLazyComponent(() => import('./pages/page.booking'));
 const ReviewPage = createLazyComponent(() => import('./pages/page.review'));
 const ReferPage = createLazyComponent(() => import('./pages/page.refer'));
 const SuppliesPage = createLazyComponent(() => import('./pages/page.supplies'));
+const SupplyDetailPage = createLazyComponent(() => import('./pages/page.supplyDetail'));
 const TipsPage = createLazyComponent(() => import('./pages/page.tipsPage'));
 const SignInPage = createLazyComponent(() => import('./pages/page.signIn'));
 const SignUpPage = createLazyComponent(() => import('./pages/page.signUp'));
@@ -68,7 +70,6 @@ import ModalOrderTest from './component/examples/ModalOrderTest';
 import ErrorTestingExample from './component/examples/ErrorTestingExample';
 
 const AppContent: React.FC = () => {
-  console.log('🚀 AppCSR rendering...');
   
   return (
     <Layout isSSR={false}>
@@ -89,6 +90,7 @@ const AppContent: React.FC = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/services" element={<ServicesPage />} />
+            <Route path="/services/:service" element={<ServiceDetailPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/faq" element={<FAQPage />} />
@@ -98,6 +100,7 @@ const AppContent: React.FC = () => {
             <Route path="/reviews" element={<ReviewPage />} />
             <Route path="/refer" element={<ReferPage />} />
             <Route path="/supplies" element={<SuppliesPage />} />
+            <Route path="/supplies/:supply" element={<SupplyDetailPage />} />
             <Route path="/tips" element={<TipsPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/signup" element={<SignUpPage />} />

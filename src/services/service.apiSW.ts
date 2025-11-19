@@ -18,6 +18,7 @@
 import { handleApiError } from '../util/apiErrorHandler';
 import { apiCache } from '../util/apiCache';
 import { isConnectionError, is503Error, normalizeTo503Error, /* log503Error, */ createConnectionError } from '../util/errorUtils'; // Reserved for future use
+import { logger } from '../util/logger';
 
 // =============================================================================
 // API FAILURE MODAL MANAGEMENT
@@ -28,15 +29,19 @@ import { isConnectionError, is503Error, normalizeTo503Error, /* log503Error, */ 
 // =============================================================================
 
 // API configuration functions (moved from config/api)
+// Track if we've logged API key info (only log once per session)
+let apiKeyLogged = false;
+
 const getApiKey = (): string => {
   // Get API key from Vite's import.meta.env
   // Support both new (API_KEY_FRONTEND) and legacy (VITE_API_KEY_FRONTEND) names
   const env=(import.meta as any).env || import.meta.env || {};
   const apiKey=env.API_KEY_FRONTEND || env.VITE_API_KEY_FRONTEND || '';
   
-  // Debug in development
-  if(import.meta.env.MODE==='development'){
-    console.log('🔑 [API-KEY-DEBUG] getApiKey check:', {
+  // Debug in development - only log once per session
+  if(!apiKeyLogged && import.meta.env.MODE==='development'){
+    apiKeyLogged = true;
+    logger.logOnce('🔑 [API-KEY] Initialized:', {
       hasImportMeta: !!import.meta,
       hasEnv: !!(import.meta as any).env,
       hasViteEnv: !!import.meta.env,
@@ -607,7 +612,6 @@ export class APIsw {
       this.lastHealthCheckTime = 0;
       
       if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
-        console.log('🔄 [API-CONSENT] Consent granted - cleared circuit breakers, global block, and reset health check');
       }
     }
     
@@ -1053,22 +1057,17 @@ export class APIsw {
       const epTrimmed = ep.startsWith('/') ? ep : `/${ep}`;
       const finalUrl = `${baseTrimmed}${epTrimmed}`;
       
-      // Debug URL construction in development
-      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
-        console.log(`🔗 [URL-BUILD] Base: "${base}" + Endpoint: "${ep}" = "${finalUrl}"`);
-      }
-      
       return finalUrl;
     };
 
     // Use only the correct endpoint - no fallbacks since backend is working
     const url = buildUrl(ENV_CONFIG.API_URL, endpoint);
     
-    // Debug final URL in development
-    if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
-      console.log(`🌐 [FINAL-URL] Making request to: ${url}`);
-      console.log(`🌐 [FINAL-URL] API_URL config: ${ENV_CONFIG.API_URL}`);
-    }
+    // Consolidated URL logging (with deduplication)
+    logger.debug(`🌐 [API-REQUEST] ${endpoint}`, {
+      url,
+      baseUrl: ENV_CONFIG.API_URL
+    });
 
     // Create the actual request promise with retry for critical endpoints
     const requestPromise = this.executeRequestWithRetry<T>(url, endpoint, options, requireAuth);
@@ -1295,17 +1294,7 @@ export class APIsw {
       'x-api-key': getApiKey()
     };
     
-    // Debug API key usage
-    if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
-      const apiKey = getApiKey();
-      console.log('🔑 API Key Configuration:', {
-        hasApiKey: !!apiKey,
-        apiKeyLength: apiKey?.length || 0,
-        apiKeyPrefix: apiKey?.substring(0, 10) + '...' || 'none',
-        // fullApiKey removed for security - never log full API keys
-        headers: headers
-      });
-    }
+    // API key logging removed - already logged once on initialization
     
     // Only set restricted headers in SSR (Node). Browsers block these.
     if (typeof window === 'undefined') {
@@ -1327,14 +1316,8 @@ export class APIsw {
     };
 
     const tryFetch = async (url: string): Promise<Response> => {
-      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
-        console.log(`🌐 API Request: ${url}`);
-        console.log(`🌐 API Request Headers:`, {
-          'x-api-key': headers['x-api-key'] ? 'present' : 'missing',
-          'Content-Type': headers['Content-Type'],
-          'Accept': headers['Accept']
-        });
-      }
+      // Headers logging is now consolidated with URL logging above
+      // Only log if this is a different request (deduplication handled by logger)
       
       try {
         const response = await fetch(url, config);
@@ -1387,6 +1370,25 @@ export class APIsw {
         }
         return data;
       } else {
+        // Handle 401 Unauthorized - API key missing or invalid
+        if (response.status === 401) {
+          let redirectUrl = 'http://localhost:5001'; // Default
+          try {
+            const data = await response.json();
+            redirectUrl = data.redirectUrl || redirectUrl;
+            console.warn('🔒 Unauthorized access - API key required');
+            console.warn('🔒 Redirecting to:', redirectUrl);
+          } catch (parseError) {
+            console.warn('🔒 Failed to parse 401 response, using default redirect');
+          }
+          
+          // Redirect immediately - this will navigate away from the page
+          window.location.href = redirectUrl;
+          
+          // Return a rejected promise to stop further execution
+          return Promise.reject(new Error('Unauthorized: redirecting to home page'));
+        }
+        
         // Handle 503 responses gracefully
         if (response.status === 503) {
           // Set global 503 status when we get a 503 response
@@ -2190,6 +2192,9 @@ export class APIsw {
     console.log('📨 Submitting contact form:', { name: data.name, email: data.email });
     return await this.makeRequest('/v0/contact/submit', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(data)
     });
   }
@@ -2241,8 +2246,17 @@ export class APIsw {
     lastName: string;
     phone: string;
     email?: string;
+    serviceId?: string;
   }): Promise<any> {
-    console.log('📨 Submitting quote request:', { firstName: data.firstName, lastName: data.lastName });
+    console.log('📨 Submitting quote request:', { 
+      firstName: data.firstName, 
+      lastName: data.lastName,
+      fromZip: data.fromZip,
+      toZip: data.toZip,
+      rooms: data.rooms,
+      phone: data.phone,
+      serviceId: data.serviceId
+    });
     return await this.makeRequest('/v0/quotes/submit', {
       method: 'POST',
       body: JSON.stringify(data)
@@ -2540,7 +2554,6 @@ export class APIsw {
    * Called when consent state changes (e.g., user opts in)
    */
   emitConsentStateChange(hasConsent: boolean): void {
-    console.log(`🍪 [API-CONSENT] Consent state changed: ${hasConsent ? 'granted' : 'blocked'}`);
     this.consentEventListeners.forEach(listener => {
       try {
         listener(hasConsent);
@@ -2649,9 +2662,7 @@ export class APIsw {
     this.currentPageName = pageName;
     this.pageApiCalls = [];
     
-    if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
-      console.log(`🔧 [API-TRACKING] Started tracking API calls for page: ${pageName}`);
-    }
+    // Reduced logging - only log page changes, not every tracking start
   }
 
   /**
@@ -2662,11 +2673,7 @@ export class APIsw {
     if (!this.pageApiCalls.includes(endpoint)) {
       this.pageApiCalls.push(endpoint);
       
-      // Log each tracked call in development for debugging
-      if (this.isDevMode && !ENV_CONFIG.REDUCE_LOGGING) {
-        console.log(`🔧 [API-TRACKING] Tracked API call: ${endpoint} (Page: ${this.currentPageName})`);
-        console.log(`🔧 [API-TRACKING] Current tracked calls:`, this.pageApiCalls);
-      }
+      // Reduced verbosity - use logger with deduplication
     }
   }
 
@@ -2758,7 +2765,7 @@ export class APIsw {
   resetApiCallTracking(): void {
     this.pageApiCalls = [];
     this.currentPageName = '';
-    console.log('🔧 [API-TRACKING] Reset API call tracking');
+    // Reset logging removed - not needed for normal operation
   }
 
   // =================================================================

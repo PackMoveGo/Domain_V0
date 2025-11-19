@@ -351,8 +351,9 @@ const Navbar: React.FC<NavbarProps> = ({ /* hasConsent, isWaitingForConsent */ i
               {/* Menu Overlay */}
               {isMenuOpen && (
                 <div
-                  className="fixed left-0 right-0 top-16 bottom-0 bg-black bg-opacity-25 transition-opacity duration-300 ease-in-out z-40"
+                  className="fixed inset-0 bg-black bg-opacity-25 transition-opacity duration-300 ease-in-out z-40"
                   onClick={handleOverlayClick}
+                  aria-hidden="true"
                 />
               )}
 
@@ -363,8 +364,27 @@ const Navbar: React.FC<NavbarProps> = ({ /* hasConsent, isWaitingForConsent */ i
                   ${isMenuOpen ? navigationStyles.mobileBottom.panelOpen : navigationStyles.mobileBottom.panelClosed}
                 `}
               >
+                {/* Close Button at Top Right */}
+                <div className="flex justify-end p-4 border-b border-gray-200 flex-shrink-0">
+                  <button
+                    onClick={handleMenuToggle}
+                    className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-md transition-colors duration-200"
+                    aria-label="Close menu"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2.5} 
+                        d="M6 18L18 6M6 6l12 12"
+                        className="text-blue-600" 
+                      />
+                    </svg>
+                  </button>
+                </div>
+
                 {/* Navigation Links */}
-                <div className="flex-1 py-3 px-4 space-y-2">
+                <div className="flex-1 py-3 px-4 space-y-2 overflow-y-auto">
                   {visibleNavItems.map((item, index) => (
                     <a
                       key={item.path}

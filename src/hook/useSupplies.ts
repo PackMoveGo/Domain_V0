@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchSuppliesData, SupplyCategory } from '../util/suppliesParser';
+import { logger } from '../util/logger';
 
 export function useSupplies() {
   const [supplies, setSupplies] = useState<SupplyCategory[]>([]);
@@ -10,11 +11,11 @@ export function useSupplies() {
     try {
       setIsLoading(true);
       setError(null);
-      console.log('🔄 Loading supplies data...');
+      logger.debug('🔄 Loading supplies');
       
       const suppliesData = await fetchSuppliesData();
       setSupplies(suppliesData.supplies);
-      console.log('✅ Supplies loaded successfully:', suppliesData.supplies.length, 'categories');
+      logger.debug('✅ Supplies loaded:', suppliesData.supplies.length);
     } catch (err) {
       // Check if this is a 503 error
       if (err instanceof Error && (err as any).is503Error) {

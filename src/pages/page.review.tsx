@@ -2,7 +2,7 @@ import { useReviews } from '../hook/useReviews';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
 import SEO from '../component/business/SEO';
 import ErrorBoundary from '../component/ui/feedback/ErrorBoundary';
-import Reviews from '../component/pages/Reviews';
+import Reviews from '../component/pages/page.Reviews';
 
 const ReviewPage = () => {
   const { reviews, stats, services, isLoading, error } = useReviews();

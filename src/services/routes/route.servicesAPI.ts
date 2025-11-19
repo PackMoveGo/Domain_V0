@@ -19,7 +19,12 @@ export interface ServiceItem {
   description: string;
   shortDescription: string;
   icon: string;
-  price: string;
+  price: string | {
+    starting?: number;
+    currency?: string;
+    display?: string;
+    perHour?: number;
+  };
   priceRange?: {
     min: number;
     max: number;
@@ -29,7 +34,12 @@ export interface ServiceItem {
   category: string;
   isPopular: boolean;
   isAvailable: boolean;
-  estimatedDuration: string;
+  estimatedDuration: string | {
+    min?: number;
+    max?: number;
+    unit?: string;
+    display?: string;
+  };
   requirements: string[];
   included: string[];
   notIncluded: string[];
@@ -38,6 +48,12 @@ export interface ServiceItem {
     question: string;
     answer: string;
   }[];
+  duration?: {
+    min?: number;
+    max?: number;
+    unit?: string;
+    display?: string;
+  };
 }
 
 export interface ServiceCategory {
@@ -119,30 +135,34 @@ export const getServiceById = async (serviceId: string): Promise<ServiceItem | n
     if (!response.service) return null;
 
     const service: ServiceItem = {
-      id: response.service.id || response.service._id,
+      id: response.service.id || response.service._id || response.service.slug,
       name: response.service.name || response.service.title,
-      description: response.service.description || response.service.fullDescription,
-      shortDescription: response.service.shortDescription || response.service.short_description || response.service.description,
+      description: response.service.description || response.service.fullDescription || '',
+      shortDescription: response.service.shortDescription || response.service.short_description || response.service.description?.substring(0, 160) || '',
       icon: response.service.icon || 'truck',
-      price: response.service.price || 'Contact for pricing',
+      price: response.service.price || 'Contact for pricing', // Can be string or object with {starting, currency, display, perHour}
       priceRange: response.service.priceRange ? {
         min: response.service.priceRange.min || response.service.price_range?.min,
         max: response.service.priceRange.max || response.service.price_range?.max
+      } : (response.service.price && typeof response.service.price === 'object' && response.service.price.starting) ? {
+        min: response.service.price.starting,
+        max: response.service.price.starting * 2 // Estimate max as 2x starting
       } : undefined,
       features: response.service.features || response.service.benefits || [],
-      benefits: response.service.benefits || response.service.advantages || [],
+      benefits: response.service.benefits || response.service.advantages || response.service.features || [],
       category: response.service.category || response.service.service_type || 'general',
-      isPopular: response.service.isPopular || response.service.is_popular || false,
-      isAvailable: response.service.isAvailable !== false,
-      estimatedDuration: response.service.estimatedDuration || response.service.estimated_duration || 'Varies',
+      isPopular: response.service.isPopular || response.service.is_popular || response.service.meta?.featured || false,
+      isAvailable: response.service.isAvailable !== false && response.service.availability?.status !== 'unavailable',
+      estimatedDuration: response.service.estimatedDuration || response.service.estimated_duration || response.service.duration?.display || (response.service.duration ? `${response.service.duration.min || ''}-${response.service.duration.max || ''} ${response.service.duration.unit || 'hours'}` : 'Varies'),
       requirements: response.service.requirements || response.service.prerequisites || [],
       included: response.service.included || response.service.includes || [],
       notIncluded: response.service.notIncluded || response.service.not_included || response.service.excludes || [],
-      images: response.service.images || [],
+      images: response.service.images || (response.service.image ? [response.service.image] : []),
       faqs: response.service.faqs?.map((faq: any) => ({
-        question: faq.question,
-        answer: faq.answer
-      })) || []
+        question: faq.question || faq.q,
+        answer: faq.answer || faq.a
+      })) || [],
+      duration: response.service.duration
     };
 
     console.log('✅ Service loaded:', service.name);

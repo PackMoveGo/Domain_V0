@@ -23,6 +23,10 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
   const [position,setPosition]=useState({x:0,y:0});
   const [isDragging,setIsDragging]=useState(false);
   const [dragOffset,setDragOffset]=useState({x:0,y:0});
+  const [size,setSize]=useState({width:384,height:500});
+  const [isResizing,setIsResizing]=useState(false);
+  const [resizeType,setResizeType]=useState<'width'|'height'|'height-bottom'|'both'|null>(null);
+  const [resizeStart,setResizeStart]=useState({x:0,y:0,width:0,height:0});
   const [apiStatus,setApiStatus]=useState<{status:'checking'|'online'|'offline',lastCheck?:number}>({status:'checking'});
   const [cacheStats,setCacheStats]=useState<any>(null);
   const [networkStatus,setNetworkStatus]=useState<any>(null);
@@ -137,6 +141,22 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
     const target=e.target as HTMLElement;
     const isInternalButton=target.closest('.dev-tool-action-button');
     const isTabButton=target.closest('.dev-tool-tab');
+    const isResizeHandle=target.closest('.resize-handle');
+    
+    if(isResizeHandle){
+      const handleType=target.getAttribute('data-resize')as 'width'|'height'|'height-bottom'|'both';
+      setResizeType(handleType);
+      setIsResizing(true);
+      setResizeStart({
+        x:e.clientX,
+        y:e.clientY,
+        width:size.width,
+        height:size.height
+      });
+      e.preventDefault();
+      return;
+    }
+    
     if(isInternalButton||isTabButton)return;
     
     const rect=containerRef.current?.getBoundingClientRect();
@@ -151,13 +171,49 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
 
   useEffect(()=>{
     const handleMouseMove=(e:MouseEvent)=>{
+      if(isResizing&&resizeType){
+        const deltaX=e.clientX-resizeStart.x;
+        const deltaY=e.clientY-resizeStart.y;
+        
+        let newWidth=resizeStart.width;
+        let newHeight=resizeStart.height;
+        let newY=position.y;
+        
+        if(resizeType==='width'||resizeType==='both'){
+          newWidth=Math.max(300,Math.min(1200,resizeStart.width+deltaX));
+        }
+        if(resizeType==='height'||resizeType==='height-bottom'||resizeType==='both'){
+          if(resizeType==='height'){
+            // Resize from top - grows downward, adjust position
+            const heightDelta=deltaY;
+            newHeight=Math.max(300,Math.min(window.innerHeight-100,resizeStart.height-heightDelta));
+            const heightChange=resizeStart.height-newHeight;
+            newY=Math.max(0,Math.min(window.innerHeight-newHeight,position.y+heightChange));
+          }else if(resizeType==='height-bottom'){
+            // Resize from bottom - grows upward, keep position
+            newHeight=Math.max(300,Math.min(window.innerHeight-100,resizeStart.height+deltaY));
+          }else if(resizeType==='both'){
+            // Resize from corner - grows in both directions
+            newHeight=Math.max(300,Math.min(window.innerHeight-100,resizeStart.height+deltaY));
+          }
+        }
+        
+        setSize({width:newWidth,height:newHeight});
+        if(newY!==position.y){
+          setPosition({...position,y:newY});
+        }
+        return;
+      }
+      
       if(!isDragging)return;
       
       const newX=e.clientX-dragOffset.x;
       const newY=e.clientY-dragOffset.y;
       
-      const maxX=window.innerWidth-(containerRef.current?.offsetWidth||0);
-      const maxY=window.innerHeight-(containerRef.current?.offsetHeight||0);
+      const currentWidth=size.width;
+      const currentHeight=size.height;
+      const maxX=window.innerWidth-currentWidth;
+      const maxY=window.innerHeight-currentHeight;
       
       setPosition({
         x:Math.max(0,Math.min(newX,maxX)),
@@ -167,9 +223,11 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
 
     const handleMouseUp=()=>{
       setIsDragging(false);
+      setIsResizing(false);
+      setResizeType(null);
     };
 
-    if(isDragging){
+    if(isDragging||isResizing){
       document.addEventListener('mousemove',handleMouseMove);
       document.addEventListener('mouseup',handleMouseUp);
     }
@@ -178,7 +236,7 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
       document.removeEventListener('mousemove',handleMouseMove);
       document.removeEventListener('mouseup',handleMouseUp);
     };
-  },[isDragging,dragOffset]);
+  },[isDragging,isResizing,resizeType,dragOffset,resizeStart,size,position]);
 
   // Safety check: Never render in production
   if(!isDevMode()||!isVisible)return null;
@@ -617,8 +675,47 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
           🛠️
         </button>
       ):(
-        <div className="bg-white rounded-lg shadow-2xl border border-gray-300 w-96 max-h-[90vh] flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div 
+          className="bg-white rounded-lg shadow-2xl border border-gray-300 flex flex-col relative"
+          style={{
+            width:`${size.width}px`,
+            height:`${size.height}px`,
+            maxHeight:'90vh'
+          }}
+        >
+          {/* Resize handles */}
+          {/* Top edge - resize height (grows downward) */}
+          <div 
+            className="resize-handle absolute top-0 left-0 right-0 h-2 cursor-ns-resize z-10 hover:bg-blue-100 transition-colors"
+            data-resize="height"
+            style={{cursor:'ns-resize'}}
+            title="Resize height from top"
+          />
+          {/* Right edge - resize width */}
+          <div 
+            className="resize-handle absolute top-0 right-0 bottom-0 w-2 cursor-ew-resize z-10 hover:bg-blue-100 transition-colors"
+            data-resize="width"
+            style={{cursor:'ew-resize'}}
+            title="Resize width"
+          />
+          {/* Bottom edge - resize height (grows upward) */}
+          <div 
+            className="resize-handle absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize z-10 hover:bg-blue-100 transition-colors"
+            data-resize="height-bottom"
+            style={{cursor:'ns-resize'}}
+            title="Resize height from bottom"
+          />
+          {/* Bottom-right corner - resize both */}
+          <div 
+            className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize z-10 hover:bg-blue-200 transition-colors"
+            data-resize="both"
+            style={{cursor:'nwse-resize'}}
+            title="Resize both"
+          >
+            <div className="absolute bottom-1 right-1 w-0 h-0 border-l-[8px] border-l-transparent border-b-[8px] border-b-gray-400"></div>
+          </div>
+          
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
             <h3 className="font-bold text-lg select-none">Dev Tools 🎯</h3>
             <button
               onClick={()=>setIsOpen(false)}
@@ -629,7 +726,7 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
             </button>
           </div>
           
-          <div className="flex border-b border-gray-200 overflow-x-auto">
+          <div className="flex border-b border-gray-200 overflow-x-auto flex-shrink-0">
             {tabs.map(tab=>(
               <button
                 key={tab.id}
@@ -646,7 +743,7 @@ export default function DevToolsLauncher({isVisible=true}:DevToolsLauncherProps)
             ))}
           </div>
           
-          <div className="p-4 overflow-y-auto flex-1">
+          <div className="p-4 overflow-y-auto flex-1 min-h-0">
             {renderTabContent()}
           </div>
         </div>

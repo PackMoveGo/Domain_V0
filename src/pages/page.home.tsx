@@ -3,6 +3,14 @@ import { useGiveSectionId } from '../hook/useGiveSectionId';
 import { getHomePageData, /* getHomePageStatusCode, getHomePageFailedEndpoints */ HomePageServiceData } from '../services/public/service.homePageAPI'; // Reserved for future use
 import { useCookiePreferences } from '../context/CookiePreferencesContext';
 import { useTestimonials } from '../hook/useTestimonials';
+import { 
+  FALLBACK_SERVICES, 
+  FALLBACK_TESTIMONIALS, 
+  FALLBACK_RECENT_MOVES, 
+  FALLBACK_TOTAL_MOVES,
+  shouldUseFallback 
+} from '../data/fallbackData';
+import { logger } from '../util/logger';
 // Modal state is handled by Layout component
 // import SEO from '../component/business/SEO'; // SEO complation
 // const { getSectionProps, isTampered, SectionWarning } = useGiveSectionId(contactPageSections); Hash validation example implmintation
@@ -68,9 +76,6 @@ export default function HomePage(){
     
     // Prevent duplicate calls (React Strict Mode protection)
     if (isLoadingRef.current) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 [HOME-PAGE] Skipping duplicate loadHomePageData call');
-      }
       return;
     }
     
@@ -130,7 +135,6 @@ export default function HomePage(){
     
     // Only load once on mount, or when consent changes from false to true
     if (hasConsent && !hasLoadedRef.current) {
-      console.log('🍪 [HOME-PAGE] Consent already granted on mount - loading data');
       // Increased delay to ensure API is fully unblocked
       setTimeout(() => {
         loadHomePageData();
@@ -149,7 +153,6 @@ export default function HomePage(){
     const removeListener = addConsentListener((newHasConsent) => {
       // When consent is granted, reload page data (only if it changed from false to true)
       if (newHasConsent && !previousConsent) {
-          console.log('🍪 [HOME-PAGE] Consent granted - reloading page data');
         hasLoadedRef.current = false; // Reset to allow reload
         previousConsent = newHasConsent;
           // Increased delay and force reload regardless of existing data
@@ -164,7 +167,6 @@ export default function HomePage(){
       // Listen for all consent-related window events
       const handleConsentGranted = () => {
       if (!previousConsent) {
-        console.log('🍪 [HOME-PAGE] Window event: consent granted - reloading data');
         hasLoadedRef.current = false; // Reset to allow reload
         previousConsent = true;
         setTimeout(() => {
@@ -202,19 +204,45 @@ export default function HomePage(){
   // Use testimonials hook for API-based testimonials
   const { testimonials: apiTestimonials, isLoading: testimonialsLoading, error: testimonialsError } = useTestimonials();
   
+  // Determine if we should use fallback data (503 error or API completely down)
+  const useFallback = !isSSR && shouldUseFallback(homePageData, _statusCode, dataError);
+  
+  // Services data with fallback support
   const servicesData = isSSR ? [] : (
-    homePageData?.services 
-      ? (Array.isArray(homePageData.services) 
-          ? homePageData.services 
-          : (homePageData.services.services || homePageData.services.data || []))
-      : []
+    useFallback 
+      ? FALLBACK_SERVICES
+      : (homePageData?.services 
+          ? (Array.isArray(homePageData.services) 
+              ? homePageData.services 
+              : (homePageData.services.services || homePageData.services.data || []))
+          : [])
   );
-  const recentMovesData = isSSR ? [] : (homePageData?.recentMoves?.recentMoves || homePageData?.recentMoves?.moves || []);
-  // Use API testimonials if available, otherwise fall back to homePageData
-  const testimonialsData = isSSR ? [] : (apiTestimonials.length > 0 ? apiTestimonials : (homePageData?.testimonials?.testimonials || []));
+  
+  // Recent moves data with fallback support
+  const recentMovesData = isSSR ? [] : (
+    useFallback
+      ? FALLBACK_RECENT_MOVES
+      : (homePageData?.recentMoves?.recentMoves || homePageData?.recentMoves?.moves || [])
+  );
+  
+  // Testimonials data with fallback support
+  // Use API testimonials if available, otherwise fall back to homePageData or fallback
+  const testimonialsData = isSSR ? [] : (
+    useFallback
+      ? FALLBACK_TESTIMONIALS
+      : (apiTestimonials.length > 0 
+          ? apiTestimonials 
+          : (homePageData?.testimonials?.testimonials || []))
+  );
+  
   const totalMoves = isSSR ? 0 : (recentMovesData.length || 0);
-  // Ensure totalMovesCount is a number, allowing 0 as a valid value
+  
+  // Total moves count with fallback support
   const totalMovesCount = isSSR ? 0 : (() => {
+    if (useFallback) {
+      return FALLBACK_TOTAL_MOVES;
+    }
+    
     const totalMovesValue = homePageData?.totalMoves;
     
     if (typeof totalMovesValue === 'number') {
@@ -274,17 +302,6 @@ export default function HomePage(){
             error={dataError}
           />
         </section>
-
-        {/* Services Section - Show when API data is available */}
-        {shouldShowServicesInHero && (
-          <section {...getSectionProps('services')}>
-            <OurServices 
-              services={servicesData}
-              isLoading={isLoadingData && !isSSR}
-              error={dataError}
-            />
-          </section>
-        )}
 
         {/* Process Steps Section */}
         <section {...getSectionProps('process-steps')}>

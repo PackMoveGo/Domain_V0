@@ -28,7 +28,6 @@ export default function ServicesSlideshow({ services }: ServicesSlideshowProps) 
     const isDev = typeof import.meta !== 'undefined' && (import.meta as any).env?.MODE === 'development';
     if (!isDev) return;
 
-    console.debug('ServicesSlideshow services data:', services);
     const allowedObjectKeys = new Set(['price', 'duration', 'availability', 'meta']);
 
     services.forEach((service: ServiceData, index: number) => {
@@ -66,6 +65,10 @@ export default function ServicesSlideshow({ services }: ServicesSlideshowProps) 
   const handleServiceClick = (service: ServiceData) => {
     if (service.link) {
       navigate(service.link);
+    } else if (service.id) {
+      navigate(`/services/${service.id}`);
+    } else {
+      navigate('/services');
     }
   };
 
@@ -167,18 +170,34 @@ export default function ServicesSlideshow({ services }: ServicesSlideshowProps) 
                   )}
                 </div>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleServiceClick(currentService);
-                  }}
-                  className="group-hover:scale-105 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
-                >
-                  <span className="flex items-center">
-                    Learn More
-                    <span className="ml-2 group-hover:translate-x-1 transition-transform duration-200">→</span>
-                  </span>
-                </button>
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const serviceId = currentService.id || getDisplay(currentService.title).toLowerCase().replace(/\s+/g, '-');
+                      const serviceName = encodeURIComponent(getDisplay(currentService.title));
+                      navigate(`/booking?serviceId=${serviceId}&serviceName=${serviceName}`);
+                    }}
+                    className="group-hover:scale-105 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
+                  >
+                    <span className="flex items-center">
+                      Book Now
+                      <span className="ml-2 group-hover:translate-x-1 transition-transform duration-200">→</span>
+                    </span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleServiceClick(currentService);
+                    }}
+                    className="group-hover:scale-105 bg-gray-600 border-2 border-gray-600 text-white hover:bg-gray-700 hover:border-gray-700 px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform"
+                  >
+                    <span className="flex items-center">
+                      Learn More
+                      <span className="ml-2 group-hover:translate-x-1 transition-transform duration-200">→</span>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

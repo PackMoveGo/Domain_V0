@@ -19,7 +19,6 @@ if (!isSSR && !rootElement) {
 
 // Create the app component
 const AppComponent = (
-  <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter
         future={{
@@ -30,13 +29,11 @@ const AppComponent = (
         <App />
       </BrowserRouter>
     </HelmetProvider>
-  </React.StrictMode>
 );
 
 // Check if we're in SSR mode (server-rendered content exists)
 const hasSSRContent = !isSSR && rootElement ? rootElement.innerHTML.trim().length > 0 : false;
 
-console.log('🚀 Main.tsx Environment:', { isSSR, isProduction, hasSSRContent, NODE_ENV: process.env.NODE_ENV });
 
 // Function to hide loading screen after React is ready (browser only)
 const hideLoadingScreen = () => {
@@ -97,7 +94,6 @@ if (!isSSR && rootElement) {
     }
   } else {
     // Development mode or no SSR content - use createRoot
-    console.log('🔄 Client-side rendering...');
     const root = createRoot(rootElement);
     root.render(AppComponent);
     // Hide loading screen after CSR render

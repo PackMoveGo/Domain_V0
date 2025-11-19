@@ -31,7 +31,7 @@ export default function RecentMoves({
 }: RecentMovesProps = {}) {
   const [recentMoves, setRecentMoves] = useState<RecentMove[]>(propRecentMoves || []);
   const [isLoading, setIsLoading] = useState<boolean>(propIsLoading || true);
-  const [_error, setError] = useState<string | null>(propError || null); // Reserved for future use
+  const [error, setError] = useState<string | null>(propError || null);
 
   // Update state when props change
   useEffect(() => {
@@ -52,7 +52,9 @@ export default function RecentMoves({
     }
   }, [propError]);
 
-  // No API calls - only use props data
+  // Determine if API is connected (no error) but no data
+  const isApiConnected = !error && !isLoading;
+  const hasNoData = isApiConnected && recentMoves.length === 0;
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -153,7 +155,17 @@ export default function RecentMoves({
               </div>
             ))}
           </div>
-        ) : (
+        ) : hasNoData ? (
+          <div className="text-center py-12">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-2xl mx-auto">
+              <div className="text-blue-600 text-4xl mb-4">📋</div>
+              <h3 className="text-lg font-semibold text-blue-800 mb-2">No Recent Moves Available</h3>
+              <p className="text-blue-700">
+                No recent moves available at the moment. Check back soon to see our latest successful moves!
+              </p>
+            </div>
+          </div>
+        ) : error ? (
           <div className="text-center py-12">
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-2xl mx-auto">
               <div className="flex items-center justify-center mb-4">
@@ -179,7 +191,7 @@ export default function RecentMoves({
               </div>
             </div>
           </div>
-        )}
+        ) : null}
         
         <div className="text-center mt-12">
           <button className={`${styles.button.secondary} mr-4`}>

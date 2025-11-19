@@ -42,6 +42,17 @@ export async function fetchLocationsData(): Promise<LocationsData> {
     console.log('📡 Response is array:', Array.isArray(response));
     console.log('📡 Response keys:', response ? Object.keys(response) : 'null/undefined');
     
+    // CRITICAL: Check if response is an error object (503 or other errors) - MUST CHECK FIRST
+    if (response && typeof response === 'object' && !Array.isArray(response) &&
+        ((response as any).error || (response as any).is503Error || (response as any).statusCode === 503 || (response as any).isConnectionError)) {
+      console.warn('⚠️ Locations API returned error response:', response);
+      const error = new Error((response as any).message || '503 Service Unavailable');
+      (error as any).is503Error = true;
+      (error as any).statusCode = (response as any).statusCode || 503;
+      (error as any).isConnectionError = (response as any).isConnectionError || false;
+      throw error;
+    }
+    
     // Handle different response formats
     console.log('🔍 Checking response structure:', {
       hasResponse: !!response,
@@ -72,6 +83,10 @@ export async function fetchLocationsData(): Promise<LocationsData> {
     }
   } catch (error) {
     console.error('❌ Error loading locations data:', error);
+    // Check if this is a 503 error
+    if (error instanceof Error && (error as any).is503Error) {
+      throw new Error('503 Service Unavailable');
+    }
     throw new Error('Failed to load locations data');
   }
 }

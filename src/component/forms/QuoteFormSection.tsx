@@ -1,6 +1,7 @@
 import React, { FC } from 'react';
 import { useOfflineStatus } from '../../hook/useOfflineStatus';
 import { FormData } from './form.quote';
+import { useServicesData } from '../../util/serviceParser';
 
 export interface QuoteFormSectionProps {
   formData: FormData;
@@ -16,6 +17,7 @@ const QuoteFormSection: FC<QuoteFormSectionProps> = ({
   /* onQuoteSubmit */ // Reserved for future use
 }) => {
   const { isOnline } = useOfflineStatus();
+  const { services } = useServicesData();
   
   return (
     <div className="py-16 bg-gray-50">
@@ -33,6 +35,33 @@ const QuoteFormSection: FC<QuoteFormSectionProps> = ({
             <>
               <form onSubmit={onSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {services && services.length > 0 && (
+                    <div className="md:col-span-2">
+                      <label htmlFor="serviceId" className="block text-sm font-medium text-gray-700 mb-1">Service Needed</label>
+                      <select
+                        id="serviceId"
+                        name="serviceId"
+                        value={formData.serviceId || ''}
+                        onChange={onChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select a Service</option>
+                        {services.map((service) => {
+                          const serviceTitle = typeof service.title === 'object' && service.title?.display 
+                            ? service.title.display 
+                            : typeof service.title === 'string' 
+                            ? service.title 
+                            : 'Untitled Service';
+                          const serviceId = service.id || serviceTitle.toLowerCase().replace(/\s+/g, '-');
+                          return (
+                            <option key={serviceId} value={serviceId}>
+                              {serviceTitle}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label htmlFor="fromZip" className="block text-sm font-medium text-gray-700 mb-1">Moving From Zip Code</label>
                     <input

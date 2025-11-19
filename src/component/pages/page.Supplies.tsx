@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SupplyCategory, SupplyItem, getPopularSupplies, searchSupplies } from '../../util/suppliesParser';
 
 interface SuppliesProps {
@@ -360,8 +361,19 @@ interface SupplyCardProps {
 }
 
 const SupplyCard: React.FC<SupplyCardProps> = ({ item }) => {
+  const navigate = useNavigate();
+  
+  const handleCardClick = () => {
+    if (item.id) {
+      navigate(`/supplies/${item.id}`);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden">
+    <div 
+      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
@@ -398,21 +410,35 @@ const SupplyCard: React.FC<SupplyCardProps> = ({ item }) => {
           </div>
         </div>
         
-        <a 
-          href={item.inStock ? `/contact?subject=Quote for ${encodeURIComponent(item.name)}` : '#'}
-          className={`w-full mt-4 py-2 px-4 rounded-lg font-medium transition-colors text-center block ${
-            item.inStock 
-              ? 'bg-blue-600 text-white hover:bg-blue-700' 
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none'
-          }`}
-          onClick={(e) => {
-            if (!item.inStock) {
-              e.preventDefault();
-            }
-          }}
-        >
-          {item.inStock ? 'Request Quote' : 'Out of Stock'}
-        </a>
+        <div className="flex gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (item.id) {
+                navigate(`/supplies/${item.id}`);
+              }
+            }}
+            className="flex-1 border-2 border-blue-600 text-blue-600 py-2 px-4 rounded-lg hover:bg-blue-600 hover:text-white transition-colors font-medium"
+          >
+            View Details
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (item.inStock) {
+                navigate(`/contact?subject=Quote for ${encodeURIComponent(item.name)}`);
+              }
+            }}
+            disabled={!item.inStock}
+            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+              item.inStock 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            {item.inStock ? 'Get Quote' : 'Out of Stock'}
+          </button>
+        </div>
       </div>
     </div>
   );

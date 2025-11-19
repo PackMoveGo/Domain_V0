@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchReferralData, ReferralData } from '../util/referralParser';
+import { logger } from '../util/logger';
 
 export function useReferral() {
   const [referralData, setReferralData] = useState<ReferralData | null>(null);
@@ -7,24 +8,56 @@ export function useReferral() {
   const [error, setError] = useState<string | null>(null);
 
   const loadReferralData = useCallback(async () => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     try {
       setIsLoading(true);
       setError(null);
-      console.log('🔄 Loading referral data...');
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('Request timeout - please try again'));
+        }, 10000); // 10 second timeout
+      });
       
-      const data = await fetchReferralData();
-      setReferralData(data);
-      console.log('✅ Referral data loaded successfully');
+      try {
+        const data = await Promise.race([
+          fetchReferralData(),
+          timeoutPromise
+        ]) as ReferralData;
+        
+        // Cancel timeout if API call succeeded
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
+        setReferralData(data);
+        logger.debug('✅ Referral data loaded');
+      } catch (raceError) {
+        // Cancel timeout when error occurs
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
+        // Re-throw to be caught by outer catch
+        throw raceError;
+      }
     } catch (err) {
-      // Check if this is a 503 error
+      // Prioritize 503 errors over timeout errors
       if (err instanceof Error && (err as any).is503Error) {
         setError('503 Service Unavailable');
+      } else if (err instanceof Error && err.message.includes('timeout')) {
+        setError('Request timeout - please try again');
       } else {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load referral data';
         setError(errorMessage);
       }
       console.error('❌ Referral loading error:', err);
     } finally {
+      // Clean up timeout if still active
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       setIsLoading(false);
     }
   }, []);

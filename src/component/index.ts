@@ -9,6 +9,9 @@ export * from './forms';
 // Page Components
 export * from './pages';
 
+// Modal Components
+export * from './modals';
+
 // Loading Components
 export * from './loading';
 

@@ -6,6 +6,7 @@ import Layout from './component/layout/Layout';
 import HomePage from './pages/page.home';
 import AboutPage from './pages/page.about';
 import ServicesPage from './pages/page.services';
+import ServiceDetailPage from './pages/page.serviceDetail';
 import ContactPage from './pages/page.contact';
 import BlogPage from './pages/page.blog';
 import FAQPage from './pages/page.faq';
@@ -14,6 +15,7 @@ import BookingPage from './pages/page.booking';
 import ReviewPage from './pages/page.review';
 import ReferPage from './pages/page.refer';
 import SuppliesPage from './pages/page.supplies';
+import SupplyDetailPage from './pages/page.supplyDetail';
 import TipsPage from './pages/page.tipsPage';
 import SignInPage from './pages/page.signIn';
 import SignUpPage from './pages/page.signUp';
@@ -47,6 +49,7 @@ const AppSSR: React.FC<AppSSRProps> = ({ url }) => {
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/services/:service" element={<ServiceDetailPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/faq" element={<FAQPage />} />
@@ -55,6 +58,7 @@ const AppSSR: React.FC<AppSSRProps> = ({ url }) => {
           <Route path="/review" element={<ReviewPage />} />
           <Route path="/refer" element={<ReferPage />} />
           <Route path="/supplies" element={<SuppliesPage />} />
+          <Route path="/supplies/:supply" element={<SupplyDetailPage />} />
           <Route path="/tips" element={<TipsPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/signup" element={<SignUpPage />} />

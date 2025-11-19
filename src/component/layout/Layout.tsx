@@ -14,7 +14,8 @@ import ScrollToTopButton from '../ui/navigation/ScrollToTopButton';
 import Footer from '../ui/footer.footer';
 import DevToolsLauncher from '../debug/DevToolsLauncher';
 import ApiFailureModal from '../ui/overlay/modal.apistatus';
-import CookieOptOut from '../../pages/modal.cookieOptOut';
+import CookieOptOut from '../modals/modal.cookieOptOut';
+import ScrollingBanner from '../ui/banner.scrolling';
 import { Helmet } from 'react-helmet-async';
 import { ENABLE_DEV_TOOLS } from '../../util/env';
 
@@ -245,6 +246,9 @@ const Layout: FC<LayoutProps> = ({
 
       <div className="flex flex-col min-h-screen">
         <Analytics />
+        
+        {/* Scrolling Banner - Above Navigation */}
+        <ScrollingBanner />
         
         {/* Navigation Header */}
         {!forceHideNavbar && (

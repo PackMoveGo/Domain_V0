@@ -1,10 +1,13 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { fetchBlogData, BlogPost, BlogCategory } from '../util/blogParser';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
 import SEO from '../component/business/SEO';
 import ErrorBoundary from '../component/ui/feedback/ErrorBoundary';
-import Blog from '../component/pages/Blog';
+import Blog from '../component/pages/page.Blog';
+
+// Lazy load QuoteForm
+const QuoteForm = lazy(() => import('../component/forms/form.quote'));
 
 // Cache for loaded blog data
 let blogCache: { blogPosts: BlogPost[]; categories: BlogCategory[]; tags: string[] } | null = null;
@@ -64,6 +67,22 @@ const BlogPage = () => {
         <section {...getSectionProps('blog')}>
           <ErrorBoundary>
             <Blog blogPosts={blogPosts} categories={categories} tags={tags} isLoading={isLoading} error={error} />
+          </ErrorBoundary>
+        </section>
+
+        {/* Quote Form Section */}
+        <section {...getSectionProps('quote-form')}>
+          <ErrorBoundary>
+            <Suspense fallback={
+              <div className="py-16 bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading Quote Form...</p>
+                </div>
+              </div>
+            }>
+              <QuoteForm />
+            </Suspense>
           </ErrorBoundary>
         </section>
       </div>

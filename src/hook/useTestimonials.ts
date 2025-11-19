@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAllTestimonials, Testimonial } from '../services/routes/route.testimonalsAPI';
+import { logger } from '../util/logger';
 
 export function useTestimonials() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -10,11 +11,10 @@ export function useTestimonials() {
     try {
       setIsLoading(true);
       setError(null);
-      console.log('🔄 Loading testimonials data...');
       
       const testimonialsData = await getAllTestimonials();
       setTestimonials(testimonialsData);
-      console.log('✅ Testimonials loaded successfully:', testimonialsData.length, 'testimonials');
+      logger.debug('✅ Testimonials loaded:', testimonialsData.length);
     } catch (err) {
       // Check if this is a 503 error
       if (err instanceof Error && (err as any).is503Error) {

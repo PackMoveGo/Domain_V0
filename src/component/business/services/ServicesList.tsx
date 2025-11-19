@@ -17,7 +17,7 @@ export interface ServicesListProps {
   onServiceSelect: (service: Service) => void;
 }
 
-const ServicesList = ({ services, onServiceSelect }: ServicesListProps) => {
+const ServicesList = ({ services, onServiceSelect: _onServiceSelect }: ServicesListProps) => {
   const navigate = useNavigate();
 
   // Debug logging
@@ -80,13 +80,22 @@ const ServicesList = ({ services, onServiceSelect }: ServicesListProps) => {
           const category = getServiceCategory(service.title);
           const serviceIcon = getServiceIcon(service.title, service.icon);
           
+          const handleCardClick = () => {
+            if (service.link) {
+              navigate(service.link);
+            } else if (service.id) {
+              navigate(`/services/${service.id}`);
+            }
+          };
+
           return (
             <div 
               key={service.id || index} 
-              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 overflow-hidden group"
+              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 group cursor-pointer flex flex-col min-h-[500px]"
+              onClick={handleCardClick}
             >
               {/* Service Header with Category Badge */}
-              <div className="relative bg-gradient-to-r from-blue-50 to-blue-100 p-6 text-center">
+              <div className="relative bg-gradient-to-r from-blue-50 to-blue-100 p-6 text-center flex-shrink-0">
                 <div className="absolute top-3 right-3">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${category.color}`}>
                     {category.name}
@@ -101,13 +110,13 @@ const ServicesList = ({ services, onServiceSelect }: ServicesListProps) => {
               </div>
               
               {/* Service Content */}
-              <div className="p-6 flex flex-col h-full">
-                <p className="text-gray-600 mb-4 leading-relaxed whitespace-pre-line flex-grow">
+              <div className="p-6 flex flex-col flex-grow min-h-0">
+                <p className="text-gray-600 mb-4 leading-relaxed whitespace-pre-line line-clamp-4">
                   {service.description}
                 </p>
                 
                 {/* Service Details */}
-                <div className="space-y-3 mb-6">
+                <div className="space-y-3 mb-6 flex-shrink-0">
                   {service.duration && (
                     <div className="flex items-center text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
                       <span className="w-5 h-5 mr-3 text-blue-500">⏱️</span>
@@ -126,21 +135,28 @@ const ServicesList = ({ services, onServiceSelect }: ServicesListProps) => {
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="space-y-3 mt-auto">
+                <div className="flex gap-3 mt-auto flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                   <button 
-                    onClick={() => onServiceSelect(service)}
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 transition duration-300 font-medium flex items-center justify-center shadow-md hover:shadow-lg"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('/booking');
+                    }}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 transition duration-300 font-medium flex items-center justify-center shadow-md hover:shadow-lg"
                   >
-                    <span className="mr-2">📋</span>
-                    Get Quote
+                    <span className="mr-2">📅</span>
+                    Book Now
                   </button>
                   
                   <button 
-                    onClick={() => navigate(service.link || '/booking')}
-                    className="w-full border-2 border-blue-600 text-blue-600 py-3 px-4 rounded-lg hover:bg-blue-600 hover:text-white transition duration-300 font-medium flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const link = service.link || (service.id ? `/services/${service.id}` : '/services');
+                      navigate(link);
+                    }}
+                    className="flex-1 border-2 border-blue-600 text-blue-600 py-3 px-4 rounded-lg hover:bg-blue-600 hover:text-white transition duration-300 font-medium flex items-center justify-center"
                   >
                     <span className="mr-2">ℹ️</span>
-                    Learn More
+                    View Details
                   </button>
                 </div>
               </div>

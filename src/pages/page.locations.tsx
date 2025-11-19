@@ -3,7 +3,7 @@ import { useLocations } from '../hook/useLocations';
 import { useGiveSectionId } from '../hook/useGiveSectionId';
 import SEO from '../component/business/SEO';
 import ErrorBoundary from '../component/ui/feedback/ErrorBoundary';
-import Locations from '../component/pages/Locations';
+import Locations from '../component/pages/page.Locations';
 
 const LocationsPage = () => {
   const { locations, serviceTypes, isLoading, error } = useLocations();

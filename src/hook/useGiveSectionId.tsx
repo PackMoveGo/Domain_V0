@@ -38,6 +38,18 @@ const defaultAboutSections: SectionConfig[] = [
   { id: 'quote-form', title: 'Quote Form Section' }
 ];
 
+// Default sections for contact page
+const defaultContactSections: SectionConfig[] = [
+  { id: 'contact-header', title: 'Contact Header Section' },
+  { id: 'contact-methods', title: 'Contact Methods Section' },
+  { id: 'office-locations', title: 'Office Locations Section' },
+  { id: 'contact-form', title: 'Contact Form Section' },
+  { id: 'faq', title: 'FAQ Section' },
+  { id: 'business-hours', title: 'Business Hours Section' },
+  { id: 'contact-cta', title: 'Contact CTA Section' },
+  { id: 'quote-form', title: 'Quote Form Section' }
+];
+
 // Default sections (home page for backward compatibility)
 const defaultSections = defaultHomeSections;
 
@@ -106,4 +118,4 @@ export const useGiveSectionId = (sections: SectionConfig[] = defaultSections) =>
 };
 
 // Export specific section configurations for different pages
-export { defaultHomeSections, defaultAboutSections }; 
+export { defaultHomeSections, defaultAboutSections, defaultContactSections }; 

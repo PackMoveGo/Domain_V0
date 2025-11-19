@@ -59,8 +59,18 @@ export interface CoverageZone {
  */
 export const getAllServiceAreas = async (): Promise<ServiceArea[]> => {
   try {
-    console.log('🔧 Fetching all service areas from public API...');
     const response = await api.makeRequest('/v0/serviceAreas') as any;
+    
+    // CRITICAL: Check if response is an error object (503 or other errors) - MUST CHECK FIRST
+    if (response && typeof response === 'object' && 
+        ((response as any).error || (response as any).is503Error || (response as any).statusCode === 503 || (response as any).isConnectionError)) {
+      console.warn('⚠️ Service areas API returned error response:', response);
+      const error = new Error((response as any).message || '503 Service Unavailable');
+      (error as any).is503Error = true;
+      (error as any).statusCode = (response as any).statusCode || 503;
+      (error as any).isConnectionError = (response as any).isConnectionError || false;
+      throw error;
+    }
     
     const areas: ServiceArea[] = response.areas?.map((area: any) => ({
       id: area.id || area._id,
@@ -84,13 +94,12 @@ export const getAllServiceAreas = async (): Promise<ServiceArea[]> => {
       updatedAt: area.updatedAt || area.updated_at || new Date().toISOString()
     })) || [];
 
-    console.log('✅ Service areas loaded:', areas.length);
     return areas;
   } catch (error) {
     console.error('❌ Failed to fetch service areas:', error);
     
     // Check if it's a 503 error and handle it appropriately
-    if (error instanceof Error && error.message.includes('503')) {
+    if (error instanceof Error && ((error as any).is503Error || error.message.includes('503'))) {
       console.warn('⚠️ Service areas API returned 503 - Service Unavailable');
       handleApiError(error, '/v0/serviceAreas', {
         context: 'Service Areas API',

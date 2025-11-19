@@ -98,8 +98,26 @@ export default function OurServices({ services: propServices, isLoading: _isLoad
           </div>
           
           <div className={styles.grid.services}>
-            {services.map((service: NormalizedService) => (
-              <div key={service.title} className={`${styles.card.default} hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1`}>
+            {services
+              .filter(service => 
+                service.id === 'house-mover' || 
+                service.id === 'gun-safe' || 
+                service.id === 'furniture-assembly' ||
+                service.id === 'residential'
+              )
+              .slice(0, 4)
+              .map((service: NormalizedService) => {
+              const handleCardClick = () => {
+                const link = service.link || (service.id ? `/services/${service.id}` : '/services');
+                navigate(link);
+              };
+              
+              return (
+              <div 
+                key={service.title} 
+                className={`${styles.card.default} hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer`}
+                onClick={handleCardClick}
+              >
                 <div className="text-4xl mb-4">{service.icon}</div>
                 <h3 className={styles.heading.h3}>{service.title}</h3>
                 <p className="text-blue-600 font-medium mb-2">{getDisplay(service.duration)}</p>
@@ -126,22 +144,30 @@ export default function OurServices({ services: propServices, isLoading: _isLoad
                   </div>
                 </div>
                 
-                <div className="flex space-x-4 mt-6">
+                <div className="flex space-x-4 mt-6" onClick={(e) => e.stopPropagation()}>
                   <button 
-                    onClick={() => navigate('/booking')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('/booking');
+                    }}
                     className={`flex-1 ${styles.button.primary}`}
                   >
                     Book Now
                   </button>
                   <button 
-                    onClick={() => navigate('/services')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const link = service.link || (service.id ? `/services/${service.id}` : '/services');
+                      navigate(link);
+                    }}
                     className={`flex-1 ${styles.button.secondary}`}
                   >
-                    Learn More
+                    View Details
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
           
           <div className="text-center mt-12">

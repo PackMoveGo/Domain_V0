@@ -104,7 +104,7 @@ export function useGeolocation() {
         state: cached.state,
         country: cached.country
       });
-      console.log('✅ [GEOLOCATION] Retrieved from cache');
+      // Retrieved from cache - no logging needed
       return;
     }
 
@@ -144,7 +144,7 @@ export function useGeolocation() {
               isLoading: false
             });
             saveToCache(locationData);
-            console.log('✅ [GEOLOCATION] Retrieved from backend proxy');
+            // Retrieved from backend - no logging needed
             isLoadingRef.current = false;
             return;
           }

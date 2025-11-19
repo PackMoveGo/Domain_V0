@@ -44,7 +44,6 @@ class ApiConsentCoordinator {
     // Listen for consent state changes
     addConsentStateListener((hasConsent: boolean) => {
       if (hasConsent) {
-        console.log('🍪 [COORDINATOR] Consent granted - retrying pending API calls');
         this.retryPendingCalls();
       }
     });
@@ -52,12 +51,10 @@ class ApiConsentCoordinator {
     // Listen for window events
     if (typeof window !== 'undefined') {
       window.addEventListener('api-consent-granted', () => {
-        console.log('🍪 [COORDINATOR] Consent granted event received - retrying pending calls');
         this.retryPendingCalls();
       });
 
       window.addEventListener('cookie-opt-in', () => {
-        console.log('🍪 [COORDINATOR] Cookie opt-in event received');
         // Small delay to ensure state is updated
         setTimeout(() => {
           this.retryPendingCalls();
@@ -65,7 +62,6 @@ class ApiConsentCoordinator {
       });
     }
 
-    console.log('🔧 [COORDINATOR] API Consent Coordinator initialized');
   }
 
   /**
@@ -121,7 +117,6 @@ class ApiConsentCoordinator {
       retryCount: 0
     });
 
-    console.log(`🍪 [COORDINATOR] Added pending API call: ${endpoint} (${context})`);
   }
 
   /**
@@ -138,7 +133,6 @@ class ApiConsentCoordinator {
 
     keysToRemove.forEach(key => {
       this.pendingCalls.delete(key);
-      console.log(`🍪 [COORDINATOR] Removed pending API call: ${key}`);
     });
   }
 
@@ -147,7 +141,6 @@ class ApiConsentCoordinator {
    */
   async retryPendingCalls(): Promise<void> {
     if (this.pendingCalls.size === 0) {
-      console.log('🍪 [COORDINATOR] No pending API calls to retry');
       return;
     }
 
@@ -164,7 +157,6 @@ class ApiConsentCoordinator {
       console.warn('⚠️ [COORDINATOR] Could not clear global block:', error);
     }
 
-    console.log(`🍪 [COORDINATOR] Retrying ${this.pendingCalls.size} pending API calls`);
 
     const callsToRetry = Array.from(this.pendingCalls.values());
     
@@ -179,7 +171,6 @@ class ApiConsentCoordinator {
       await new Promise(resolve => setTimeout(resolve, i * this.retryDelay));
 
       try {
-        console.log(`🍪 [COORDINATOR] Retrying: ${call.endpoint} (${call.context})`);
         await call.apiCall();
         console.log(`✅ [COORDINATOR] Successfully retried: ${call.endpoint}`);
       } catch (error) {
@@ -190,7 +181,6 @@ class ApiConsentCoordinator {
           if (call.retryCount < this.maxRetries) {
             const key = `${call.endpoint}-${call.context}-${Date.now()}`;
             this.pendingCalls.set(key, call);
-            console.log(`🍪 [COORDINATOR] Still consent-blocked, re-queued: ${call.endpoint}`);
           } else {
             console.warn(`⚠️ [COORDINATOR] Max retries reached for: ${call.endpoint}`);
           }
@@ -208,7 +198,6 @@ class ApiConsentCoordinator {
   clearPendingCalls(): void {
     const count = this.pendingCalls.size;
     this.pendingCalls.clear();
-    console.log(`🍪 [COORDINATOR] Cleared ${count} pending API calls`);
   }
 
   /**

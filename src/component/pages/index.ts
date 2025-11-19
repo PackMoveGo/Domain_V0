@@ -1,11 +1,11 @@
 // Page Components - Specific to individual pages
-export { default as ContactPage } from './ContactPage';
+export { default as ContactPage } from './page.Contact';
 // export { default as Hero } from './Hero';
-// export { default as Reviews } from './Reviews';
-// export { default as Locations } from './Locations';
-// export { default as Supplies } from './Supplies';
+export { default as Reviews } from './page.Reviews';
+export { default as Locations } from './page.Locations';
+export { default as Supplies } from './page.Supplies';
 // export { default as FAQ } from './FAQ';
-// export { default as Blog } from './Blog';
-// export { default as BlogWithApi } from './BlogWithApi';
-// export { default as AboutPageExample } from './AboutPageExample';
-// export { default as ReferPage } from './ReferPage';
+export { default as Blog } from './page.Blog';
+export { default as BlogWithApi } from './page.BlogWithApi';
+export { default as AboutPage } from './page.About';
+export { default as ReferPage } from './page.Refer';

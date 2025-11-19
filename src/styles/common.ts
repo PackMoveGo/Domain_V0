@@ -25,7 +25,7 @@ export const styles = {
   },
   grid: {
     services: 'grid grid-cols-1 md:grid-cols-3 gap-8',
-    form: 'grid grid-cols-1 md:grid-cols-3 gap-4',
+    form: 'grid grid-cols-1 lg:grid-cols-3 gap-4',
   },
   text: {
     body: 'text-lg sm:text-xl md:text-2xl text-black mb-8 max-w-2xl',

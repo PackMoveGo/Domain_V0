@@ -35,6 +35,17 @@ export async function fetchSuppliesData(): Promise<SuppliesData> {
     console.log('📡 Response type:', typeof response);
     console.log('📡 Response keys:', response ? Object.keys(response) : 'null/undefined');
     
+    // CRITICAL: Check if response is an error object (503 or other errors) - MUST CHECK FIRST
+    if (response && typeof response === 'object' && 
+        ((response as any).error || (response as any).is503Error || (response as any).statusCode === 503 || (response as any).isConnectionError)) {
+      console.warn('⚠️ Supplies API returned error response:', response);
+      const error = new Error((response as any).message || '503 Service Unavailable');
+      (error as any).is503Error = true;
+      (error as any).statusCode = (response as any).statusCode || 503;
+      (error as any).isConnectionError = (response as any).isConnectionError || false;
+      throw error;
+    }
+    
     // Handle different response formats
     let suppliesData: SupplyCategory[] = [];
     

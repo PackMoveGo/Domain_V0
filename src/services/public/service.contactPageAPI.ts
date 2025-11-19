@@ -173,9 +173,9 @@ export const getContactInfo = async (): Promise<ContactInfo> => {
     const contactInfo: ContactInfo = {
       title: response.title || 'Contact Pack Move Go',
       description: response.description || 'Get in touch with us for professional moving services',
-      mainPhone: response.mainPhone || '(949) 414-5282',
+      mainPhone: response.mainPhone || 'Pending',
       mainEmail: response.mainEmail || 'info@packmovego.com',
-      emergencyPhone: response.emergencyPhone || '(949) 414-5282',
+      emergencyPhone: response.emergencyPhone || 'Pending',
       website: response.website || 'https://packmovego.com'
     };
 
@@ -216,7 +216,7 @@ export const getOfficeLocations = async (): Promise<OfficeLocation[]> => {
         zip: location.address?.zip || '92602',
         fullAddress: location.address?.fullAddress || 'TBA, Orange County, CA 92602'
       },
-      phone: location.phone || '(949) 414-5282',
+      phone: location.phone || 'Pending',
       email: location.email || 'info@packmovego.com',
       hours: location.hours || {},
       services: location.services || []
@@ -252,7 +252,7 @@ export const getContactMethods = async (): Promise<ContactMethod[]> => {
       id: method.id || method._id || `method-${Math.random().toString(36).substr(2, 9)}`,
       title: method.title || 'Contact Method',
       description: method.description || 'Get in touch with us',
-      primary: method.primary || '(949) 414-5282',
+      primary: method.primary || 'Pending',
       secondary: method.secondary,
       hours: method.hours,
       icon: method.icon || '📞',
@@ -358,7 +358,7 @@ export const getBusinessHours = async (): Promise<BusinessHours> => {
         saturday: { open: '9:00 AM', close: '4:00 PM', status: 'open' },
         sunday: { open: '10:00 AM', close: '3:00 PM', status: 'open' }
       },
-      emergency: response.emergency || 'For urgent matters, call our emergency line at (949) 414-5282 (pending)'
+      emergency: response.emergency || 'For urgent matters, call our emergency line at Pending'
     };
 
     contactPageCache.set(cacheKey, businessHours);
@@ -539,9 +539,9 @@ export const API_ContactPage = async (): Promise<ContactPageData> => {
       contactInfo: {
         title: consolidatedData.contact?.title || 'Contact Pack Move Go',
         description: consolidatedData.contact?.description || 'Get in touch with us for professional moving services',
-        mainPhone: consolidatedData.contact?.mainPhone || '(949) 414-5282',
+        mainPhone: consolidatedData.contact?.mainPhone || 'Pending',
         mainEmail: consolidatedData.contact?.mainEmail || 'info@packmovego.com',
-        emergencyPhone: consolidatedData.contact?.emergencyPhone || '(949) 414-5282',
+        emergencyPhone: consolidatedData.contact?.emergencyPhone || 'Pending',
         website: consolidatedData.contact?.website || 'https://packmovego.com'
       },
       officeLocations: consolidatedData.contact?.locations || consolidatedData.contact?.officeLocations || [],
@@ -550,7 +550,7 @@ export const API_ContactPage = async (): Promise<ContactPageData> => {
           id: 'phone',
           title: 'Call Us',
           description: 'Speak with our team directly',
-          primary: '(949) 414-5282',
+          primary: 'Pending',
           hours: 'Mon-Fri 8AM-6PM',
           icon: '📞',
           color: 'bg-blue-600'
@@ -582,7 +582,7 @@ export const API_ContactPage = async (): Promise<ContactPageData> => {
           saturday: { open: '9:00 AM', close: '4:00 PM', status: 'open' },
           sunday: { open: '10:00 AM', close: '3:00 PM', status: 'open' }
         },
-        emergency: consolidatedData.contact?.businessHours?.emergency || 'For urgent matters, call our emergency line at (949) 414-5282 (pending)'
+        emergency: consolidatedData.contact?.businessHours?.emergency || 'For urgent matters, call our emergency line at Pending'
       },
       lastUpdated: new Date().toISOString()
     };
@@ -601,7 +601,7 @@ export const API_ContactPage = async (): Promise<ContactPageData> => {
           zip: location.address?.zip || '92602',
           fullAddress: location.address?.fullAddress || 'TBA, Orange County, CA 92602'
         },
-        phone: location.phone || '(949) 414-5282',
+        phone: location.phone || 'Pending',
         email: location.email || 'info@packmovego.com',
         hours: location.hours || {},
         services: location.services || []
@@ -615,7 +615,7 @@ export const API_ContactPage = async (): Promise<ContactPageData> => {
         id: method.id || method._id || `method-${Math.random().toString(36).substr(2, 9)}`,
         title: method.title || 'Contact Method',
         description: method.description || 'Get in touch with us',
-        primary: method.primary || '(949) 414-5282',
+        primary: method.primary || 'Pending',
         secondary: method.secondary,
         hours: method.hours,
         icon: method.icon || '📞',

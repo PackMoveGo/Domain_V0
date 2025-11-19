@@ -7,21 +7,13 @@ import { useGiveSectionId } from '../hook/useGiveSectionId';
 import { searchContent, SearchResult } from '../util/search';
 import ErrorBoundary from '../component/ui/feedback/ErrorBoundary';
 import ServicesList from '../component/business/services/ServicesList';
-import QuoteFormSection from '../component/forms/QuoteFormSection';
+import QuoteForm from '../component/forms/form.quote';
 import { useServicesData } from '../util/serviceParser';
 import { LoadingSpinner } from '../component/ui/LoadingSpinner';
 import { ServicesUnavailable } from '../component/business/services/ServicesUnavailable';
 import { isConsentBlockedError } from '../util/apiConsentCoordinator';
 
-interface FormData {
-  fromZip: string;
-  toZip: string;
-  moveDate: string;
-  rooms: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-}
+// FormData interface moved to form.quote.tsx
 
 const Services: FC = () => {
   const navigate = useNavigate();
@@ -39,15 +31,6 @@ const Services: FC = () => {
   const [sortBy, setSortBy] = useState<'name' | 'price' | 'duration'>('name');
   const [currentPage, setCurrentPage] = useState(1);
   const [servicesPerPage] = useState(9); // 3x3 grid
-  const [formData, setFormData] = useState<FormData>({
-    fromZip: '',
-    toZip: '',
-    moveDate: '',
-    rooms: '',
-    firstName: '',
-    lastName: '',
-    phone: ''
-  });
 
   // Handle cookie consent for services
   const handleAcceptCookies = useCallback(() => {
@@ -170,20 +153,6 @@ const Services: FC = () => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory, sortBy]);
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  }, []);
-
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    navigate('/booking');
-  }, [formData, navigate]);
-
   const handleServiceSelect = useCallback(() => {
     navigate('/booking');
   }, [navigate]);
@@ -194,11 +163,6 @@ const Services: FC = () => {
 
   const _handleSearchComplete = useCallback((results: SearchResult[]) => { // Reserved for future use
     console.log('Search completed:', results);
-  }, []);
-
-  const handleQuoteSubmit = useCallback((data: FormData) => {
-    console.log('Quote form submitted:', data);
-    // Handle form submission logic here
   }, []);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -471,12 +435,7 @@ const Services: FC = () => {
         {/* Quote Form Section */}
         <section {...getSectionProps('quote-form')} className="py-16 bg-white">
           <ErrorBoundary>
-            <QuoteFormSection 
-              formData={formData}
-              onChange={handleChange}
-              onSubmit={handleSubmit}
-              onQuoteSubmit={handleQuoteSubmit}
-            />
+            <QuoteForm />
           </ErrorBoundary>
         </section>
       </div>

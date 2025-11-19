@@ -104,7 +104,7 @@ export const getFooterServices = async (): Promise<FooterServiceData[]> => {
  */
 export const getFooterContactInfo = async (): Promise<FooterContactInfo> => {
   return {
-    phone: '(949) 414-5282',
+    phone: 'Pending',
     email: 'info@packmovego.com',
     address: '1369 Adams Ave, Costa Mesa, 92626',
     website: 'https://packmovego.com'
@@ -241,7 +241,7 @@ export const getFooterData = async (): Promise<FooterData> => {
       return {
       services: [],
       contactInfo: {
-        phone: '(949) 414-5282',
+        phone: 'Pending',
         email: 'info@packmovego.com',
         address: '1369 Adams Ave, Costa Mesa, 92626',
         website: 'https://packmovego.com'
@@ -267,7 +267,7 @@ export const getFooterData = async (): Promise<FooterData> => {
     return {
       services: [],
       contactInfo: {
-        phone: '(949) 414-5282',
+        phone: 'Pending',
         email: 'info@packmovego.com',
         address: '1369 Adams Ave, Costa Mesa, 92626',
         website: 'https://packmovego.com'

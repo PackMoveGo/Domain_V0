@@ -1,7 +1,8 @@
 import React, { lazy, Suspense } from 'react';
 import { getComprehensiveContactPageData } from '../services/public/service.contactPageAPI';
-import { useGiveSectionId } from '../hook/useGiveSectionId';
+import { useGiveSectionId, defaultContactSections } from '../hook/useGiveSectionId';
 import { useCookiePreferences } from '../context/CookiePreferencesContext';
+import ErrorBoundary from '../component/ui/feedback/ErrorBoundary';
 // Modal state is handled by Layout component
 
 // Lazy load contact components
@@ -12,6 +13,7 @@ const ContactFormSection = lazy(() => import('../component/business/contact/bann
 const ContactFAQ = lazy(() => import('../component/pages/banner.FAQ'));
 const BusinessHoursSection = lazy(() => import('../component/business/contact/banner.businessHours'));
 const ContactCTA = lazy(() => import('../component/business/contact/banner.contactCTA'));
+const QuoteForm = lazy(() => import('../component/forms/form.quote'));
 
 // Add displayName to lazy components
 (ContactHeader as any).displayName = 'ContactHeader';
@@ -38,7 +40,7 @@ export default function ContactPage() {
   // Modal state is handled by Layout component
 
   // Section verification and tracking
-  const { getSectionProps } = useGiveSectionId();
+  const { getSectionProps } = useGiveSectionId(defaultContactSections);
 
   // Load contact page data using comprehensive API service with modal middleware
   const loadContactPageData = React.useCallback(async () => {
@@ -492,6 +494,22 @@ export default function ContactPage() {
                 isLoading={isLoadingData}
               />
             </Suspense>
+          </section>
+
+          {/* Quote Form Section */}
+          <section {...getSectionProps('quote-form')}>
+            <ErrorBoundary>
+              <Suspense fallback={
+                <div className="py-16 bg-gray-50 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading Quote Form...</p>
+                  </div>
+                </div>
+              }>
+                <QuoteForm />
+              </Suspense>
+            </ErrorBoundary>
           </section>
         </div>
         

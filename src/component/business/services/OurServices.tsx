@@ -75,7 +75,15 @@ export default function OurServices({ services: propServices }: OurServicesProps
           </div>
           
           <div className={styles.grid.services}>
-            {services.map((service: ServiceData) => (
+            {services
+              .filter(service => 
+                service.id === 'house-mover' || 
+                service.id === 'gun-safe' || 
+                service.id === 'furniture-assembly' ||
+                service.id === 'residential'
+              )
+              .slice(0, 4)
+              .map((service: ServiceData) => (
               <div key={service.title} className={`${styles.card.default} hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1`}>
                 <div className="text-4xl mb-4">{service.icon}</div>
                 <h3 className={styles.heading.h3}>{service.title}</h3>

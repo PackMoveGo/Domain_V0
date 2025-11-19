@@ -169,7 +169,7 @@ import SignupForm from '../forms/SignupForm';
 
 ### Importing Page Components
 ```tsx
-import ContactPage from '../pages/ContactPage';
+import ContactPage from '../pages/page.Contact';
 import Hero from '../pages/hero.home';
 ```
 

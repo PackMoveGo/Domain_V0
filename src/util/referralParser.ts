@@ -95,6 +95,17 @@ export async function fetchReferralData(): Promise<ReferralData> {
     console.log('📡 Response type:', typeof response);
     console.log('📡 Response keys:', response ? Object.keys(response) : 'null/undefined');
     
+    // CRITICAL: Check if response is an error object (503 or other errors) - MUST CHECK FIRST
+    if (response && typeof response === 'object' && 
+        ((response as any).error || (response as any).is503Error || (response as any).statusCode === 503 || (response as any).isConnectionError)) {
+      console.warn('⚠️ Referral API returned error response:', response);
+      const error = new Error((response as any).message || '503 Service Unavailable');
+      (error as any).is503Error = true;
+      (error as any).statusCode = (response as any).statusCode || 503;
+      (error as any).isConnectionError = (response as any).isConnectionError || false;
+      throw error;
+    }
+    
     // Handle different response formats
     if (response && response.referralProgram && response.howItWorks && response.referralStats) {
       console.log('✅ Referral data loaded successfully');
@@ -105,10 +116,6 @@ export async function fetchReferralData(): Promise<ReferralData> {
     } else if (response && response.success && response.data && response.data.referralProgram) {
       console.log('✅ Referral data loaded from wrapped response');
       return response.data as ReferralData;
-    } else if (response && typeof response === 'object') {
-      // Try to extract data directly if it's the referral object
-      console.log('✅ Referral data loaded - using response directly');
-      return response as ReferralData;
     } else {
       console.warn('⚠️ Unexpected referral data format:', response);
       console.warn('⚠️ Expected structure: { referralProgram: {...}, howItWorks: [...], referralStats: {...}, ... }');

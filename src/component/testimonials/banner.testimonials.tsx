@@ -59,18 +59,35 @@ const Testimonials: React.FC<TestimonialsProps> = ({ testimonials, isLoading, er
 
   // Handle empty testimonials
   if (!testimonials || testimonials.length === 0) {
+    // Determine if API is connected (no error) but no data
+    const isApiConnected = !error && !isLoading;
+    
     return (
       <div className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">What Our Customers Say</h2>
-            <p className="text-gray-600 mb-4">
-              {error && error.includes('503') 
-                ? 'Testimonials temporarily unavailable. Please check back soon.' 
-                : 'No testimonials available at the moment.'}
-            </p>
-            {error && error.includes('503') && (
-              <p className="text-sm text-gray-500 mb-4">Status: 503 Service Unavailable</p>
+            {isApiConnected ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-2xl mx-auto">
+                <div className="text-blue-600 text-4xl mb-4">💬</div>
+                <h3 className="text-lg font-semibold text-blue-800 mb-2">No Recent Testimonials Available</h3>
+                <p className="text-blue-700">
+                  No recent testimonials available at the moment. Check back soon to see what our customers are saying!
+                </p>
+              </div>
+            ) : error ? (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-2xl mx-auto">
+                <div className="text-yellow-600 text-4xl mb-4">⚠️</div>
+                <h3 className="text-lg font-semibold text-yellow-800 mb-2">Testimonials Temporarily Unavailable</h3>
+                <p className="text-yellow-700 mb-4">
+                  We're experiencing technical difficulties loading testimonials. Please check back soon.
+                </p>
+                {error.includes('503') && (
+                  <p className="text-sm text-yellow-600 mb-4">Status: 503 Service Unavailable</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-600 mb-4">No testimonials available at the moment.</p>
             )}
           </div>
         </div>

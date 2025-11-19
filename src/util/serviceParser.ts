@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { api } from "../services/service.apiSW";
 import { normalizeServices, NormalizedService } from "./serviceNormalizer";
-import { logger } from "./debug";
+import { logger as debugLogger } from "./debug";
 import { handleApiError } from "./apiErrorHandler";
+import { FALLBACK_SERVICES } from "../data/fallbackData";
+import { logger } from "./logger";
 
 // Global cache for services
 let servicesCache: NormalizedService[] | null = null;
@@ -26,9 +28,11 @@ export function useServicesData(autoLoad = true) {
     setLoading(true);
     setError(null);
     
+    // Get current time for cache and fallback operations
+    const now = Date.now();
+    
     try {
       // Check cache first
-      const now = Date.now();
       if (!force && servicesCache && (now - servicesCacheTime) < SERVICES_CACHE_DURATION) {
         logger.debug('Using cached services data', { count: servicesCache.length }, { sensitive: true });
         setServices(servicesCache);
@@ -40,18 +44,8 @@ export function useServicesData(autoLoad = true) {
       // Check if we have data from batch loading
       const batchData = (window as any).__INITIAL_SERVICES_DATA__;
       if (batchData) {
-        console.log('🔧 serviceParser: Using batch-loaded services data:', {
-          hasBatchData: !!batchData,
-          hasServices: !!(batchData.services),
-          servicesCount: batchData.services?.length || 0,
-          batchData: batchData
-        });
-        logger.debug('Using batch-loaded services data', { count: batchData.services?.length || 0 }, { sensitive: true });
+        debugLogger.debug('Using batch-loaded services data', { count: batchData.services?.length || 0 }, { sensitive: true });
         const normalizedServices = normalizeServices(batchData.services || []);
-        console.log('🔧 serviceParser: Batch data normalized:', {
-          normalizedCount: normalizedServices.length,
-          normalizedServices: normalizedServices
-        });
         servicesCache = normalizedServices;
         servicesCacheTime = now;
         setServices(normalizedServices);
@@ -59,25 +53,14 @@ export function useServicesData(autoLoad = true) {
         setLoading(false);
         // Clear the batch data to prevent memory leaks
         delete (window as any).__INITIAL_SERVICES_DATA__;
-        console.log('🔧 serviceParser: Batch data processed and cleared');
         return;
       }
 
-      logger.debug('Fetching services from API', null, { sensitive: true });
-      console.log('🔧 serviceParser: Fetching services from API...');
+      debugLogger.debug('Fetching services from API', null, { sensitive: true });
       const response = await api.getServices();
-      console.log('🔧 serviceParser: Raw API response received:', {
-        hasResponse: !!response,
-        hasServices: !!(response && response.services),
-        servicesCount: response?.services?.length || 0
-      });
       
       if (response && response.services) {
-        console.log('🔧 serviceParser: Normalizing services data...', {
-          count: response.services.length
-        });
         const normalizedServices = normalizeServices(response.services);
-        console.log('🔧 serviceParser: Normalized services count:', normalizedServices.length);
         
         // Cache the results
         servicesCache = normalizedServices;
@@ -85,28 +68,37 @@ export function useServicesData(autoLoad = true) {
         
         setServices(normalizedServices);
         setHasLoadedFromApi(true);
-        logger.debug('Services loaded and cached successfully', { count: response.services.length }, { sensitive: true });
-        console.log('🔧 serviceParser: Services successfully loaded and cached');
+        debugLogger.debug('Services loaded and cached successfully', { count: response.services.length }, { sensitive: true });
       } else {
-        console.error('🔧 serviceParser: Invalid services response format:', response);
         throw new Error('Invalid services response format');
       }
     } catch (err) {
       // Check if this is a 503 error
-      if (err instanceof Error && (err as any).is503Error) {
+      const is503Error = err instanceof Error && (err as any).is503Error;
+      
+      if (is503Error) {
         setError('503 Service Unavailable');
+        // Use fallback services when API is unavailable
+        debugLogger.debug('Using fallback services due to 503 error', { count: FALLBACK_SERVICES.length }, { sensitive: true });
+        const normalizedFallback = normalizeServices(FALLBACK_SERVICES);
+        servicesCache = normalizedFallback;
+        servicesCacheTime = now;
+        setServices(normalizedFallback);
+        setHasLoadedFromApi(false); // Mark as not from API
       } else {
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch services';
         setError(errorMessage);
       }
       logger.error('Failed to fetch services', err);
       
-      // Use centralized error handling
-      handleApiError(err, '/v0/services', {
-        context: 'serviceParser',
-        showModal: true,
-        logError: true
-      });
+      // Use centralized error handling (but don't show modal for 503 if we have fallback)
+      if (!is503Error) {
+        handleApiError(err, '/v0/services', {
+          context: 'serviceParser',
+          showModal: true,
+          logError: true
+        });
+      }
     } finally {
       setLoading(false);
     }

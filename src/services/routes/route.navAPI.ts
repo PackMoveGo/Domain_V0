@@ -247,7 +247,6 @@ export const getMainNavigation = async (): Promise<NavItem[]> => {
  */
 export const getFooterNavigation = async (): Promise<NavItem[]> => {
   try {
-    console.log('🔧 Fetching footer navigation from public API...');
     const response = await api.makeRequest('/v0/nav/footer') as any;
     
     const navItems: NavItem[] = response.footerNav?.map((item: any) => ({
@@ -258,7 +257,6 @@ export const getFooterNavigation = async (): Promise<NavItem[]> => {
       isVisible: item.isVisible !== false
     })) || [];
 
-    console.log('✅ Footer navigation loaded:', navItems.length);
     return navItems;
   } catch (error) {
     console.error('❌ Failed to fetch footer navigation:', error);

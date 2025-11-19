@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useCookiePreferences } from '../context/CookiePreferencesContext';
+import { useCookiePreferences } from '../../context/CookiePreferencesContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getCurrentTimestamp } from '../util/ssrUtils';
-import { retryPendingApiCalls } from '../util/apiConsentCoordinator';
+import { getCurrentTimestamp } from '../../util/ssrUtils';
+import { retryPendingApiCalls } from '../../util/apiConsentCoordinator';
 
 interface CookiePreferences {
   thirdPartyAds: boolean;
@@ -40,7 +40,6 @@ const CookieOptOut: React.FC = () => {
       returnPathRef.current = currentPath;
       // Also store in sessionStorage as backup
       sessionStorage.setItem('packmovego-return-path', currentPath);
-      console.log('🍪 CookieOptOut: Stored return path:', currentPath);
     }
   }, [isFullPage, location.pathname, location.search, location.hash]);
   
@@ -178,7 +177,6 @@ const CookieOptOut: React.FC = () => {
     if (isSSR) return;
     
     const handleCookieReset = () => {
-      console.log('🍪 Cookie consent reset event received - showing modal');
       setIsVisible(true);
       setIsFadingOut(false);
     };
@@ -208,27 +206,21 @@ const CookieOptOut: React.FC = () => {
   }, [isVisible, isLoading, isInitialized, isFullPage]);
 
   const handleOptIn = () => {
-    console.log('🍪 CookieOptOut: handleOptIn called');
-    console.log('🍪 CookieOptOut: optIn function available:', !!optIn);
-    console.log('🍪 CookieOptOut: hasMadeChoice:', hasMadeChoice, 'hasOptedOut:', hasOptedOut);
     
     setSelectedOption('accept');
     
     if (optIn) {
-      console.log('🍪 CookieOptOut: Calling optIn function');
       setIsTransitioning(true);
       optIn();
       
       // Set last banner time to now (will show again in 30 minutes)
       if (!isSSR) {
         localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
-        console.log('🍪 Cookie banner opt-in - will show again in 30 minutes');
       }
       
       // Trigger API retry after consent is granted
       if (!isSSR) {
         setTimeout(() => {
-          console.log('🍪 CookieOptOut: Triggering API retry after consent granted');
           retryPendingApiCalls();
         }, 300);
       }
@@ -238,7 +230,6 @@ const CookieOptOut: React.FC = () => {
         setTimeout(() => {
           const returnPath = sessionStorage.getItem('packmovego-return-path') || '/';
           sessionStorage.removeItem('packmovego-return-path');
-          console.log('🍪 CookieOptOut: Navigating to return path after opt-in (full page mode):', returnPath);
           navigate(returnPath);
         }, 500);
       } else {
@@ -250,7 +241,6 @@ const CookieOptOut: React.FC = () => {
           setIsTransitioning(false);
           
           // Don't navigate - user stays on the page they were on
-          console.log('🍪 CookieOptOut: User opted in, staying on current page:', location.pathname);
         }, 300);
       }
     } else {
@@ -290,7 +280,6 @@ const CookieOptOut: React.FC = () => {
     // Set last banner time to now (dismiss for 30 minutes) (SSR-safe)
     if (!isSSR) {
       localStorage.setItem('packmovego-last-banner-time', getCurrentTimestamp().toString());
-      console.log('🍪 Cookie banner dismissed - will show again in 30 minutes');
     }
     // Clear cache
     if (clearBannerCache) clearBannerCache();

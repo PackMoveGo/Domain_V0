@@ -35,14 +35,11 @@ export function useReviews() {
       const authenticated = checkAuth();
       setIsAuthenticated(authenticated);
       
-      console.log('🔄 Loading reviews data...', { authenticated });
-      
       // Use user API if authenticated, otherwise use public API
       const reviewsData = await fetchReviewsData(authenticated);
       setReviews(reviewsData.reviews);
       setStats(reviewsData.stats);
       setServices(reviewsData.services);
-      console.log('✅ Reviews loaded successfully:', reviewsData.reviews.length, 'reviews,', reviewsData.services.length, 'services');
     } catch (err) {
       // Check if this is a 503 error
       if (err instanceof Error && (err as any).is503Error) {
@@ -71,7 +68,7 @@ export function useReviews() {
         throw new Error('You must be logged in to submit a review');
       }
       
-      console.log('🔄 Submitting review...');
+      // Review submission - no verbose logging needed
       const newReview = await submitReview(reviewData);
       
       // Refresh reviews after submission

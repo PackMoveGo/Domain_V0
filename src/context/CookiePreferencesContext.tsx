@@ -122,11 +122,6 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
       emitConsentStateChange(hasConsent);
       emitConsentChange(hasConsent);
       
-      console.log('🍪 [CONTEXT] Consent state updated:', {
-        hasConsent,
-        isApiBlocked,
-        hasOptedIn
-      });
     }
   }, [isLoading, hasConsent, isApiBlocked, hasOptedIn]);
 
@@ -170,7 +165,6 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
         hasMadeChoice: preferences.hasMadeChoice,
         lastUpdated: preferencesWithTimestamp.lastUpdated
       };
-      console.log('🍪 Cookie preferences updated:', reportWithOptIn);
     }
   }, [preferences, isLoading, hasOptedOut, hasOptedIn]);
 
@@ -212,7 +206,6 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
   };
 
   const optIn = () => {
-    console.log('🍪 optIn called - starting cookie consent process');
     const newPreferences = {
       thirdPartyAds: true,
       analytics: true,
@@ -221,7 +214,6 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
       lastUpdated: getCurrentTimestamp(),
     };
     
-    console.log('🍪 Setting new preferences:', newPreferences);
     setPreferences(newPreferences);
     
     // Update last banner time (SSR-safe)
@@ -238,7 +230,6 @@ export const CookiePreferencesProvider: React.FC<CookiePreferencesProviderProps>
       emitConsentChange(true);
       
       // Check for pending API errors now that consent is given
-      console.log('🍪 Checking for pending API errors after consent');
       setTimeout(() => {
         checkPendingApiErrors();
         // Trigger retry for any pending API calls

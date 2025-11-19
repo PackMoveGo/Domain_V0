@@ -53,8 +53,18 @@ export interface TestimonialStats {
  */
 export const getAllTestimonials = async (): Promise<Testimonial[]> => {
   try {
-    console.log('🔧 Fetching all testimonials from public API...');
     const response = await api.makeRequest('/v0/testimonials') as any;
+    
+    // CRITICAL: Check if response is an error object (503 or other errors) - MUST CHECK FIRST
+    if (response && typeof response === 'object' && 
+        ((response as any).error || (response as any).is503Error || (response as any).statusCode === 503 || (response as any).isConnectionError)) {
+      console.warn('⚠️ Testimonials API returned error response:', response);
+      const error = new Error((response as any).message || '503 Service Unavailable');
+      (error as any).is503Error = true;
+      (error as any).statusCode = (response as any).statusCode || 503;
+      (error as any).isConnectionError = (response as any).isConnectionError || false;
+      throw error;
+    }
     
     const testimonials: Testimonial[] = response.testimonials?.map((testimonial: any) => ({
       id: testimonial.id || testimonial._id,
@@ -75,7 +85,6 @@ export const getAllTestimonials = async (): Promise<Testimonial[]> => {
       updatedAt: testimonial.updatedAt || testimonial.updated_at
     })) || [];
 
-    console.log('✅ Testimonials loaded:', testimonials.length);
     return testimonials;
   } catch (error) {
     console.error('❌ Failed to fetch testimonials:', error);
@@ -126,7 +135,6 @@ export const getFeaturedTestimonials = async (limit: number = 6): Promise<Testim
       updatedAt: testimonial.updatedAt || testimonial.updated_at
     })) || [];
 
-    console.log('✅ Featured testimonials loaded:', testimonials.length);
     return testimonials;
   } catch (error) {
     console.error('❌ Failed to fetch featured testimonials:', error);
@@ -180,7 +188,6 @@ export const getTestimonialsByRating = async (rating: number): Promise<Testimoni
       updatedAt: testimonial.updatedAt || testimonial.updated_at
     })) || [];
 
-    console.log('✅ Testimonials by rating loaded:', testimonials.length);
     return testimonials;
   } catch (error) {
     console.error('❌ Failed to fetch testimonials by rating:', error);
@@ -234,7 +241,6 @@ export const getRecentTestimonials = async (limit: number = 10): Promise<Testimo
       updatedAt: testimonial.updatedAt || testimonial.updated_at
     })) || [];
 
-    console.log('✅ Recent testimonials loaded:', testimonials.length);
     return testimonials;
   } catch (error) {
     console.error('❌ Failed to fetch recent testimonials:', error);
@@ -339,7 +345,6 @@ export const getTestimonialsByLocation = async (location: string): Promise<Testi
       updatedAt: testimonial.updatedAt || testimonial.updated_at
     })) || [];
 
-    console.log('✅ Testimonials by location loaded:', testimonials.length);
     return testimonials;
   } catch (error) {
     console.error('❌ Failed to fetch testimonials by location:', error);

@@ -137,9 +137,9 @@ function getFallbackContactData(): ContactData {
     contactInfo: {
       title: 'Contact Pack Move Go',
       description: 'Get in touch with us for professional moving services in Orange County. We\'re here to help make your move smooth and stress-free.',
-      mainPhone: '(949) 414-5282',
+      mainPhone: 'Pending',
       mainEmail: 'info@packmovego.com',
-      emergencyPhone: '(949) 414-5282',
+      emergencyPhone: 'Pending',
       website: 'https://packmovego.com'
     },
     officeLocations: [
@@ -154,7 +154,7 @@ function getFallbackContactData(): ContactData {
           zip: 'pending',
           fullAddress: 'pending'
         },
-        phone: '(949) 414-5282',
+        phone: 'Pending',
         email: 'info@packmovego.com',
         coordinates: {
           lat: 33.6846,
@@ -207,7 +207,7 @@ function getFallbackContactData(): ContactData {
         description: 'Speak with our moving specialists',
         icon: '📞',
         color: 'bg-blue-600',
-        primary: '(949) 414-5282',
+        primary: 'Pending',
         secondary: 'Mon-Fri 8AM-6PM',
         hours: 'Available 7 days a week'
       },
@@ -237,7 +237,7 @@ function getFallbackContactData(): ContactData {
         description: 'Urgent moving needs',
         icon: '🚨',
         color: 'bg-red-600',
-        primary: '(949) 414-5282',
+        primary: 'Pending',
         secondary: 'pending',
         hours: 'pending'
       }
@@ -335,7 +335,7 @@ function getFallbackContactData(): ContactData {
         saturday: { open: '9:00 AM', close: '4:00 PM', status: 'open' },
         sunday: { open: '10:00 AM', close: '3:00 PM', status: 'open' }
       },
-      emergency: 'For urgent matters, call our emergency line at (949) 414-5282 (pending)'
+      emergency: 'For urgent matters, call our emergency line at Pending'
     }
   };
 }

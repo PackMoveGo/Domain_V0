@@ -37,9 +37,6 @@ function RouteTracker() {
     // Start tracking for new page
     startPageTracking(pageName);
     
-    if(process.env.NODE_ENV==='development'){
-      console.log(`📍 [ROUTE-TRACKING] Changed to page: ${pageName} (${pathname})`);
-    }
   }, [location.pathname]);
   
   return null;
@@ -67,10 +64,7 @@ function App() {
           
           // If health check fails, show modal immediately
           if (!healthResult || healthResult.error) {
-            console.log('🚨 [INITIAL-HEALTH] Health check failed on initial load - showing 503 modal');
             api.showApiFailureModal(['/v0/health'], true);
-          } else {
-            console.log('✅ [INITIAL-HEALTH] Health check passed on initial load');
           }
         } catch (error) {
           // Health check failed with an error - show modal
@@ -92,9 +86,6 @@ function App() {
 
   // Always use SSR in production, CSR in development
   const isDevelopment = !isProduction;
-  
-  console.log('🚀 App Environment:', { isDevelopment, isProduction, isSSR, NODE_ENV: process.env.NODE_ENV });
-  console.log('🚀 App rendering with providers...');
 
   // Use appCSR for client-side rendering to ensure proper routing
   // appSSR is only used during server-side rendering, not for client-side navigation

@@ -22,6 +22,7 @@ interface FormData {
   firstName: string;
   lastName: string;
   phone: string;
+  serviceId?: string;
 }
 
 export default function Hero({ services, isLoading, error }: HeroProps) {
@@ -33,10 +34,19 @@ export default function Hero({ services, isLoading, error }: HeroProps) {
     rooms: '',
     firstName: '',
     lastName: '',
-    phone: ''
+    phone: '',
+    serviceId: ''
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Filter to show only top 4 services
+  const topServices = services.filter(service => 
+    service.id === 'house-mover' || 
+    service.id === 'gun-safe' || 
+    service.id === 'furniture-assembly' ||
+    service.id === 'residential'
+  ).slice(0, 4);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -88,6 +98,32 @@ export default function Hero({ services, isLoading, error }: HeroProps) {
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className={styles.grid.form}>
+                  {services && services.length > 0 && (
+                    <div className="min-h-[48px] lg:col-span-2">
+                      <select
+                        id="heroService"
+                        name="serviceId"
+                        value={formData.serviceId || ''}
+                        onChange={handleChange}
+                        className={styles.input.default}
+                      >
+                        <option value="">Select a Service</option>
+                        {services.map((service) => {
+                          const serviceTitle = typeof service.title === 'object' && service.title?.display 
+                            ? service.title.display 
+                            : typeof service.title === 'string' 
+                            ? service.title 
+                            : 'Untitled Service';
+                          const serviceId = service.id || serviceTitle.toLowerCase().replace(/\s+/g, '-');
+                          return (
+                            <option key={serviceId} value={serviceId}>
+                              {serviceTitle}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  )}
                   <div className="min-h-[48px]">
                     <input
                       type="text"
@@ -159,8 +195,8 @@ export default function Hero({ services, isLoading, error }: HeroProps) {
                       onRetry={() => window.location.reload()} 
                     />
                   </div>
-                ) : services.length > 0 ? (
-                  <ServicesSlideshow services={services} />
+                ) : topServices.length > 0 ? (
+                  <ServicesSlideshow services={topServices} />
                 ) : (
                   <NoDataSection
                     title="Services arent available in your area"

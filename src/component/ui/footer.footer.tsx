@@ -206,7 +206,15 @@ const Footer=()=>{
               if (footerData?.services && Array.isArray(footerData.services) && footerData.services.length > 0) {
                 return (
                   <ul className="space-y-2 text-gray-300 text-center">
-                    {footerData.services.slice(0, 5).map((service) => (
+                    {footerData.services
+                      .filter(service => 
+                        service.id === 'house-mover' || 
+                        service.id === 'gun-safe' || 
+                        service.id === 'furniture-assembly' ||
+                        service.id === 'residential'
+                      )
+                      .slice(0, 4)
+                      .map((service) => (
                       <li key={service.id}>
                         <a 
                           href={`/services${service.id ? `#${service.id}` : ''}`}
@@ -217,7 +225,7 @@ const Footer=()=>{
                         </a>
                       </li>
                     ))}
-                    {footerData.services.length > 5 && (
+                    {footerData.services.length > 4 && (
                       <li>
                         <a 
                           href="/services"

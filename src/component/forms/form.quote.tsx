@@ -3,6 +3,7 @@ import React, { useState /* , useEffect */ } from 'react'; // useEffect reserved
 import { useNavigate } from 'react-router-dom';
 import { useApiStatus } from '../../hook/useApiStatus';
 import { api } from '../../services/service.apiSW';
+import { useServicesData } from '../../util/serviceParser';
 
 export interface FormData {
   fromZip: string;
@@ -13,6 +14,7 @@ export interface FormData {
   lastName: string;
   phone: string;
   email?: string;
+  serviceId?: string;
 }
 
 interface QuoteFormProps {
@@ -22,7 +24,23 @@ interface QuoteFormProps {
 export default function QuoteForm({ onSubmit }: QuoteFormProps) {
   const navigate = useNavigate();
   const { isOnline } = useApiStatus();
-  const [formData, setFormData] = useState<FormData>({
+  const { services } = useServicesData();
+  
+  // Load cached form data from localStorage
+  const loadCachedFormData = (): FormData => {
+    try {
+      const cached = localStorage.getItem('quoteFormData');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        // Check if cache is less than 24 hours old
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+          return parsed.data;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load cached form data:', error);
+    }
+    return {
     fromZip: '',
     toZip: '',
     moveDate: '',
@@ -30,8 +48,12 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
     firstName: '',
     lastName: '',
     phone: '',
-    email: ''
-  });
+    email: '',
+    serviceId: ''
+    };
+  };
+  
+  const [formData, setFormData] = useState<FormData>(loadCachedFormData());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -61,10 +83,57 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    let newFormData = { ...formData };
+    
+    // Handle zip code validation - only allow 5 digits
+    if (name === 'fromZip' || name === 'toZip') {
+      const digitsOnly = value.replace(/\D/g, '');
+      if (digitsOnly.length <= 5) {
+        newFormData[name] = digitsOnly;
+      } else {
+        return; // Don't update if exceeds 5 digits
+      }
+    }
+    // Handle phone number formatting - (XXX) XXX-XXXX
+    else if (name === 'phone') {
+      const digitsOnly = value.replace(/\D/g, '');
+      if (digitsOnly.length <= 10) {
+        let formatted = digitsOnly;
+        if (digitsOnly.length >= 3) {
+          formatted = `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3)}`;
+        }
+        if (digitsOnly.length >= 6) {
+          formatted = `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
+        }
+        newFormData[name] = formatted;
+      } else {
+        return; // Don't update if exceeds 10 digits
+      }
+    }
+    // Handle rooms - only numbers, max 50
+    else if (name === 'rooms') {
+      const numValue = parseInt(value) || '';
+      if (numValue === '' || (numValue >= 1 && numValue <= 50)) {
+        newFormData[name] = value;
+      } else {
+        return; // Don't update if invalid
+      }
+    } else {
+      newFormData[name] = value;
+    }
+    
+    setFormData(newFormData);
+    
+    // Cache form data to localStorage
+    try {
+      localStorage.setItem('quoteFormData', JSON.stringify({
+        data: newFormData,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.warn('Failed to cache form data:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,6 +161,14 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
         setSubmitSuccess(true);
         setCanSubmit(false); // Prevent resubmission
         setRateLimitMessage('You can submit another quote in 3 days');
+        
+        // Clear cached form data on successful submission
+        try {
+          localStorage.removeItem('quoteFormData');
+        } catch (error) {
+          console.warn('Failed to clear cached form data:', error);
+        }
+        
         setFormData({
           fromZip: '',
           toZip: '',
@@ -100,7 +177,8 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
           firstName: '',
           lastName: '',
           phone: '',
-          email: ''
+          email: '',
+          serviceId: ''
         });
         console.log('✅ Quote submitted successfully:', response);
         
@@ -111,9 +189,20 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
       } else {
         setSubmitError(response.message || 'Failed to submit quote request');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Quote submission error:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Failed to submit quote. Please try again or call us directly.';
+      
+      // Extract detailed error message
+      let errorMsg = 'Failed to submit quote. Please try again or call us directly.';
+      
+      if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+      
+      // If there's a response with errors array, show those
+      if (error.errors && Array.isArray(error.errors)) {
+        errorMsg = error.errors.join('. ');
+      }
       
       // Check if it's a rate limit error (429)
       if (errorMsg.includes('3 days') || errorMsg.includes('429')) {
@@ -154,14 +243,49 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {services && services.length > 0 && (
+                  <div className="md:col-span-2">
+                    <label htmlFor="serviceId" className="block text-sm font-medium text-gray-700 mb-1">
+                      Service Needed <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="serviceId"
+                      name="serviceId"
+                      value={formData.serviceId || ''}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select a Service</option>
+                      {services.map((service) => {
+                        const serviceTitle = typeof service.title === 'object' && service.title?.display 
+                          ? service.title.display 
+                          : typeof service.title === 'string' 
+                          ? service.title 
+                          : 'Untitled Service';
+                        const serviceId = service.id || serviceTitle.toLowerCase().replace(/\s+/g, '-');
+                        return (
+                          <option key={serviceId} value={serviceId}>
+                            {serviceTitle}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
                 <div>
-                  <label htmlFor="fromZip" className="block text-sm font-medium text-gray-700 mb-1">Moving From Zip Code</label>
+                  <label htmlFor="fromZip" className="block text-sm font-medium text-gray-700 mb-1">
+                    Moving From Zip Code <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     id="fromZip"
                     name="fromZip"
                     value={formData.fromZip}
                     onChange={handleChange}
+                    placeholder="92660"
+                    maxLength={5}
+                    pattern="\d{5}"
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -174,6 +298,9 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
                     name="toZip"
                     value={formData.toZip}
                     onChange={handleChange}
+                    placeholder="92660"
+                    maxLength={5}
+                    pattern="\d{5}"
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -191,25 +318,34 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
                   />
                 </div>
                 <div>
-                  <label htmlFor="rooms" className="block text-sm font-medium text-gray-700 mb-1">Number of Rooms</label>
+                  <label htmlFor="rooms" className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Rooms <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    type="text"
+                    type="number"
                     id="rooms"
                     name="rooms"
                     value={formData.rooms}
                     onChange={handleChange}
+                    min="1"
+                    max="50"
+                    placeholder="1"
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     id="firstName"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
+                    placeholder="Your full name"
+                    minLength={2}
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -227,13 +363,16 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="tel"
                     id="phone"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    placeholder="(949) 555-1234"
                     required
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -246,6 +385,7 @@ export default function QuoteForm({ onSubmit }: QuoteFormProps) {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    placeholder="your.email@example.com"
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

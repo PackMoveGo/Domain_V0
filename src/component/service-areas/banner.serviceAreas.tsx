@@ -72,13 +72,11 @@ const ServiceAreas: React.FC<ServiceAreasProps> = ({ error: propError, /* simula
       try {
         setIsLoading(true);
         setError(null);
-        console.log('🔧 Loading service areas...');
         
         const serviceAreasData = await getAllServiceAreas();
         // Filter to only California service areas
         const californiaAreas = serviceAreasData.filter((area: any) => area.state === 'CA');
         setServiceAreas(californiaAreas);
-        console.log('✅ Service areas loaded:', californiaAreas.length, 'California areas');
       } catch (err) {
         console.error('❌ Failed to load service areas:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to load service areas';
