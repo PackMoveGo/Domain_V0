@@ -45,14 +45,82 @@ const routeMetaTags = {
     description: 'Join PackMoveGo\'s referral program and earn rewards for recommending our professional moving services to friends and family. Get discounts on future moves!',
     image: 'https://packmovego.com/og-cover-v2.jpg',
   },
+  '/terms': {
+    title: 'Terms of Service - PackMoveGo | Moving Services Terms & Conditions',
+    description: 'Read PackMoveGo\'s terms of service and conditions for using our professional moving and packing services. Understand your rights and responsibilities.',
+    image: 'https://packmovego.com/og-cover-v2.jpg',
+  },
+  '/privacy': {
+    title: 'Privacy Policy - PackMoveGo | Your Data Protection & Privacy',
+    description: 'PackMoveGo\'s privacy policy explains how we collect, use, and protect your personal information. Learn about our commitment to your privacy.',
+    image: 'https://packmovego.com/og-cover-v2.jpg',
+  },
+  '/faq': {
+    title: 'FAQ - PackMoveGo | Frequently Asked Questions About Moving',
+    description: 'Get answers to common questions about PackMoveGo\'s moving services, pricing, scheduling, and more. Find the information you need.',
+    image: 'https://packmovego.com/og-cover-v2.jpg',
+  },
+  '/booking': {
+    title: 'Book Your Move - PackMoveGo | Schedule Professional Moving Services',
+    description: 'Book your move with PackMoveGo online. Choose your moving date, get an instant quote, and schedule professional movers for your relocation.',
+    image: 'https://packmovego.com/og-cover-v2.jpg',
+  },
 };
 
 export default async function middleware(request) {
   const url = new URL(request.url);
   const { pathname } = url;
   
-  // Get meta tags for this route (or use homepage as fallback)
-  const meta = routeMetaTags[pathname] || routeMetaTags['/'];
+  // Handle dynamic routes with pattern matching
+  let meta;
+  
+  // Check for exact match first
+  if (routeMetaTags[pathname]) {
+    meta = routeMetaTags[pathname];
+  }
+  // Handle /services/:id routes
+  else if (pathname.startsWith('/services/') && pathname !== '/services') {
+    const serviceName = pathname.split('/services/')[1];
+    const formattedName = serviceName.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+    
+    meta = {
+      title: `${formattedName} - PackMoveGo | Professional Moving Service`,
+      description: `Get professional ${formattedName.toLowerCase()} services from PackMoveGo. Expert movers, competitive pricing, and exceptional customer service.`,
+      image: 'https://packmovego.com/og-cover-v2.jpg',
+    };
+  }
+  // Handle /supplies/:id routes
+  else if (pathname.startsWith('/supplies/') && pathname !== '/supplies') {
+    const supplyName = pathname.split('/supplies/')[1];
+    const formattedName = supplyName.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+    
+    meta = {
+      title: `${formattedName} - PackMoveGo Moving Supplies`,
+      description: `Shop ${formattedName.toLowerCase()} from PackMoveGo. Quality moving and packing supplies for your relocation needs.`,
+      image: 'https://packmovego.com/og-cover-v2.jpg',
+    };
+  }
+  // Handle /blog/:id routes
+  else if (pathname.startsWith('/blog/') && pathname !== '/blog') {
+    const postSlug = pathname.split('/blog/')[1];
+    const formattedTitle = postSlug.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+    
+    meta = {
+      title: `${formattedTitle} - PackMoveGo Blog`,
+      description: `Read our blog post about ${formattedTitle.toLowerCase()}. Expert moving tips and advice from PackMoveGo professionals.`,
+      image: 'https://packmovego.com/og-cover-v2.jpg',
+    };
+  }
+  // Fallback to homepage
+  else {
+    meta = routeMetaTags['/'];
+  }
   
   // Fetch the original response
   const response = await fetch(request);
@@ -118,12 +186,19 @@ export const config = {
     '/',
     '/about',
     '/services',
+    '/services/:path*',
     '/contact',
     '/blog',
+    '/blog/:path*',
     '/locations',
     '/supplies',
+    '/supplies/:path*',
     '/review',
     '/refer',
+    '/terms',
+    '/privacy',
+    '/faq',
+    '/booking',
   ],
 };
 
