@@ -97,19 +97,28 @@ export default async function handler(req, res) {
         if (helmetContext && helmetContext.helmet) {
           const { helmet } = helmetContext;
           
-          // Replace the default meta tags with page-specific ones
-          if (helmet.title) {
-            html = html.replace(/<title>.*?<\/title>/, helmet.title.toString());
-          }
-          if (helmet.meta) {
-            // Inject meta tags after the existing ones
-            html = html.replace('</head>', `${helmet.meta.toString()}</head>`);
-          }
-          if (helmet.link) {
-            html = html.replace('</head>', `${helmet.link.toString()}</head>`);
-          }
+          console.log('📋 Helmet context available:', Object.keys(helmet));
           
-          console.log('✅ Helmet meta tags injected');
+          // Build complete head content from Helmet
+          let helmetHead = '';
+          if (helmet.title && helmet.title.toString()) helmetHead += helmet.title.toString();
+          if (helmet.meta && helmet.meta.toString()) helmetHead += helmet.meta.toString();
+          if (helmet.link && helmet.link.toString()) helmetHead += helmet.link.toString();
+          if (helmet.script && helmet.script.toString()) helmetHead += helmet.script.toString();
+          
+          if (helmetHead) {
+            // Replace the default OG tags section with Helmet's tags
+            // Find the section after the initial meta tags and before the closing </head>
+            html = html.replace(
+              /<!-- Critical OG tags for text messaging.*?<!-- PWA Manifest/s,
+              `${helmetHead}\n    <!-- PWA Manifest`
+            );
+            
+            console.log('✅ Helmet meta tags injected');
+            console.log(`📝 Helmet head length: ${helmetHead.length} chars`);
+          }
+        } else {
+          console.log('⚠️  No Helmet context available, using default meta tags');
         }
         
         // Check if injection worked
