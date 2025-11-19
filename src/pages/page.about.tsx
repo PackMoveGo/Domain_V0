@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { useGiveSectionId, defaultAboutSections } from '../hook/useGiveSectionId';
 import { getComprehensiveAboutPageData } from '../services/public/service.aboutPageAPI';
 import { useCookiePreferences } from '../context/CookiePreferencesContext';
+import SEO from '../component/business/SEO';
 // Modal state is handled by Layout component
 
 // Lazy load Hero component
@@ -159,6 +160,13 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-white">
+        <SEO 
+          title="About Us - PackMoveGo | Professional Moving Company Since 2020"
+          description="Learn about PackMoveGo's mission, values, and commitment to providing exceptional moving services. Our professional team ensures your move is stress-free and efficient."
+          keywords="about packmovego, moving company story, professional movers, our mission, our values, moving company team, relocation experts"
+          url="https://packmovego.com/about"
+          type="website"
+        />
         {/* Hero Section - Lazy loaded with Suspense */}
         <section {...getSectionProps('hero')}>
           <Suspense fallback={

@@ -3,6 +3,7 @@ import { getComprehensiveContactPageData } from '../services/public/service.cont
 import { useGiveSectionId, defaultContactSections } from '../hook/useGiveSectionId';
 import { useCookiePreferences } from '../context/CookiePreferencesContext';
 import ErrorBoundary from '../component/ui/feedback/ErrorBoundary';
+import SEO from '../component/business/SEO';
 // Modal state is handled by Layout component
 
 // Lazy load contact components
@@ -166,6 +167,13 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+        <SEO 
+          title="Contact Us - PackMoveGo | Get a Free Moving Quote Today"
+          description="Contact PackMoveGo for professional moving services. Call (949) 414-5282 or request a free quote online. Our team is ready to help with your move."
+          keywords="contact packmovego, moving quote, free estimate, moving company contact, call movers, moving consultation, (949) 414-5282"
+          url="https://packmovego.com/contact"
+          type="website"
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Contact Header */}
           <section {...getSectionProps('contact-header')}>

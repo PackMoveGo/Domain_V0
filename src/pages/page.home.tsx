@@ -11,8 +11,8 @@ import {
   shouldUseFallback 
 } from '../data/fallbackData';
 import { logger } from '../util/logger';
+import SEO from '../component/business/SEO';
 // Modal state is handled by Layout component
-// import SEO from '../component/business/SEO'; // SEO complation
 // const { getSectionProps, isTampered, SectionWarning } = useGiveSectionId(contactPageSections); Hash validation example implmintation
 
 // Lazy load Hero component
@@ -270,6 +270,13 @@ export default function HomePage(){
 
   return (
     <div className="min-h-screen bg-white">
+        <SEO 
+          title="PackMoveGo - Professional Moving & Packing Services | Your Trusted Moving Partner"
+          description="PackMoveGo offers professional moving and packing services across the country. Residential, commercial, and long-distance moving solutions with expert care. Get your free quote today!"
+          keywords="moving services, professional movers, packing services, residential moving, commercial moving, long distance moving, local movers, moving company, relocation services, packmovego"
+          url="https://packmovego.com"
+          type="website"
+        />
         {/* Hero Section (above the fold) - Lazy loaded with Suspense */}
         <section {...getSectionProps('hero')}>
           <Suspense fallback={

@@ -56,11 +56,12 @@ const BlogPage = () => {
   return (
     <div>
       <SEO 
-        title="Moving & Packing Blog - Pack Move Go"
-        description="Expert moving tips, packing guides, and insights to help make your move successful and stress-free. Learn from the professionals at Pack Move Go."
-        keywords="moving tips, packing guide, moving blog, moving advice, packing tips, moving checklist, moving with kids, moving company blog"
+        title="Moving & Packing Blog - PackMoveGo | Expert Tips & Guides"
+        description="Expert moving tips, packing guides, and relocation advice from PackMoveGo professionals. Learn how to make your move stress-free with our comprehensive blog articles."
+        keywords="moving tips, packing guide, moving blog, moving advice, packing tips, moving checklist, moving with kids, pet relocation, moving company blog, relocation tips"
         url="https://packmovego.com/blog"
         image="/og-cover-v2.jpg"
+        type="website"
       />
       <div className="min-h-screen bg-gray-50">
         {/* Blog Section */}

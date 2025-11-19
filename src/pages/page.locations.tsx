@@ -12,9 +12,11 @@ const LocationsPage = () => {
   return (
     <ErrorBoundary>
         <SEO
-          title="Service Locations - Pack Move Go"
-          description="Find Pack Move Go services in your area. We provide professional moving and packing services across multiple locations."
-          keywords="moving services, packing services, locations, service areas"
+          title="Service Locations - PackMoveGo | Nationwide Moving Services"
+          description="PackMoveGo provides professional moving and packing services nationwide. Find our service locations and areas we cover for your residential or commercial move."
+          keywords="moving services locations, service areas, nationwide movers, local moving areas, packmovego locations, moving service coverage"
+          url="https://packmovego.com/locations"
+          type="website"
         />
         
         <div {...getSectionProps('hero')}>

@@ -11,9 +11,11 @@ const ReviewPage = () => {
   return (
     <ErrorBoundary>
         <SEO
-          title="Customer Reviews - Pack Move Go"
-          description="Read what our customers say about Pack Move Go's professional moving and packing services."
-          keywords="customer reviews, moving reviews, packing reviews, testimonials"
+          title="Customer Reviews & Testimonials - PackMoveGo | 5-Star Moving Services"
+          description="Read real customer reviews and testimonials about PackMoveGo's professional moving services. See why thousands trust us with their residential and commercial moves."
+          keywords="customer reviews, moving reviews, testimonials, moving company ratings, 5-star movers, customer feedback, moving service reviews, packmovego reviews"
+          url="https://packmovego.com/review"
+          type="website"
         />
         
         <div {...getSectionProps('hero')}>

@@ -17,9 +17,11 @@ const ReferPageComponent = () => {
   return (
     <ErrorBoundary>
         <SEO
-          title="Referral Program - Pack Move Go"
-          description="Join our referral program and earn rewards for recommending Pack Move Go services to friends and family."
-          keywords="referral program, earn rewards, moving services referral"
+          title="Refer Friends & Earn Rewards - PackMoveGo Referral Program"
+          description="Join PackMoveGo's referral program and earn rewards for recommending our professional moving services to friends and family. Get discounts on future moves!"
+          keywords="referral program, earn rewards, refer friends, moving services referral, referral bonus, moving discounts, friend referral"
+          url="https://packmovego.com/refer"
+          type="website"
         />
         
         <div {...getSectionProps('hero')}>

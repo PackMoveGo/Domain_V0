@@ -189,11 +189,12 @@ const Services: FC = () => {
   return (
     <div>
       <SEO 
-        title="Moving Services - Pack Move Go | Residential & Commercial Moving"
-        description="Comprehensive moving services including residential, commercial, packing, and storage solutions. Professional and reliable moving services in Orange County."
-        keywords="moving services, residential moving, commercial moving, packing services, storage solutions, local movers, long distance moving"
+        title="Our Services - PackMoveGo | Residential, Commercial & Long Distance Moving"
+        description="Comprehensive moving services including residential, commercial, long-distance, packing, and storage solutions. Professional movers with expert care and competitive pricing."
+        keywords="moving services, residential moving, commercial moving, long distance movers, packing services, storage solutions, local movers, office relocation, apartment movers, house moving"
         url="https://packmovego.com/services"
-        image="/images/moving-services.jpg"
+        image="/og-cover-v2.jpg"
+        type="website"
       />
       <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}

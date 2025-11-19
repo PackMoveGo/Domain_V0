@@ -11,9 +11,11 @@ const SuppliesPage = () => {
   return (
     <ErrorBoundary>
         <SEO
-          title="Moving Supplies - Pack Move Go"
-          description="Professional moving supplies and packing materials for your move. Quality boxes, tape, and packing materials."
-          keywords="moving supplies, packing materials, boxes, tape, moving equipment"
+          title="Moving Supplies & Packing Materials - PackMoveGo"
+          description="Shop professional moving supplies and packing materials from PackMoveGo. Quality boxes, bubble wrap, tape, and all the supplies you need for a successful move."
+          keywords="moving supplies, packing materials, moving boxes, bubble wrap, packing tape, moving equipment, box sizes, packing supplies, moving kit"
+          url="https://packmovego.com/supplies"
+          type="website"
         />
         
         <div {...getSectionProps('hero')}>
