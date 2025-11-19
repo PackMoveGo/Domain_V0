@@ -99,26 +99,42 @@ export default async function handler(req, res) {
           
           console.log('📋 Helmet context available:', Object.keys(helmet));
           
-          // Build complete head content from Helmet
-          let helmetHead = '';
-          if (helmet.title && helmet.title.toString()) helmetHead += helmet.title.toString();
-          if (helmet.meta && helmet.meta.toString()) helmetHead += helmet.meta.toString();
-          if (helmet.link && helmet.link.toString()) helmetHead += helmet.link.toString();
-          if (helmet.script && helmet.script.toString()) helmetHead += helmet.script.toString();
+          // Step 1: Remove the default OG tags section from index.html to avoid duplicates
+          html = html.replace(
+            /<!-- Critical OG tags for text messaging[\s\S]*?<!-- Twitter Card/,
+            '<!-- Page-specific OG tags injected by SSR -->\n    <!-- Twitter Card'
+          );
           
-          if (helmetHead) {
-            // Replace the default OG tags section with Helmet's tags
-            // Find the section after the initial meta tags and before the closing </head>
-            html = html.replace(
-              /<!-- Critical OG tags for text messaging.*?<!-- PWA Manifest/s,
-              `${helmetHead}\n    <!-- PWA Manifest`
-            );
-            
-            console.log('✅ Helmet meta tags injected');
-            console.log(`📝 Helmet head length: ${helmetHead.length} chars`);
+          // Step 2: Replace default title with page-specific title
+          if (helmet.title && helmet.title.toString()) {
+            html = html.replace(/<title>.*?<\/title>/, helmet.title.toString());
+            console.log('✅ Title replaced');
           }
+          
+          // Step 3: Inject page-specific meta tags before Twitter Card section
+          if (helmet.meta && helmet.meta.toString()) {
+            html = html.replace(
+              '<!-- Page-specific OG tags injected by SSR -->',
+              helmet.meta.toString()
+            );
+            console.log('✅ Meta tags injected');
+          }
+          
+          // Step 4: Inject canonical and other link tags
+          if (helmet.link && helmet.link.toString()) {
+            html = html.replace('</head>', `${helmet.link.toString()}\n    </head>`);
+            console.log('✅ Link tags injected');
+          }
+          
+          // Step 5: Inject structured data scripts
+          if (helmet.script && helmet.script.toString()) {
+            html = html.replace('</head>', `${helmet.script.toString()}\n    </head>`);
+            console.log('✅ Script tags injected');
+          }
+          
+          console.log('✅ Helmet meta tags fully injected and defaults removed');
         } else {
-          console.log('⚠️  No Helmet context available, using default meta tags');
+          console.log('⚠️  No Helmet context available, using default meta tags from index.html');
         }
         
         // Check if injection worked
