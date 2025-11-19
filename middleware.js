@@ -1,5 +1,3 @@
-import { next } from '@vercel/edge';
-
 // Route-specific meta tags for iOS link previews
 const routeMetaTags = {
   '/': {
@@ -50,13 +48,14 @@ const routeMetaTags = {
 };
 
 export default async function middleware(request) {
-  const { pathname } = request.nextUrl;
+  const url = new URL(request.url);
+  const { pathname } = url;
   
   // Get meta tags for this route (or use homepage as fallback)
   const meta = routeMetaTags[pathname] || routeMetaTags['/'];
   
-  // Fetch the HTML response
-  const response = await next();
+  // Fetch the original response
+  const response = await fetch(request);
   
   // Only process HTML responses
   const contentType = response.headers.get('content-type') || '';
